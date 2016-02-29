@@ -19,7 +19,7 @@ AttributesToIDs.GCL=function(silly,attribute,matching){
 ########################################################################################################################################################
 
 
-  IDs=NULL
+   IDs= NULL
   myattribute=as.character(get(paste(silly,".gcl",sep=""),pos=1)$attributes[[attribute]])
    for(match in 1:length(matching)){
      IND=myattribute==matching[match]
