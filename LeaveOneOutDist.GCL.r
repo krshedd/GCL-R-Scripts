@@ -1,4 +1,46 @@
 LeaveOneOutDist.GCL=function(sillyvec,loci,groupvec,pgroup=rep(1/max(groupvec),max(groupvec))){
+  ####################################################################################################################################################################################################################################################################
+  #
+  # This function calculates a genetic likelihood for each individual belonging
+  # to each population, based on the probabilitie of each individuals genotype 
+  # originating from population allele frequencies (leave one out). These
+  # individual to population probabilities are also rolled up into reporting
+  # groups. This genetic likelihood profile is intended to show how well
+  # populations / reporting groups are differentiated by the markers at hand.
+  # This function can aid in marker selection.
+  # 
+  # Input parameters~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # 
+  # sillyvec = Kodiak49Pops
+  #   ~ A character vector of sillys (pops make more sense, but collecitons could be used).
+  # loci = loci90
+  #   ~ A character vector of loci. Can include haploid markers and/or combined loci.
+  # groupvec = Kodiak49GroupVec9
+  #   ~ A numberic vector of length(sillyvec) sepcifying group assignments.
+  # pgroup = rep(1/max(groupvec),max(groupvec))
+  #   ~ Default is for a regionally flat prior
+  #     This means that each individual has an equal probability of coming from any group,
+  #     otherwise, there is an implicit population flat prior, which would mean that groups
+  #     with lots of populations would "pull" in more fish.
+  # 
+  # Output~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Unnamed List of 2
+  #  List of (number of RGs)
+  #   List of (number of pops)
+  #    numberic vector (length of number of individuals in pop) 
+  #     probability of each individual originated from a pop in that group
+  #  List of (number of pops)
+  #   List of (number of pops)
+  #    numberic vector (length of number of individuals in pop) 
+  #     probability of each individual originated from a pop in that pop
+  #
+  # e.g. list[[1]][[1]][[1]][[1]] = probability of indv 1 in pop 1 originating from a pop in RG 1
+  # e.g. list[[2]][[1]][[1]][[1]] = probability of indv 1 in pop 1 originating from  pop 1
+  #
+  # Created by Jim Jasper on unknown???
+  # Modified by Kyle Shedd on unkown to include progress bars
+  #
+  ####################################################################################################################################################################################################################################################################
   
   if(sum(is.na(match(loci,LocusControl$locusnames)))){stop(paste("'",loci[is.na(match(loci,LocusControl$locusnames))],"' from argument 'loci' not found in 'LocusControl' object!!!",sep=""))}
   
