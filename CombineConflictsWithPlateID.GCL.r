@@ -23,7 +23,7 @@ N <- length(files)
 data = NULL
 
 for(i in seq(N)){
-  NextFile <- read.xlsx(files[i], sheetIndex = 1 ,header = TRUE)[,-1]
+  NextFile <- read.csv(files[i], header = TRUE)[,-1]
   end <- dim(NextFile)[1]  # added this
   data <- rbind(data, NextFile[1:end, ])
 }
