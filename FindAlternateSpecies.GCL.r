@@ -3,13 +3,13 @@ FindAlternateSpecies.GCL=function(sillyvec,species="chum"){
   require("abind")
 
   if(species=="chum"){
-    AlternateGenotypesPath="V:\\DATA\\R_GEN\\Alternate Homo Markers Chum.txt"
-    FailedMarkersPath="V:\\DATA\\R_GEN\\Failed Chum Markers.txt"
+    AlternateGenotypesPath="V:/Analysis/R files/Alternate Homo Markers Chum.txt"
+    FailedMarkersPath="VV:/Analysis/R files/Failed Chum Markers.txt"
   }
 
   if(species=="sockeye"){
-    AlternateGenotypesPath="V:\\DATA\\R_GEN\\Alternate Homo Markers Sockeye.txt"
-    FailedMarkersPath="V:\\DATA\\R_GEN\\Failed Sockeye Markers.txt"
+    AlternateGenotypesPath="V:/Analysis/R files/Alternate Homo Markers Sockeye.txt"
+    FailedMarkersPath="V:/Analysis/R files/Failed Sockeye Markers.txt"
   }
 
 
@@ -20,13 +20,15 @@ FindAlternateSpecies.GCL=function(sillyvec,species="chum"){
   loci=LocusControl$locusnames
 
   if(sum(is.na(match(AlternateMarkers,loci)))){
-    stop("'AlternateMarkers' not found in 'loci', hoser!!!") 
+    warning(paste(sum(is.na(match(AlternateMarkers,loci))), "out of", length(AlternateMarkers), "'AlternateMarkers' not found in 'loci', hoser!!!\nAnalyses were made based on the", sum(!is.na(match(AlternateMarkers,loci))), "remaining alternate marker(s)"))
+    AlternateMarkers <- AlternateMarkers[AlternateMarkers %in% loci]
   }
 
   FailedMarkers=scan(FailedMarkersPath,what="")[-1]
 
   if(sum(is.na(match(FailedMarkers,loci)))){
-    stop("'FailedMarkers' not found in 'loci', hoser!!!") 
+    warning(paste(sum(is.na(match(FailedMarkers,loci))), "out of", length(FailedMarkers), "'FailedMarkers' not found in 'loci', hoser!!!\nAnalyses were made based on the", sum(!is.na(match(AlternateMarkers,loci))), "remaining failed marker(s)"))
+    FailedMarkers <- FailedMarkers[FailedMarkers %in% loci]
   }
 
 
