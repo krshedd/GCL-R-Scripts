@@ -1,18 +1,33 @@
-###################################################################################################################################################################################
-# This function will remove the BAYES input files (.ctl and .mix) from the server and cut/paste the BAYES output files (.BO1, .BOT, .RGN, .SUM, and .CLS) to the V drive
-#
-# origindir <- where your files are on the server (e.g. "C:/Kyle")
-# targetdir <- where you want your files to go on the V drive (e.g. "V:/WORK/Sockeye/Kodiak/2013 2014 Karluk Smolt")
-#   NOTE: this assumes a file structure of "BAYES/Output/" within your targetdir (e.g. ""V:/WORK/Sockeye/Kodiak/2013 2014 Karluk Smolt/BAYES/Output/")
-# sillyvec <- what your mixtures are called (e.g. "KarlukSmolt2013.1" or "SKARL13s" or dget(file="V:/WORK/Sockeye/Kodiak/2013 2014 Karluk Smolt/Objects/KarlukMixtures.txt")[1:5])
-#   NOTE: sillyvec can only be up to 5 mixtures long (1st one goes in "Bayes A", 2nd in "Bayes B", etc.)
-#
-# Created by Kyle Shedd on Fri Mar 27 17:10:57 2015
-###################################################################################################################################################################################
-
 BayesOutputCopyPaste.GCL <- function(origindir, targetdir, sillyvec){
-  
-  if(length(sillyvec) > 5) {stop(paste("sillyvec can only be up to 5 mixtures long!!!"))}
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # This function will copy the BAYES output files (.BO1, .BOT, .RGN, .SUM, .CLS)
+  # from the server and paste them onto the V drive. All BAYES files are removed
+  # from the server (input and output). The function looks recursively into the
+  # orgindir for all BAYES files that match the sillyvec.
+  # 
+  # Input parameters~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # 
+  # origindir = original directory of files
+  #   ~ A character vector indicating where BAYES output files are on the server.
+  # targetdir = target directory structure
+  #   ~ A character vector indicating where you want BAYES files to go (i.e. V drive).
+  # sillyvec = mixtures you want to move
+  #   ~ A character vector indicating which mixtures you want to move.
+  # 
+  # Output~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # No output, just cuts and pastes BAYES output files from server back to 
+  # and deletes the BAYES input files from the server.
+  #
+  # Example~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #   source("https://raw.githubusercontent.com/krshedd/GCL-R-Scripts/master/BayesOutputCopyPaste.GCL.R")
+  #   
+  #   BayesOutputCopyPaste.GCL(origindir="C:/Users/krshedd/BAYES", 
+  #                            targetdir="V:/Analysis/4_Westward/Sockeye/KMA Commercial Harvest 2014-2016/Mixtures/BAYES/Late August 89loci",
+  #                            sillyvec=dget(file="V:/Analysis/4_Westward/Sockeye/KMA Commercial Harvest 2014-2016/Mixtures/Objects/LateAugustMixtures2014Strata.txt"))
+  #    
+  # Created by Kyle Shedd Fri Mar 27 17:10:57 2015
+  # Updated by Kyle Shedd Tue Apr 05 16:46:39 2016 in order to generalize and better document
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
   # Removing input files (".ctl" and ".mix")
   controlfiles=list.files(path=origindir, pattern=".ctl", full.names=TRUE, recursive=TRUE) # All control files in origindir
@@ -27,7 +42,7 @@ BayesOutputCopyPaste.GCL <- function(origindir, targetdir, sillyvec){
   
   filestocopy=sapply(sillyvec, function(silly) {outputfiles[grep(pattern=silly, x=outputfiles)]}, simplify=FALSE) # Create list of output files by sillyvec
   
-  invisible(sapply(sillyvec, function(silly) {file.copy(from=filestocopy[[silly]], to=paste(targetdir, "/BAYES/Output/", silly, sep=""))})) # Move to appropriate V drive directory
+  invisible(sapply(sillyvec, function(silly) {file.copy(from=filestocopy[[silly]], to=paste(targetdir, "/Output/", silly, sep=""))})) # Move to appropriate V drive directory
   
   invisible(lapply(filestocopy, file.remove)) # Remove output files from server
   
