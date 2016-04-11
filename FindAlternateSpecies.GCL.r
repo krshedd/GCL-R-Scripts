@@ -20,15 +20,23 @@ FindAlternateSpecies.GCL=function(sillyvec,species="chum"){
   loci=LocusControl$locusnames
 
   if(sum(is.na(match(AlternateMarkers,loci)))){
-    warning(paste(sum(is.na(match(AlternateMarkers,loci))), "out of", length(AlternateMarkers), "'AlternateMarkers' not found in 'loci', hoser!!!\nAnalyses were made based on the", sum(!is.na(match(AlternateMarkers,loci))), "remaining alternate marker(s)"))
-    AlternateMarkers <- AlternateMarkers[AlternateMarkers %in% loci]
+    if(sum(is.na(match(AlternateMarkers,loci))) == length(AlternateMarkers)) {
+      stop("None of the 'AlternateMarkers' found in 'loci', hoser!!!")
+    } else {
+      warning(paste(sum(is.na(match(AlternateMarkers,loci))), "out of", length(AlternateMarkers), "'AlternateMarkers' not found in 'loci', hoser!!!\nAnalyses were made based on the", sum(!is.na(match(AlternateMarkers,loci))), "remaining alternate marker(s)"))
+      AlternateMarkers <- AlternateMarkers[AlternateMarkers %in% loci]
+    }
   }
-
-  FailedMarkers=scan(FailedMarkersPath,what="")[-1]
+  
+  FailedMarkers=scan(FailedMarkersPath,what="", quiet = TRUE)[-1]
 
   if(sum(is.na(match(FailedMarkers,loci)))){
-    warning(paste(sum(is.na(match(FailedMarkers,loci))), "out of", length(FailedMarkers), "'FailedMarkers' not found in 'loci', hoser!!!\nAnalyses were made based on the", sum(!is.na(match(AlternateMarkers,loci))), "remaining failed marker(s)"))
-    FailedMarkers <- FailedMarkers[FailedMarkers %in% loci]
+    if(sum(is.na(match(FailedMarkers,loci))) == length(FailedMarkers)) {
+      stop("None of the 'FailedMarkers' found in 'loci', hoser!!!")
+    } else {
+      warning(paste(sum(is.na(match(FailedMarkers,loci))), "out of", length(FailedMarkers), "'FailedMarkers' not found in 'loci', hoser!!!\nAnalyses were made based on the", sum(!is.na(match(FailedMarkers,loci))), "remaining failed marker(s)"))
+      FailedMarkers <- FailedMarkers[FailedMarkers %in% loci]
+    }
   }
 
 
@@ -54,6 +62,10 @@ FindAlternateSpecies.GCL=function(sillyvec,species="chum"){
                               ifelse(is.na(gclobjectAll[vial,loc,1]),NA,paste(gclobjectAll[vial,loc,1:ploidy[loc]],collapse=""))
                             })
                           }))
+  
+  if(length(AlternateMarkers) == 1) {
+    gclobjectAllAlternate <- matrix(data = gclobjectAllAlternate, ncol = 1, dimnames = list(sillyvial, AlternateMarkers))
+  }
 
    Alternate=apply(
                sapply(AlternateMarkers,function(loc){
