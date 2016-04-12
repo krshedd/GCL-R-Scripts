@@ -28,7 +28,7 @@ DupCheckBetweenSillys.GCL=function(KeySillys,KeySillyIDs=NULL,BetweenSillys,loci
    
     KeySillyIDs2Remove=sapply(KeySillys,function(silly){list(KeySillyIDsALL[[silly]][is.na(match(KeySillyIDsALL[[silly]],KeySillyIDs[[silly]]))])},simplify=FALSE)
 
-    EMPTY=sapply(KeySillys,function(silly){RemoveIDs.GCL(paste0("new",silly,".gcl"),KeySillyIDs2Remove[silly])})
+    EMPTY=sapply(KeySillys,function(silly){RemoveIDs.GCL(paste0("new",silly),KeySillyIDs2Remove[[silly]])})
 
   }
 
