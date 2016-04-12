@@ -7,7 +7,7 @@ PoolCollections.GCL=function(collections,loci,IDs=NULL,newname=paste(collections
 #
 #  "loci" is the set of markers used for pooling.
 #
-#  "IDs" is a named list of fish ID vectors, each vector is associated with and named after a member of "collections" 
+#  "IDs" is a named list of fish ID character vectors, each vector is associated with and named after a member of "collections" 
 #
 #  "newname" is the name of the new "*.gcl" created. Do not provide ".gcl" extention. 
 #
@@ -30,6 +30,8 @@ PoolCollections.GCL=function(collections,loci,IDs=NULL,newname=paste(collections
   if(!is.list(IDs)){stop("'IDs' must be a list")}
 
   if(ncollections!=length(IDs)){stop("'IDs' must be same length as 'collections'")}
+
+  if(sum(sapply(IDs, function(collection) {!is.character(collection)} )) > 0) {stop("'IDs' must be a character vector, not a numeric vector")}
 
   names(IDs)=collections
 
