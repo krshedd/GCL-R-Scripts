@@ -12,6 +12,7 @@ PoolCollections.GCL=function(collections,loci,IDs=NULL,newname=paste(collections
 #  "newname" is the name of the new "*.gcl" created. Do not provide ".gcl" extention. 
 #
 #  ReWritten by JJ 12/17/2015 
+#  Edited by Kyle Shedd on 4/12/2016
 #
 ######################################################################################################################################################################################
 
@@ -31,7 +32,7 @@ PoolCollections.GCL=function(collections,loci,IDs=NULL,newname=paste(collections
 
   if(ncollections!=length(IDs)){stop("'IDs' must be same length as 'collections'")}
 
-  if(sum(sapply(IDs, function(collection) {!is.character(collection)} )) > 0) {stop("'IDs' must be a character vector, not a numeric vector")}
+  if(!is.character(unlist(IDs))) {stop("'IDs' must be a character vector, not a numeric vector")}
 
   names(IDs)=collections
 
