@@ -1,4 +1,4 @@
-LinkageCorrelationJAGSvKyle.GCL=function(sillyvec,markerset,groupvec,groupnames){
+LinkageCorrelationJAGS.GCL=function(sillyvec,markerset,groupvec,groupnames){
   #####################################################################################################################################################################################################################################################################
   #
   # This function calculates Gst values for the all combinations of the markerset
