@@ -39,7 +39,7 @@ compare_comps_between.GCL <- function(mixnames, groupnames, mixdir, d = 0.05, on
 #
 ########################################################################################################################################################################################################################################################################################
 
-  dirs <- paste(dir, "/", mixnames, "/", mixnames, sep="")
+  dirs <- paste(mixdir, "/", mixnames, "/", mixnames, sep="")
 
   chains=paste("Chain",seq(nchains), "RGN.RGN",sep="")
 
