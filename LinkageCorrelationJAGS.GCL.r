@@ -39,7 +39,7 @@ LinkageCorrelationJAGS.GCL=function(sillyvec,markerset,groupvec,groupnames){
   
   if(sum(is.na(match(markerset,LocusControl$locusnames)))){stop(paste("'",markerset[is.na(match(markerset,LocusControl$locusnames))],"' from argument 'markerset' not found in 'LocusControl' object!!!",sep=""))}
   
-  model="V:\\DATA\\R_GEN\\BUGS Scripts\\LinkageCorrelationCoefficientJAGS.txt"
+  model="V:/Analysis/R files/rGCL/BUGS Scripts/LinkageCorrelationCoefficientJAGS.txt"
   
   ORD=order(groupvec)
   
