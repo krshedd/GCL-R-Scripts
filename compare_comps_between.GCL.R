@@ -23,11 +23,13 @@ compare_comps_between.GCL <- function(mixnames, groupnames, mixdir, d = 0.05, on
 #
 ##########  Example  ###################################################################################################################################################################################################################################################################
 #  
-#  load("V:/WORK/Sockeye/Cook Inlet/2012 Baseline/Mixture/2013 UCIfisheryMixtures/2013UCIfisheryMixtureAnalysis.RData")
+#  load("V:/Analysis/2_Central/Sockeye/Cook Inlet/2012 Baseline/Mixture/2013 UCIfisheryMixtures/2013UCIfisheryMixtureAnalysis.RData")
 #
 #  mixnames <- c("DriftExpCorr.Jul11","Drift.Jul8")
 #
-#  d <- 0.05    
+#  d <- 0.05 
+# 
+#  onesided <- FALSE
 #
 #  groupnames <- groups  
 #
@@ -78,7 +80,7 @@ compare_comps_between.GCL <- function(mixnames, groupnames, mixdir, d = 0.05, on
 
   
 
-  return(pvals)
+  return(list(pvals = pvals, differnce.output = dsim))
 
 }  
 
