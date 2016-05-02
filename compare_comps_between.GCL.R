@@ -1,4 +1,4 @@
-compare_comps_between.GCL <- function(mixnames, groupnames, mixdir, d = 0.05, onesided = FALSE, nchains = 5, burn = 1/2){
+compare_comps_between.GCL <- function(mixnames, groupnames, mixdir, d = seq(10)/100, nchains = 5, burn = 1/2){
 
 ##########  Arguments  #####################################################################################################################################################################################################################################################################
 #
@@ -27,10 +27,8 @@ compare_comps_between.GCL <- function(mixnames, groupnames, mixdir, d = 0.05, on
 #
 #  mixnames <- c("DriftExpCorr.Jul11","Drift.Jul8")
 #
-#  d <- 0.05 
+#  d <- seq(10)/100 
 # 
-#  onesided <- FALSE
-#
 #  groupnames <- groups  
 #
 #  mixdir <- "V:/Analysis/2_Central/Sockeye/Cook Inlet/2012 Baseline/Mixture/2013 UCIfisheryMixtures/BAYES/Output"
@@ -57,30 +55,13 @@ compare_comps_between.GCL <- function(mixnames, groupnames, mixdir, d = 0.05, on
 
   colnames(dsim) <- groupnames
 
-  if(onesided){
+  pvals1side <- c(apply(dsim < 0, 2, mean), Overall = NA)
 
-    dsimBOOL  <- dsim < 0
+  pvals1side <- pmin(pvals1side, 1 - pvals1side)
 
-    pvals <- c(apply(dsimBOOL, 2, mean))
+  pvals <- sapply(setNames(d,d), function(dd){c(apply(abs(dsim) < dd,2,mean), Overall = mean(apply(abs(dsim) < dd,1,all)))})
 
-    pvals <- pmin(pvals, 1 - pvals)
-
-  }
-   
-
-  if(!onesided){
-
-    absd <- abs(dsim)
-
-    absdBOOL  <- absd < d
-
-    pvals <- c(apply(absdBOOL,2,mean), Overall = mean(apply(absdBOOL,1,all)))
-
-  }
-
-  
-
-  return(list(pvals = pvals, differnce.output = dsim))
+  return(list(pvals = cbind(one.sided = pvals1side, diff.mean = c(apply(dsim,2,mean), NA), pvals), differnce.output = dsim))
 
 }  
 
