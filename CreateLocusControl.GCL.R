@@ -17,40 +17,45 @@ CreateLocusControl.GCL=function(markersuite,username,password)
 #
 #  CreateLocusControl.GCL(markersuite,username,password)
 #
-#  Written by JJ 10/05/2015
+#  Written by JJ 10/05/2015; updated to new ojdbc6.jar path on V:/Analysis by Kyle Shedd on 05/05/2016
 ######################################################################################################################################################################################
 
     if(exists("LocusControl",where=1)){
         stop("LocusControl already exists")
     }
-     
+
+    while(!require(RJDBC)){install.packages("RJDBC")}
+
     if(!file.exists(path.expand("~/R"))){
   
      dir<-path.expand("~/R")
                                                    
      dir.create(dir)
       
-     bool <- file.copy(from="V:/DATA/R_GEN/JJs GCL/jars/ojdbc6.jar",to=path.expand("~/R/ojdbc6.jar"))
+     bool <- file.copy(from="V:/Analysis/R files/Scripts/DEV/jars/ojdbc6.jar",to=path.expand("~/R/ojdbc6.jar"))
       
-     }
-      
-    if(file.exists(path.expand("~/R"))){
+     } else {
       
      if(!file.exists(path.expand("~/R/ojdbc6.jar"))){
          
-      bool <- file.copy(from="V:/DATA/R_GEN/JJs GCL/jars/ojdbc6.jar",to=path.expand("~/R/ojdbc6.jar"))
+      bool <- file.copy(from="V:/Analysis/R files/Scripts/DEV/jars/ojdbc6.jar",to=path.expand("~/R/ojdbc6.jar"))
       
       }
       
      }
  
-                                   
-    require(RJDBC)
-      
     options(java.parameters = "-Xmx10g")
 
-    drv <- JDBC("oracle.jdbc.OracleDriver",classPath="C:/Program Files/R/RequiredLibraries/ojdbc6.jar"," ")#https://blogs.oracle.com/R/entry/r_to_oracle_database_connectivity    C:/app/awbarclay/product/11.1.0/db_1/jdbc/lib
+    if(file.exists("C:/Program Files/R/RequiredLibraries/ojdbc6.jar")) {
 
+      drv <- JDBC("oracle.jdbc.OracleDriver",classPath="C:/Program Files/R/RequiredLibraries/ojdbc6.jar"," ")#https://blogs.oracle.com/R/entry/r_to_oracle_database_connectivity    C:/app/awbarclay/product/11.1.0/db_1/jdbc/lib
+    
+    } else {
+      
+      drv <- JDBC("oracle.jdbc.OracleDriver",classPath=path.expand("~/R/ojdbc6.jar")," ")
+      
+    }
+    
     con <- dbConnect(drv, "jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS_LIST=(ADDRESS=(PROTOCOL=TCP)(HOST=db-pcfres.dfg.alaska.local)(PORT=1521)))(CONNECT_DATA=(SID=PCFRES)))",username,password)
 
     lociqry <- paste("SELECT * FROM AKFINADM.V_LOCUSQRY WHERE SUITE_NAME = '",markersuite,"'",sep="")#Query locus information of markers in markersuite.
