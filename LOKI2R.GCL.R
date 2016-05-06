@@ -20,7 +20,7 @@ LOKI2R.GCL=function(sillyvec,username,password){
 #
 #  LOKI2R.GCL(sillyvec,username,password)
 #
-#  Written by AB, EL, & JJ,  10/06/2015 # from.jar="Z:/Analysis/R files/Scripts/DEV/jars/ojdbc6.jar" 2016-02-13 10:40:33 AKST for KS
+#  Written by AB, EL, & JJ,  05/05/2016 # from.jar="V:/Analysis/R files/Scripts/DEV/jars/ojdbc6.jar" 2016-02-13 10:40:33 AKST for KS
 
 ######################################################################################################################################################################################
 
@@ -31,36 +31,39 @@ LOKI2R.GCL=function(sillyvec,username,password){
   }
 
   while(!require(RJDBC)){install.packages("RJDBC")}
-
-  path0 <- path.expand("~\\R")
-
-  to.jar <- paste0(path0,"\\ojdbc6.jar")
-
-  from.jar <- "Z:/Analysis/R files/Scripts/DEV/jars/ojdbc6.jar"
-
-  if(!file.exists(path0)){
-                                                     
-    dir.create(path0)
+  
+  if(!file.exists(path.expand("~/R"))){
+    
+    dir<-path.expand("~/R")
+    
+    dir.create(dir)
+    
+    bool <- file.copy(from="V:/Analysis/R files/Scripts/DEV/jars/ojdbc6.jar",to=path.expand("~/R/ojdbc6.jar"))
+    
+  } else {
+    
+    if(!file.exists(path.expand("~/R/ojdbc6.jar"))){
       
-    bool <- file.copy(from=from.jar,to=to.jar)
+      bool <- file.copy(from="V:/Analysis/R files/Scripts/DEV/jars/ojdbc6.jar",to=path.expand("~/R/ojdbc6.jar"))
       
-  }else
-    {
-     
-      if(!file.exists(to.jar)){
-         
-        bool <- file.copy(from=from.jar,to=to.jar)
-      
-      }#if
-      
-    }#else
-                                                                     
+    }
+    
+  }
+  
   start.time <- Sys.time() 
-     
-  options(java.parameters = "-Xmx10g")
 
-  drv <- JDBC("oracle.jdbc.OracleDriver",classPath="C:/Program Files/R/RequiredLibraries/ojdbc6.jar"," ")#https://blogs.oracle.com/R/entry/r_to_oracle_database_connectivity    C:/app/awbarclay/product/11.1.0/db_1/jdbc/lib
- 
+  options(java.parameters = "-Xmx10g")
+  
+  if(file.exists("C:/Program Files/R/RequiredLibraries/ojdbc6.jar")) {
+    
+    drv <- JDBC("oracle.jdbc.OracleDriver",classPath="C:/Program Files/R/RequiredLibraries/ojdbc6.jar"," ")#https://blogs.oracle.com/R/entry/r_to_oracle_database_connectivity    C:/app/awbarclay/product/11.1.0/db_1/jdbc/lib
+    
+  } else {
+    
+    drv <- JDBC("oracle.jdbc.OracleDriver",classPath=path.expand("~/R/ojdbc6.jar")," ")
+    
+  }
+                                                                     
   con <- dbConnect(drv, "jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS_LIST=(ADDRESS=(PROTOCOL=TCP)(HOST=db-pcfres.dfg.alaska.local)(PORT=1521)))(CONNECT_DATA=(SID=PCFRES)))",username,password)
 
   loci <- LocusControl$locusnames
