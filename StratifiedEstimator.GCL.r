@@ -143,19 +143,19 @@ WghtAve=as.mcmc.list(WghtAve)
 
 OutputWghtAve=Reduce(rbind,WghtAve)
 
-summary=array(NA,c(G,7),list(groupnames,c("MEAN","SD",paste0(100*alpha/2,"%"),"MEDIAN", paste0(100*(1-alpha/2),"%"),"P0","GR")))
+summary=array(NA,c(G,7),list(groupnames,c("mean", "sd", "median", paste0(100*alpha/2,"%"), paste0(100*(1-alpha/2),"%"), "P=0", "GR")))
 
-summary[groupnames,"MEAN"]=apply(OutputWghtAve,2,mean)
+summary[groupnames,"mean"]=apply(OutputWghtAve,2,mean)
 
-summary[groupnames,"SD"]=apply(OutputWghtAve,2,sd)
+summary[groupnames,"sd"]=apply(OutputWghtAve,2,sd)
 
-summary[groupnames,"MEDIAN"]=apply(OutputWghtAve,2,median)
+summary[groupnames,"median"]=apply(OutputWghtAve,2,median)
 
 summary[groupnames,paste0(100*alpha/2,"%")]=apply(OutputWghtAve,2,quantile,probs=alpha/2)
 
 summary[groupnames,paste0(100*(1-alpha/2),"%")]=apply(OutputWghtAve,2,quantile,probs=1-alpha/2)
 
-summary[groupnames,"P0"]=apply(OutputWghtAve,2,function(clm){sum(clm<threshold)/n})
+summary[groupnames,"P=0"]=apply(OutputWghtAve,2,function(clm){sum(clm<threshold)/n})
 
 summary[groupnames,"GR"]=gelman.diag(WghtAve,multivariate=FALSE,transform=TRUE)[[1]][,1]
 
@@ -163,7 +163,7 @@ if(xlxs){
   write.xlsx(summary, file=paste(maindir, "\\", newname, ".xlsx", sep=""))
 }
 
-return(list(Summary=summary,Output=OutputWghtAve))
+return(list(Stats=summary,Output=OutputWghtAve))
 
 }
 
