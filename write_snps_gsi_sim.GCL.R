@@ -1,4 +1,4 @@
-write_snps_gsi_sim.GCL(collections, loci, path.name){
+write_snps_gsi_sim.GCL <- function(collections, loci, path.name) {
 # 
 ## write mixture file
 #
