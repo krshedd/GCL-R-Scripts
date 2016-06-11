@@ -75,7 +75,7 @@ FreqFisPlot4SNPs.GCL=function(sillyvec,loci,groupvec,alpha=0.05,groupcol=NULL,fi
 
     genecounts=t(apply(genecounts0,2,tabulate,nbins=3))
 
-    HWEpval=suppressWarnings(HWExactMat(genecounts))$pvalvec
+    HWEpval=suppressWarnings(HWExactMat(genecounts, verbose = FALSE))$pvalvec
 
     pval[silly,loci]=HWEpval
     
@@ -119,22 +119,28 @@ FreqFisPlot4SNPs.GCL=function(sillyvec,loci,groupvec,alpha=0.05,groupcol=NULL,fi
 
   fisylim=c(-fisylim0,fisylim0)
 
-  pdf(file,width=11,height=8,family="Helvetica",pointsize=20)
+  pdf(file,width=11,height=8.5,family="Helvetica",pointsize=20)
 
   for(locus in loci){
   
     layout(mat=cbind(1:2))
 
-    par(mar=c(0,4,2,0)+0.1)
+    par(mar=c(0.5,3,2,0)+0.1)
 
-    plot(q[,locus],main=locus,col=PopCol,pch=PopPch,ylim=c(0,1),ylab="Freqency",xaxt="n",cex=dot.cex)
+    plot(q[,locus],main=locus,col=PopCol,pch=PopPch,ylim=c(0,1),ylab="",xaxt="n",cex=dot.cex, cex.axis = 0.8)
+    
+    mtext(text = "Frequency", side = 2, line = 2)
     
     lines(q[,locus],lty="dotted")
 
-    par(mar=c(4,4,0,0)+0.1)
+    par(mar=c(3,3,0,0)+0.1)
 
-    plot(fis[,locus],pch=PopPch,col=PopCol,ylim=fisylim,ylab="Fis",xlab="Population",cex=dot.cex)
-
+    plot(fis[,locus],pch=PopPch,col=PopCol,ylim=fisylim,ylab="",xlab="",cex=dot.cex, cex.axis = 0.8)
+    
+    mtext(text = "Fis", side = 2, line = 2)
+    
+    mtext(text = "Population", side = 1, line = 2)
+    
     lines(fis[,locus],lty="dotted")
 
     labels=as.character(round(pval[,locus],pval.digits))
@@ -153,7 +159,7 @@ FreqFisPlot4SNPs.GCL=function(sillyvec,loci,groupvec,alpha=0.05,groupcol=NULL,fi
 
     text(x=seq(C),y=fis[,locus],labels=labels,pos=pos,cex=pval.cex,font=2,col=PopCol)
     
-    abline(h=0)
+    abline(h=0, xpd = FALSE)
 
   }
 
