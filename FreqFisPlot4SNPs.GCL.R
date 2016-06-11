@@ -1,19 +1,47 @@
 FreqFisPlot4SNPs.GCL=function(sillyvec,loci,groupvec,alpha=0.05,groupcol=NULL,file=NULL,group.pch=19,dot.cex=1,pval.cex=1,pval.digits=2){
 
-################################################################################################################################
-#The function creates a pdf file with the freqencies of of each locus plotted on a separate page.  
-#
-# "sillyvec" a vector of sillys, without ".gcl" extension that you want the freqencies plotted for.
-#
-# "loci"  a vector of loci that you want included in the frequency plots, *Note: Only use loci with ploidy=2 
-#
-# "groupvec" a vector of group numbers corresponding to each silly in sillyvec.
-#
-# "groupcol" vector of colors corresponding to each group with length= max(groupvec), can be either color numbers (numeric vector) or color names (character vector). If left NULL (default) a rainbow of colors will be used.
-#
-# "file" the full file path, with .pdf extension where the file will be written.  If no file is supplied, the default is to write the file "FreqPlot.pdf" to the current working directory.
-#
-# "group.pch" vector of pch values corresponding to each group with length= max(groupvec), default is 19 
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # This function will create a pdf file with plots of allele frequency and Fis 
+  # for each locus on a separate page. HWE p-values are printed if less than
+  # alpha.
+  # 
+  # Input parameters~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # 
+  # sillyvec = a vector of sillys, without ".gcl" extension that you want the 
+  #   freqencies plotted for
+  # loci = a vector of loci that you want included in the frequency plots, 
+  #   Note: Only use loci with ploidy=2
+  # groupvec = a vector of group numbers corresponding to each silly in sillyvec
+  # alpha = critical HWE p-value
+  # groupcol = optional vector of colors corresponding to each group with 
+  #   length = max(groupvec), can be either color numbers (numeric vector) or
+  #   color names (character vector). If left NULL (default) a rainbow of colors
+  #   will be used.
+  # file = the full file path, with .pdf extension where the file will be written
+  #   If no file is supplied, the default is to write the file "FreqPlot.pdf" to 
+  #   the current working directory.
+  # group.pch = ector of pch values corresponding to each group with length = 
+  #   max(groupvec), default is 19
+  # 
+  # Output~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # A pdf file with allele frequency plots for each locus. Also plots Fis for
+  # each locus and indicates the HWE pvalue if less than alpha.
+  #
+  # Also outputs a list object with three matrices with silly as row and loci as columns
+  #   1) allele.freqs
+  #   2) Fis
+  #   3) HWE.pval
+  #
+  # Example~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #   FreqFisPlot_SWKodiakCollections46GroupVec8 <- FreqFisPlot4SNPs.GCL(
+  #     sillyvec = SWKodiakCollections46, loci = loci96, 
+  #     groupvec = SWKodiakCollections46GroupVec8, alpha = 0.05, 
+  #     groupcol = c("cyan", "red", "blue", "blue4", "green", "purple", "grey", "orange"), 
+  #     file = "HWE/FreqFisPlot_SWKodiakCollections46GroupVec8.pdf")
+  #    
+  # Created by Jim Jasper November 2015
+  # Updated by Kyle Shedd Fri Jun 10 15:49:37 2016 in order to generalize and better document
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   if(is.null(file)){
 
