@@ -2,9 +2,9 @@ PairwiseFstTree.GCL=function(sillyvec,loci,dir,nboots=1000){
 
   fstatdir=paste(dir,"\\fstatfile.dat",sep="")  
 
-  require("ape")
+  while(!require("ape")){intall.packages("ape")}
 
-  require("hierfstat")
+  while(!require("hierfstat")){intall.packages("hierfstat")}
 
   nsillys=length(sillyvec)
 
@@ -27,7 +27,7 @@ PairwiseFstTree.GCL=function(sillyvec,loci,dir,nboots=1000){
   n=sapply(sillyvec,function(silly){my.gcl[[silly]]$n})
   names(n)=sillyvec
 
-  scores=lapply(sillyvec,function(silly){my.gcl[[silly]]$scores[,loci,]})
+  scores=lapply(sillyvec,function(silly){scores0 <- my.gcl[[silly]]$scores[,loci,] ; scores0[scores0 %in% c("Unk", "XXX", "0")] <- NA ; scores0})
   names(scores)=sillyvec
 
   counts=lapply(sillyvec,function(silly){
