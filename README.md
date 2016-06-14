@@ -65,7 +65,7 @@ Periodically, after large changes to the `GCL-R-Scripts` repository, a specific 
 Release notes serve to update you periodically of major changes so you don't have to go through each commit specifically to note changes.
 
 ## Branches
-The `GCL-R-Scripts` repository has two main branches: `master` and `develop`. The thought is to loosely follow this [successful Git branching model](http://nvie.com/posts/a-successful-git-branching-model/). The `master` branch is what we should all be pulling from and sourcing to. Ideally, the `develop` branch is where new functions are added and changes are made to existing scripts between *releases*. When it is time for a new *release* the `develop` branch is merged back to the `master` branch once code has been vetted and tested.
+The `GCL-R-Scripts` repository has two main branches: `master` and `develop`. The thought is to loosely follow this [successful Git branching model](http://nvie.com/posts/a-successful-git-branching-model/). The `master` branch is what we should all be pulling from and sourcing to. Ideally, the `develop` branch is where new functions are added and changes are made to existing scripts between *releases*. When it is time for a new *release* the `develop` branch is merged back to the `master` branch once code has been vetted and tested. If there are bugs in a *release* that need immediate attention, a temporary `hotfix` branch should be created from the `master` to address the bug.
 
 ## Issues
 One of the most powerful features of GitHub is tracking *Issues*. When someone has a problem with one of our functions, finds a bug, or wants a new feature, it is best to create a *Issue*. This allows us to:  
