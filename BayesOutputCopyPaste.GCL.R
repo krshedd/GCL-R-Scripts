@@ -38,7 +38,7 @@ BayesOutputCopyPaste.GCL <- function(origindir, targetdir, sillyvec){
   invisible(lapply(filestoremove, file.remove)) # Remove input files from server
   
   # Copy/paste output files (".BO1", ".BOT", ".RGN", ".SUM", and ".CLS")
-  outputfiles=sapply(c(".BO1", ".BOT", ".RGN", ".SUM", ".CLS"), function(outfile) {list.files(path=origindir, pattern=outfile, full.names=TRUE, recursive=TRUE)}) # All output files in origindir
+  outputfiles=unlist(sapply(c(".BO1", ".BOT", ".RGN", ".SUM", ".CLS"), function(outfile) {list.files(path=origindir, pattern=outfile, full.names=TRUE, recursive=TRUE)})) # All output files in origindir
   
   filestocopy=sapply(sillyvec, function(silly) {outputfiles[grep(pattern=silly, x=outputfiles)]}, simplify=FALSE) # Create list of output files by sillyvec
   

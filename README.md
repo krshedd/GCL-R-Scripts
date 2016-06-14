@@ -16,13 +16,13 @@ Files were initially moved off of the V: drive on 2/29/16.
         * Change directory to where you want to save key `cd /c/Users/krshedd`
         * Make directory to save key in `mkdir ".ssh"`
         * Create key `ssh-keygen -t rsa -b 4096 -C "kyle.shedd@alaska.gov"`
-        * Enter file in which to save the key `/c/Users/krshedd/.ssh/id_rsa/`
+        * Enter file in which to save the key `/c/Users/krshedd/.ssh/id_rsa`
         * Create passphrase for key
         * Re-enter passphrase for key
         * Open ssh-agent `eval "$(ssh-agent -s)"`
         * Add key to ssh-agent `ssh-add /c/Users/krshedd/.ssh/id_rsa`
         * Enter passphrase for key
-        * Copy SSH key `clip < /c/Useres/krshedd/.ssh/id_rsa.pub`
+        * Copy SSH key `clip < /c/Users/krshedd/.ssh/id_rsa.pub`
         * Follow [instructions](https://help.github.com/articles/adding-a-new-ssh-key-to-your-github-account/) to add SSH key to your GitHub account online
         * Test your SSH connection `ssh -T git@github.com`
         * Are you sure you want to continue connecting `yes`

@@ -1,4 +1,4 @@
-write_snps_gsi_sim.GCL(collections, loci, path.name){
+write_snps_gsi_sim.GCL <- function(collections, loci, path.name) {
 # 
 ## write mixture file
 #
@@ -20,7 +20,7 @@ write_snps_gsi_sim.GCL(collections, loci, path.name){
 
   while(!require(pryr)){install.packages("pryr")}
 
-  filelines <- Reduce(rbind,lapply(collections, function(collection){cbind(c(paste("POP", collection), paste(get(paste0(collection, ".gcl"))$attributes$SillySource, apply(sapply(loci, function(locus){gsub(apply(apply(get(paste0(collection, ".gcl"))$scores[, locus, seq(LocusControl$ploidy[locus])], 1, as.numeric %.% factor, levels = c("A", "C", "G", "T", "-")), 2, paste, collapse = " "), pattern = "NA", replacement = "0")}), 1, paste, collapse = "  "), sep="   ")))}))
+  filelines <- Reduce(rbind,lapply(collections, function(collection){cbind(c(paste("POP", collection), paste(get(paste0(collection, ".gcl"))$attributes$SillySource, apply(sapply(loci, function(locus){gsub(apply(apply(get(paste0(collection, ".gcl"))$scores[, locus, seq(LocusControl$ploidy[locus]), drop = FALSE], 1, as.numeric %.% factor, levels = c("A", "C", "G", "T", "-")), 2, paste, collapse = " "), pattern = "NA", replacement = "0")}), 1, paste, collapse = "  "), sep="   ")))}))
 
   write.table(paste(length(filelines) - length(collections), length(loci)), path.name, row.names = FALSE, col.names = FALSE, quote = FALSE, append=FALSE)
 

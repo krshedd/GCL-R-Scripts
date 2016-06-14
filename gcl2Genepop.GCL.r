@@ -22,6 +22,7 @@ gcl2Genepop.GCL=function(sillyvec,loci,path,VialNums=TRUE){
     IDs=dimnames(my.gcl$scores)[[1]]
     names(vials)=IDs    
     scores=my.gcl$scores[,loci,]
+    scores <- gsub(pattern = "0", replacement = NA, x = scores)
     counts=sapply(IDs,function(ID){paste(sapply(loci,function(locus){paste(sapply(1:ploidy[locus],function(ploid){ifelse(is.na(scores[ID,locus,ploid]),paste(rep(0,maxchar[locus]),collapse=""),paste(c(rep(0,maxchar[locus]-nchar(match(scores[ID,locus,ploid],alleles[[locus]]))),match(scores[ID,locus,ploid],alleles[[locus]])),collapse=""))}),collapse="")}),collapse=" ")})
     counts=as.character(sapply(IDs,function(ID){paste(paste(vials[ID]," , ",sep=""),counts[ID],collapse=" ")}))
     file=rbind(file,cbind(c("Pop",counts)))
