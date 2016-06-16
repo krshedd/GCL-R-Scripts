@@ -72,6 +72,20 @@ DupCheckBetweenSillys.GCL=function(KeySillys,KeySillyIDs=NULL,BetweenSillys,loci
 
   duplicaterate=rowMeans(scores.df[combs[,1],]==scores.df[combs[,2],],na.rm=TRUE)
 
+  
+  sapply(unique(combs$Keysillyvial), function(KeysillyID) {
+    hist(duplicaterate[combs$Keysillyvial == KeysillyID], breaks = seq(0, 1, 0.01), col = 8, xlab = "Duplicate Rate", main = KeysillyID)
+    abline(v = 0.9, col = "red", lwd = 2)
+    maxduplicaterate.log <- duplicaterate[combs$Keysillyvial == KeysillyID] == max(duplicaterate[combs$Keysillyvial == KeysillyID])
+    maxduplicaterate <- setNames(object = duplicaterate[combs$Keysillyvial == KeysillyID][maxduplicaterate.log], nm = combs[combs$Keysillyvial == KeysillyID, 2][maxduplicaterate.log])
+    text(x = maxduplicaterate[1], y = 5, labels = paste(names(maxduplicaterate), collapse = "_"), srt = 90, adj = 0)
+    sort(x = duplicaterate[combs$Keysillyvial == KeysillyID], decreasing = TRUE)[1:5]
+  }, simplify = FALSE)
+  
+  
+  
+  
+  
   outliers=outlier(duplicaterate,opposite=FALSE,logical=TRUE)
 
   keymissing=apply(is.na(scores[combs[outliers,1],,1,drop=FALSE]),1,sum)
