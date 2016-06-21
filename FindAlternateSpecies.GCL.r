@@ -4,7 +4,7 @@ FindAlternateSpecies.GCL=function(sillyvec,species="chum"){
 
   if(species=="chum"){
     AlternateGenotypesPath="V:/Analysis/R files/Alternate Homo Markers Chum.txt"
-    FailedMarkersPath="VV:/Analysis/R files/Failed Chum Markers.txt"
+    FailedMarkersPath="V:/Analysis/R files/Failed Chum Markers.txt"
   }
 
   if(species=="sockeye"){
