@@ -115,7 +115,21 @@ DupCheckBetweenSillys.GCL=function(KeySillys,KeySillyIDs=NULL,BetweenSillys,loci
       
     }
     
-    list(Threshold = thresholddups, MostSimilar = maxdups)
+    
+    
+    projectduplicaterate.log <- combs$Keysillyvial == KeySillyID & combs$Betweensillyvial == gsub(pattern = "QC", replacement = "", x = KeySillyID)
+    
+    projectduplicaterate <- setNames(object = duplicaterate[projectduplicaterate.log], nm = combs[projectduplicaterate.log, "Betweensillyvial"])
+
+    keymissing <- apply(is.na(scores[combs[projectduplicaterate.log, "Keysillyvial"], , 1, drop = FALSE]), 1, sum)
+    
+    betweenmissing <- apply(is.na(scores[combs[projectduplicaterate.log, "Betweensillyvial"], , 1, drop = FALSE]), 1, sum)
+    
+    projectdups <- cbind(combs[projectduplicaterate.log, ], Keymissing = keymissing, Betweenmissing = betweenmissing, DuplicateRate = projectduplicaterate, stringsAsFactors=FALSE,row.names=seq(sum(projectduplicaterate.log)))
+    
+    
+    
+    list(Threshold = thresholddups, MostSimilar = maxdups, Project = projectdups)
     
   }, simplify = FALSE)
   
