@@ -117,7 +117,11 @@ DupCheckBetweenSillys.GCL=function(KeySillys,KeySillyIDs=NULL,BetweenSillys,loci
     
     
     
-    projectduplicaterate.log <- combs$Keysillyvial == KeySillyID & combs$Betweensillyvial == gsub(pattern = "QC", replacement = "", x = KeySillyID)
+    if(grep(pattern = "QC", x = combs[1, ]) == 1) {
+      projectduplicaterate.log <- combs$Keysillyvial == KeySillyID & combs$Betweensillyvial == gsub(pattern = "QC", replacement = "", x = KeySillyID)
+    } else {
+      projectduplicaterate.log <- combs$Keysillyvial == KeySillyID & combs$Betweensillyvial == gsub(pattern = "_", replacement = "QC_", x = KeySillyID)
+    }
     
     projectduplicaterate <- setNames(object = duplicaterate[projectduplicaterate.log], nm = combs[projectduplicaterate.log, "Betweensillyvial"])
 
