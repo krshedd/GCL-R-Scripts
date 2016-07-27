@@ -182,7 +182,7 @@ if(FALSE){
 
     rdirich <- function(alpha0){ vec <- rgamma(length(alpha0), alpha0, 1) ; vec / sum(vec) }
    
-    beta <- array(rep(1/nalleles, nalleles), dim(y), dimnames(y))
+    beta <- matrix(rep(1/nalleles, nalleles), nrow = nrow(y), ncol = ncol(y), byrow = TRUE, dimnames = dimnames(y))
    
     beta_prm <- y + beta
    
