@@ -126,7 +126,7 @@ if(FALSE){
 
     piPrior <- array(1/C, c(K, C), list(seq(K), seq(C)))
   
-    pPrior <- array(1/(K+H), c(W, K), list(seq(W), seq(K)))
+    pPrior <- array(1/(K+H), c(W, K), list(seq(W), seq(K))) # Jim, H is not defined before now, so the function bombs.
   
     a <- metadat$a
   
