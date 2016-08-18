@@ -51,9 +51,9 @@ DupCheckBetweenSillys.GCL=function(KeySillys,KeySillyIDs=NULL,BetweenSillys,loci
    
   betweenname=paste(betweensillys,collapse=".")
 
-  EMPTY=PoolCollections.GCL(BetweenSillys,loci,IDs=NULL,newname=betweenname)
+  EMPTY=PoolCollections.GCL(BetweenSillys,loci,IDs=NULL,newname="betweenname")
 
-  betweengcl=get(paste0(betweenname,".gcl"))
+  betweengcl=get(paste0("betweenname",".gcl"))
 
   betweenscores=betweengcl$scores[,loci,,drop=FALSE]
 
