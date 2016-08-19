@@ -3,29 +3,24 @@
   
 if(FALSE){
   
+# nchains <- 6
 
-  while(!require(reshape)){install.packages("reshape")}
-
-  while(!require(abind)){install.packages("abind")}
-
-# nchains <- 2
-
-# NSIMS <- 10
+# NSIMS <- 40000
 
 # burn <- NSIMS/2
 
-# thin <- 1
+# thin <- 10
 
-# wd <- "C:/Users/jjasper/Documents" ### "V:/Analysis/Staff/Jim Jasper/Sockeye/SEAK/MarkEnhancedGSI/MarkEnhancedGSIwithAge/All 2011-2014" ### 
+# wd <- "C:/Users/jjasper/Documents/LynnCannal" 
 
 
 
-# load("V:\\Analysis\\1_SEAK\\Sockeye\\Mixture\\Lynn Canal Inseason\\2015\\LynnCanalInseason2015.NewChilkatBaseline.RData")
+# load("V:/Analysis/1_SEAK/Sockeye\\Mixture/Lynn Canal Inseason\\2015/PostSeason/LynnCanal_PostSeason_2015.RData")
 
-# attach("V:\\Analysis\\1_SEAK\\Sockeye\\Mixture\\Lynn Canal Inseason\\2015\\PostSeason/LynnCanal_PostSeason_2015.RData")
-# attach("V:/Analysis/1_SEAK/Sockeye/Baseline/2016/SEAK update for Lynn Canal Inseason/SEAK Baseline Chilkat update.RData")
 # attach("V:\\Analysis\\1_SEAK\\Sockeye\\Baseline\\2013_2014\\SRO\\SEAKbaseline2014.RData")
+# attach("V:\\Analysis\\1_SEAK\\Sockeye\\Baseline\\2016\\SEAK update for Lynn Canal Inseason\\SEAK Baseline Chilkat update.RData")
 
+# 
 
 # sillyvecMix <- "SGILL15D15"
 
@@ -37,10 +32,17 @@ if(FALSE){
 
 # age_groups <- c(1, 1, 1, 1, 1, 6, 2, 3, 6, 6, 6, 6, 4, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6)
 
-# attach("V:/Analysis/1_SEAK/Sockeye/Baseline/2011/Nov2011/BaselineUpdate_Nov2011.RData")
+# age_groups_names <- c("ZeroX", "Age1.2", "Age1.3", "Age2.2", "Age2.3", "AgeOther")
 
-#  sillyvecBase <- dget("V:/Analysis/1_SEAK/Sockeye/Baseline/2016/SEAK update for Lynn Canal Inseason/Output/LynnCanalBasepops173.txt")
+# sillyvecBase <- dget("V:/Analysis/1_SEAK/Sockeye/Baseline/2016/SEAK update for Lynn Canal Inseason/Output/LynnCanalBasepops173.txt")
 
+# groups <- as.numeric(dget("V:\\Analysis\\1_SEAK\\Sockeye\\Mixture\\Lynn Canal Inseason\\2016\\PostSeason\\NewPostSeasonGroupvec.txt"))
+
+# group_names <- c("ChilkatLake","ChilkatMain","Chilkoot","NSEAK","Snett","Taku/StikMain","TakuLakes","Other")
+
+
+
+  while(!require(coda)){install.packages("coda")}
 
   setwd(wd)
 
@@ -54,15 +56,13 @@ if(FALSE){
 
   nalleles <- LocusControl$nalleles[loci]
 
-  PoolCollections.GCL(collections = sillyvecMix, loci = loci)
+  invisible(PoolCollections.GCL(collections = sillyvecMix, loci = loci))
 
   all.gcl <- get(paste(c(sillyvecMix, "gcl"), collapse="."))
 
-  attributes0 <- all.gcl$attributes
-
   x0 <- all.gcl$counts[,  loci, ]
 
-  rownames(x0) <- attributes0$SillySource
+  rownames(x0) <- all.gcl$attributes$SillySource
   
 # Meta Data Massaging  ########################################################################################################################################################################################################################################################################################################################################################################################################################################################
 
@@ -72,8 +72,6 @@ if(FALSE){
   AgeNames <- paste0("Age", age_classes)
 
   age_groups <- setNames(age_groups, AgeNames)
-
-  age_groups_names <- c("ZeroX", "Age1.2", "Age1.3", "Age2.2", "Age2.3", "AgeOther")
 
   A <- length(age_groups_names)
 
@@ -87,10 +85,9 @@ if(FALSE){
  
 # Baseline Wild  #####################################################################################################################################################################################################################################################################################################################################################################################################################################################################
 
+  y <- FreqPop.GCL(sillyvecBase, loci)
 
-  y0 <- FreqPop.GCL(sillyvecBase, loci)
-
-  y <- Reduce(cbind, lapply(loci, function(locus){y0[, locus, seq(nalleles[locus])]}))
+  y <- Reduce(cbind, lapply(loci, function(locus){y[, locus, seq(nalleles[locus])]}))
 
   K <- length(sillyvecBase)
 
@@ -112,7 +109,9 @@ if(FALSE){
 
   registerDoParallel(cl, cores = nchains)
 
-  chain_times=foreach(chain = chains)%dopar%{
+  beg_time <- Sys.time()
+
+  chain_times <- foreach(chain = chains)%dopar%{
 
     rdirich <- function(alpha0){ vec <- rgamma(length(alpha0), alpha0, 1) ; vec / sum(vec) }
   
@@ -124,9 +123,9 @@ if(FALSE){
   
     genofreq <- exp(x%*%t(lnq))
 
-    piPrior <- array(1/C, c(K, C), list(seq(K), seq(C)))
+    piPrior <- matrix((1 / A / table(age_groups))[age_groups], nrow = K, ncol = C, byrow = TRUE)
   
-    pPrior <- array(1/(K+H), c(W, K), list(seq(W), seq(K))) # Jim, H is not defined before now, so the function bombs.
+    pPrior <- matrix((1 / max(groups) / table(groups))[groups], nrow = W, ncol = K, dimnames = list(seq(W), seq(K)))
   
     a <- metadat$a
   
@@ -153,8 +152,6 @@ if(FALSE){
     p <- t(apply(p, 1, rdirich))
   
     a[is.na(metadat$a)] <- sapply(i[is.na(metadat$a)], function(ii){sample(C, 1, TRUE, pi[ii, ])})
-  
-    beg_time <- Sys.time()
   
     for(sim in seq(NSIMS)){
   
@@ -198,18 +195,60 @@ if(FALSE){
   
       if( sim > burn & ! sim %% thin){
   
-        empty <- lapply(seq(W), function(w){ cat(c(format(p[w, ], trim = TRUE, digits = 16, scientific = TRUE), "\n"), file = paste0("P_Week", w, "_Chain", chain, ".txt")) })
+        invisible(lapply(seq(W), function(ww){ cat(format(rowsum(p[ww, ], group = groups), trim = TRUE, digits = 16, scientific = TRUE), "\n", file = paste0("R_Week", ww, "_", chain, ".txt"), append = sim - thin > burn) }))
 
         Pi <- t(rowsum(t(pi), group = age_groups))
-  
-        empty <- lapply(seq(A), function(aa){ cat(format(Pi[, aa], trim = TRUE, digits = 16, scientific = TRUE), "\n", file = paste0("Pi_", age_groups_names[aa], "_Chain", chain, ".txt")) })
+
+        PiR <- lapply(seq(W), function(ww){ rowsum(diag(p[ww, ]) %*% Pi, group = groups) })
+        
+        invisible(lapply(seq(W), function(ww){ lapply(seq(A), function(aa){ cat(format(PiR[[ww]][, aa], trim = TRUE, digits = 16, scientific = TRUE), "\n", file = paste0("PiR_Week", ww, "_", age_groups_names[aa], "_", chain, ".txt"), append = sim - thin > burn) }) }))
   
       }# end if  
       
     }#sim
-  
-    Sys.time() - beg_time
-  
+     
   }#chain
 
+  stopCluster(cl)
+
+  tot_time <- Sys.time() - beg_time
+
+  print(tot_time)
+
 }
+
+
+
+  R <- lapply(seq(W), function(ww){  lapply(chains, function(chain){ read.table(paste0("R_Week", ww, "_", chain, ".txt")) }) })
+
+  R <- lapply(seq(W), function(ww){  as.mcmc.list(lapply(seq(chains), function(chain){ mcmc(R[[ww]][[chain]]) })) })
+
+  GR_R <- lapply(lapply(lapply(R, gelman.diag, transform = TRUE, autoburnin = FALSE, multivariate = FALSE), "[[", 1), function(gr){ gr[, 1] })
+
+  R <- lapply(seq(W), function(ww){ Reduce(rbind, R[[ww]]) }) 
+
+  R <- lapply(seq(W), function(ww){ t(apply(R[[ww]], 2, function(cl){ c(mean = mean(cl), sd = sd(cl), median = quantile(cl, 0.5), ci = quantile(cl, 0.05), ci = quantile(cl, 0.95), GR = NA) })) }) 
+
+  R <- setNames(lapply(seq(W), function(ww){ rownames(R[[ww]]) <- group_names ; R[[ww]][,"GR"] <- GR_R[[ww]] ; R[[ww]] }), stat_weeks)
+
+  sink("R_all_weeks.txt")
+
+  print(R)
+
+  sink()
+
+
+  PiR <- lapply(seq(W), function(ww){ lapply(seq(A), function(aa){ lapply(chains, function(chain){ read.table(paste0("PiR_Week", ww, "_", age_groups_names[aa], "_", chain, ".txt")) }) }) })
+
+  GR_PiR <- lapply(seq(W), function(ww){ lapply(seq(A), function(aa){ gelman.diag(as.mcmc.list(lapply(PiR[[ww]][[aa]], mcmc)), transform = TRUE, autoburnin = FALSE, multivariate = FALSE)[[1]][, 1] }) }) 
+
+  PiR <- lapply(seq(W), function(ww){ lapply(seq(A), function(aa){ mat <- Reduce(rbind, PiR[[ww]][[aa]])  ; colnames(mat) <- group_names ; mat }) })
+
+  PiR <- lapply(seq(W), function(ww){ lapply(seq(A), function(aa){ t(apply(PiR[[ww]][[aa]], 2, function(cl){ c(mean = mean(cl), sd = sd(cl), median = quantile(cl, 0.5), ci = quantile(cl, 0.05), ci = quantile(cl, 0.95), GR = NA)} )) }) })
+
+  PiR <- setNames(lapply(seq(W), function(ww){ setNames(lapply(seq(A), function(aa){ PiR[[ww]][[aa]][, "GR"] <- GR_PiR[[ww]][[aa]] ; PiR[[ww]][[aa]] }), age_groups_names) }), stat_weeks)
+  
+  PiR <- Reduce(rbind, lapply(as.character(stat_weeks), function(ww){ Reduce(rbind, lapply(age_groups_names, function(aa){ data.frame(Group = group_names, StatWeek = ww, AgeClass = aa, PiR[[ww]][[aa]])  })) }))
+
+  write.table(PiR, "PiR.txt", col.names = NA, sep = "\t")
+
