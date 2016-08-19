@@ -49,7 +49,7 @@ PairwiseFstTree.GCL=function(sillyvec,loci,dir,nboots=1000){
 
   write.table(fstat,fstatdir,row.names=FALSE,col.names=FALSE,quote=FALSE) 
 
-  dat=read.fstat.data(fstatdir)
+  dat=read.fstat.data(fstatdir, na.s = c("0", "00", "000", "0000", "00000", "000000", "NA", "NANA"))
   
   Fst=array(0,c(nsillys,nsillys),dimnames=list(sillyvec,sillyvec))
 
