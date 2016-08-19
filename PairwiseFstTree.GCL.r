@@ -118,16 +118,11 @@ PairwiseFstTree.GCL = function(sillyvec, loci, dir, nboots=1000, ncores = 4, ret
   fstat=rbind(fstat,cbind(as.vector(unlist(counts))))
 
   write.table(fstat,fstatdir,row.names=FALSE,col.names=FALSE,quote=FALSE) 
-<<<<<<< HEAD
-
-  dat=read.fstat.data(fstatdir, na.s = c("0", "00", "000", "0000", "00000", "000000", "NA", "NANA"))
-=======
   
   message("\nfstat file created\n", sep = '')
   
-  dat=read.fstat.data(fstatdir)
->>>>>>> bcbafe3f0c545171ee0618f65a6c0a5ca01bf268
-  
+  dat=read.fstat.data(fstatdir, na.s = c("0", "00", "000", "0000", "00000", "000000", "NA", "NANA"))
+
   pairs=combn(sillyvec,2)
 
   pairnames=apply(pairs,2,function(col){paste(col,collapse=".")})
