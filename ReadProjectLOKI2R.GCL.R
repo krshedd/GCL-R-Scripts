@@ -83,8 +83,18 @@ ReadProjectLOKI2R.GCL <- function(projectID, username, password){
   sillyvec <- unique(projlodata$SILLY_CODE)
   
   assign(x = "ProjectSillys", value = sillyvec, pos = 1)
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Adaptation of LOKI2R to subset only fish in SILLYs run for ProjectID
+  projfshqry <- paste("SELECT * FROM AKFINADM.V_LAB_PROJECT_WELL WHERE LU_LAB_PROJECT_ID = '", projectID, "'", sep = "")
+  
+  projfshdata <- dbGetQuery(con, projfshqry)
+  
+  fish.sillyvec <- sapply(unique(projfshdata$SILLY_CODE), function(silly) {
+    as.vector(t(subset(projfshdata, SILLY_CODE == silly, select = FISH_NO)))
+  }, simplify = FALSE)
+  
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   gnoqry <- paste("SELECT * FROM AKFINADM.V_GNOQRY WHERE LOCUS IN (",paste0("'",loci,"'",collapse=","),") AND SILLY_CODE IN (",paste0("'",sillyvec,"'",collapse=","),")",sep="")
   
   dataAll0 <- dbGetQuery(con,gnoqry)   
@@ -121,7 +131,7 @@ ReadProjectLOKI2R.GCL <- function(projectID, username, password){
     
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     
-    ids <- as.character(sort(unique(sillydata$FISH_ID)))   
+    ids <- as.character(sort(unique(fish.sillyvec[[silly]])))  # ids <- as.character(sort(unique(sillydata$FISH_ID)))   
     
     sillyvials <- paste(silly,ids,sep="_")
     
@@ -172,6 +182,8 @@ ReadProjectLOKI2R.GCL <- function(projectID, username, password){
     attributes <- sillydata[,attnames]
     
     attributes <- aggregate(attributes[,-match("FISH_ID",attnames)],list(FISH_ID=attributes$FISH_ID),unique)
+    
+    attributes <- subset(attributes, FISH_ID %in% as.numeric(ids))
     
     attributes <-  data.frame(attributes,SillySource=sillyvials,row.names=ids,stringsAsFactors = FALSE)
     
