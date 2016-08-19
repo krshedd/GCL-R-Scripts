@@ -81,10 +81,14 @@ LinkageCorrelationJAGS.GCL=function(sillyvec,markerset,groupvec,groupnames){
   n=apply(y,1,sum)
   
   data=list(y=y,n=n,C=C,G=G,cmCg=cmCg)
+
+  Y <- FreqPop.GCL(sillyvec[ORD], markerset)
+
+  inits <- list(list(p1 = (Y[,1,1] + 1 / 2) / apply(Y[,1,] + 1 / 2, 1,sum), p2 = (Y[,2,1] + 1 / 2) / apply(Y[,2,] + 1 / 2, 1,sum)))
   
   pars2save=c("rGroup","p1Gst","p2Gst","fGst","GstRatio","r")#  
   
-  fit=jags(data=data,parameters.to.save=pars2save,model.file=model,n.chains=1,n.iter=10000,n.thin=1,DIC=FALSE)$BUGSoutput$summary
+  fit=jags(data=data, inits = inits,parameters.to.save=pars2save,model.file=model,n.chains=1,n.iter=10000,n.thin=1,DIC=FALSE)$BUGSoutput$summary
   
   detach("package:R2jags")
   
