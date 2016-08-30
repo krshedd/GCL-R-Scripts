@@ -7,7 +7,7 @@ if(FALSE){##
 
 #~~~  Arguments  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  wd <- "V:/Lab/Genotyping/Microsatellite Projects/Chinook/Project K102 SEAK Origins Winter Troll 2016 Part 1/QC"
+  dirQC <- "V:/Lab/Genotyping/Microsatellite Projects/Chinook/Project K102 SEAK Origins Winter Troll 2016 Part 1/QC"
 
   species <- "chinook"
 
@@ -33,9 +33,9 @@ if(FALSE){##
 
   while(!require(xlsx)){ install.packages("xlsx") }
 
-  source(path.expand("~\\R\\Functions.GCL.R"))
+  source(path.expand("~/R/Functions.GCL.R"))
 
-  setwd(wd)
+  setwd(dirQC)
 
   CreateLocusControl.GCL(markersuite = markersuite, username = username, password = password)
 
