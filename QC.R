@@ -1,15 +1,13 @@
+##Don't Run#
+############
+if(FALSE){##
+############
+############
 
-if(FALSE){
 
-  while(!require(abind)){ install.packages("abind") }
+#~~~  Arguments  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  while(!require(lattice)){ install.packages("lattice") }
-
-  bbind <- function(...) { abind(..., along = 3) }
-
-  source("C:\\Users\\jjasper\\Documents\\R\\Functions.GCL.R")
-
-  setwd("V:/Lab/Genotyping/Microsatellite Projects/Chinook/Project K102 SEAK Origins Winter Troll 2016 Part 1/QC")
+  wd <- "V:/Lab/Genotyping/Microsatellite Projects/Chinook/Project K102 SEAK Origins Winter Troll 2016 Part 1/QC"
 
   species <- "chinook"
 
@@ -24,6 +22,20 @@ if(FALSE){
   password <- ""
 
   QCSummaryfile <- "Project K095 QC Summary.xlsx"
+
+#~~~  GO! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  while(!require(abind)){ install.packages("abind") }
+
+  bbind <- function(...) { abind(..., along = 3) }
+
+  while(!require(lattice)){ install.packages("lattice") }
+
+  while(!require(xlsx)){ install.packages("xlsx") }
+
+  source(path.expand("~\\R\\Functions.GCL.R"))
+
+  setwd(wd)
 
   CreateLocusControl.GCL(markersuite = markersuite, username = username, password = password)
 
@@ -129,7 +141,7 @@ if(FALSE){
 
   OriginalProjectPercentbyLocus <- apply(OriginalProjectSampleSizebyLocus, 1, function(row) {row / max(row)} )
 
-  reruns <- which(apply(OriginalProjectPercentbyLocus, 2, min) < 0.8)
+  reruns <- which(apply(OriginalProjectPercentbyLocus, 2, min) < 0.8)  
 
   new_colors <- colorRampPalette(c("black", "white"))
 
@@ -225,9 +237,92 @@ if(FALSE){
 
   }#conflict_bool
 
+  SummaryTable1 <- cbind(ProjectSillys_SampleSizes, "Failure Rate" = FailureRate$Silly_Failure_Rate, "Total QC Fish" = QCColSize)
 
-}
+  tab_names <- c("Total QC Genotypes", "Discrepancy Rate", "Total Het-Het", "Het-Het Rate", "Total Het-Homo", "Het-Homo Rate", "Total Homo-Het", "Homo-Het Rate", "Total Homo-Homo", "Homo-Homo Rate", "DB Zeros", "DB Zero Rate", "QC Zeros", "QC Zero Rate")
 
+  SummaryTable2 <- matrix(NA, nrow = length(ProjectSillys), ncol = length(tab_names), dimnames = list(ProjectSillys, tab_names))
+
+  SummaryTable2[, "Total QC Genotypes"] <- QCColSizeAll * length(loci)
+
+  for(silly in ProjectSillys) {
+
+    if(silly %in% rownames(ConflictsBySilly)){
+
+      SummaryTable2[silly, c("Total Het-Het", "Total Het-Homo", "Total Homo-Het", "Total Homo-Homo", "DB Zeros", "QC Zeros")] <- ConflictsBySilly[silly, c("Het-Het", "Het-Homo", "Homo-Het", "Homo-Homo", "DB Zero", "File Zero")]
+
+      SummaryTable2[silly, "Discrepancy Rate"] <- ConflictsBySilly[silly, "Conflict"] / SummaryTable2[silly, "Total QC Genotypes"]
+
+      SummaryTable2[silly, c("Het-Het Rate", "Het-Homo Rate", "Homo-Het Rate", "Homo-Homo Rate", "DB Zero Rate", "QC Zero Rate")] <- SummaryTable2[silly, c("Total Het-Het", "Total Het-Homo", "Total Homo-Het", "Total Homo-Homo", "DB Zeros", "QC Zeros")] / SummaryTable2[silly, "Total QC Genotypes"]
+
+    } else {
+
+      SummaryTable2[silly, -1] <- 0
+
+    }
+
+  }#silly
+
+  SummaryTable3 <- matrix(data = NA, nrow = length(loci), ncol = length(tab_names), dimnames = list(loci, tab_names))
+
+  SummaryTable3[, "Total QC Genotypes"] <- sum(QCColSizeAll)
+
+  for(locus in loci) {
+
+    if(locus %in% rownames(ConflictsByLocus)){
+
+      SummaryTable3[locus, c("Total Het-Het", "Total Het-Homo", "Total Homo-Het", "Total Homo-Homo", "DB Zeros", "QC Zeros")] <- ConflictsByLocus[locus, c("Het-Het", "Het-Homo", "Homo-Het", "Homo-Homo", "DB Zero", "File Zero")]
+
+      SummaryTable3[locus, "Discrepancy Rate"] <- ConflictsByLocus[locus, "Conflict"] / SummaryTable3[locus, "Total QC Genotypes"]
+
+      SummaryTable3[locus, c("Het-Het Rate", "Het-Homo Rate", "Homo-Het Rate", "Homo-Homo Rate", "DB Zero Rate", "QC Zero Rate")] <- SummaryTable3[locus, c("Total Het-Het", "Total Het-Homo", "Total Homo-Het", "Total Homo-Homo", "DB Zeros", "QC Zeros")] / SummaryTable3[locus, "Total QC Genotypes"]
+
+    } else {
+
+      SummaryTable3[locus, -1] <- 0
+
+    }
+
+  }#locus
+
+  write.xlsx(x = SummaryTable1, file = QCSummaryfile, sheetName = "Summary by Silly", row.names = TRUE, col.names = TRUE, append = TRUE)
+
+  write.xlsx(x = SummaryTable2, file = QCSummaryfile, sheetName = "Conflicts by Silly", row.names = TRUE, col.names = TRUE, append = TRUE)
+
+  if(exists("DupCheckResults")) {
+
+    lapply(conflict.silly, function(silly) {write.xlsx(x = DupCheckResults[[silly]], file = QCSummaryfile, sheetName = paste("DupCheckBetween", silly, sep = " "), row.names = TRUE, col.names = TRUE, append = TRUE)} )
+
+  }
+
+  write.xlsx(x = SummaryTable3, file = QCSummaryfile, sheetName = "Conflicts by Locus", row.names = TRUE, col.names = TRUE, append = TRUE)
+
+  write.xlsx(x = ConflictsByPlateID, file = QCSummaryfile, sheetName = "Conflicts by PlateID", row.names = TRUE, col.names = TRUE, append = TRUE)
+
+  write.xlsx(x = sort(FailureRate$Silly_Failure_Rate, decreasing = TRUE), file = QCSummaryfile, sheetName = "Failure Rate by Silly", row.names = TRUE, col.names = TRUE, append = TRUE)
+
+  write.xlsx(x = sort(FailureRate$Locus_Failure_Rate, decreasing = TRUE), file = QCSummaryfile, sheetName = "Failure Rate by Locus", row.names = TRUE, col.names = TRUE, append = TRUE)
+
+  write.xlsx(x = FailureRate$Overall_Failure_Rate, file = QCSummaryfile, sheetName = "Overall Failure Rate", row.names = TRUE, col.names = TRUE, append = TRUE)
+
+  write.xlsx(x = OriginalProjectSampleSizebyLocus, file = QCSummaryfile, sheetName = "OriginalProjectSampleSizebyLocus", row.names = TRUE, col.names = TRUE, append = TRUE)
+
+  if(exists("Alternate")){
+
+    write.xlsx(x = Alternate, file = QCSummaryfile, sheetName = "Alternate Species", row.names = TRUE, col.names = TRUE, append = TRUE)
+
+  }
+
+#~~~  STOP!  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  
+  
+
+##Don't Run#
+############
+}###########
+############
+############
 
 
 
