@@ -23,7 +23,7 @@ SampSizeByLocus.GCL=function(sillyvec,loci){
   results=array(NA,c(nsilly,nloci),dimnames=list(sillyvec,loci) )
 
   for(silly in sillyvec){
-    counts=get(paste(silly,".gcl",sep=""),pos=1)$counts[,loci,]
+    counts=get(paste(silly,".gcl",sep=""),pos=1)$counts[, loci,, drop = FALSE]
     n=nrow(counts)
     if(nloci>1){   
       results[silly,loci]=sapply(loci,function(locus){sum(counts[!is.na(counts[1:n,locus,1]),locus,1:nalleles[locus]])/ploidy[locus]})
