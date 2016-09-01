@@ -21,7 +21,9 @@ if(FALSE){##
 
   password <- ""
 
-  QCSummaryfile <- "Project K095 QC Summary.xlsx"
+  QCSummaryfile <- "Project K102 QC Summary TEST.xlsx"
+  
+  conflict_rate <- 0.10
 
 #~~~  GO! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -36,7 +38,11 @@ if(FALSE){##
   source(path.expand("~/R/Functions.GCL.R"))
 
   setwd(dirQC)
-
+  
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #### Create Locus Control ####
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
   CreateLocusControl.GCL(markersuite = markersuite, username = username, password = password)
 
   loci <- LocusControl$locusnames
@@ -47,12 +53,24 @@ if(FALSE){##
 
   alleles <- LocusControl$alleles
 
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #### Read in Project Genotypes ####
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
   ReadProjectLOKI2R.GCL(projectID = projectID, username = username, password = password)
 
   rm(password)
 
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #### Failure Rate ####
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
   FailureRate <- FailureRate.GCL(sillyvec = ProjectSillys)
 
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #### Read in QC Genotypes ####
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
   QCfiles <- list.files(path = "Genotype Data Files", pattern = ".csv", full.names = TRUE, recursive = FALSE)
 
   QCdat <- Reduce(rbind, lapply(QCfiles, read.csv))
@@ -109,7 +127,11 @@ if(FALSE){##
 
   QCColSizeAll[paste0(QCSillys, ".gcl")] <- QCColSize[paste0(QCSillys, ".gcl")]
 
-  QCConcordanceReportfile <- list.files ("Conflict Reports", pattern = "ConcordanceReport", full.names = TRUE)
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #### Read in Conflict Report ####
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ 
+  QCConcordanceReportfile <- list.files (path = "Conflict Reports", pattern = "ConcordanceReport", full.names = TRUE)
 
   CombineConflictsWithPlateID.GCL(files = QCConcordanceReportfile)
 
@@ -117,7 +139,7 @@ if(FALSE){##
 
   QCtypes <- levels(CombinedConflicts$Type)
 
-  types <- union(QCtypes, c("DB Zero", "File Zero", "Het-Homo", "Homo-Het", "Homo-Homo", "Conflict"))
+  types <- c(sort(union(QCtypes, c("DB Zero", "File Zero", "Het-Het", "Het-Homo", "Homo-Het", "Homo-Homo"))), "Conflict")
 
   ConflictsByPlateID <- matrix(data = 0, nrow = length(unique(CombinedConflicts$PlateID)), ncol = length(types), dimnames = list(unique(CombinedConflicts$PlateID), types))
 
@@ -137,6 +159,10 @@ if(FALSE){##
 
   ConflictsByLocus[, "Conflict"] <- rowSums(ConflictsByLocus[, c("Het-Het", "Het-Homo", "Homo-Het", "Homo-Homo"), drop = FALSE])
 
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #### Sample Size by Locus for Project Genotypes ####
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
   OriginalProjectSampleSizebyLocus <- SampSizeByLocus.GCL(sillyvec = ProjectSillys, loci = loci)
 
   OriginalProjectPercentbyLocus <- apply(OriginalProjectSampleSizebyLocus, 1, function(row) {row / max(row)} )
@@ -147,6 +173,10 @@ if(FALSE){##
 
   levelplot(t(OriginalProjectPercentbyLocus), col.regions = new_colors, at = seq(0, 1, length.out = 100), main = "% Genotyped", xlab = "SILLY", ylab = "Locus", scales = list(x = list(rot = 90)), aspect = "fill") # aspect = "iso" will make squares
 
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #### Sample Size by Locus for QC Genotypes ####
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
   OriginalQCSampleSizebyLocus <- SampSizeByLocus.GCL(sillyvec = QCSillys, loci = loci)
 
   OriginalQCPercentbyLocus <- apply(OriginalQCSampleSizebyLocus, 1, function(row) {row / max(row)} )
@@ -155,6 +185,10 @@ if(FALSE){##
 
   levelplot(t(OriginalQCPercentbyLocus), col.regions = new_colors, at = seq(0, 1, length.out = 100), main = "% Genotyped", xlab = "SILLY", ylab = "Locus", scales = list(x = list(rot = 90)), aspect = "fill") # aspect = "iso" will make squares
 
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #### QC of Project Genotypes ####
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
   ProjectSillys_SampleSizes <- matrix(data = NA, nrow = length(ProjectSillys), ncol = 5, dimnames = list(ProjectSillys, c("Genotyped", "Alternate", "Missing", "Duplicate", "Final")))
 
   ProjectSillys_SampleSizes[, "Genotyped"] <- sapply(paste(ProjectSillys, ".gcl", sep = ''), function(x) get(x)$n)
@@ -189,19 +223,27 @@ if(FALSE){##
 
   ProjectSillys_SampleSizes[, "Final"] <- ColSizePostDuplicate
 
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #### QC of QC Genotypes ####
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
   MissLociQC <- RemoveIndMissLoci.GCL(sillyvec = QCSillys, proportion = 0.8)
 
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #### Perform Duplicate Check on High Conflict Individuals ####
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
   conflicts <- which(CombinedConflicts$Type %in% c("Het-Het", "Het-Homo", "Homo-Het", "Homo-Homo"))
 
   conflictstab <- table(CombinedConflicts[conflicts, "Silly.Source"])
 
   hist(conflictstab / length(loci), main = "QC individual conflict rate", xlab = "Conflict rate", col = 8, breaks = seq(from = 0, to = 0.5, by = 0.02))
 
-  conflict_bool <- conflictstab / length(loci) > 0.10
+  conflict_bool <- conflictstab / length(loci) > conflict_rate
 
   if(sum(conflict_bool)){ 
 
-    conflict_indv_bool <- table(CombinedConflicts[conflicts, "Silly.Source"]) / length(loci) > 0.10
+    conflict_indv_bool <- table(CombinedConflicts[conflicts, "Silly.Source"]) / length(loci) > conflict_rate
 
     conflict_indv <- names(conflict_indv_bool)[conflict_indv_bool]
  
@@ -237,6 +279,10 @@ if(FALSE){##
 
   }#conflict_bool
 
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #### Create Summary Tables ####
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
   SummaryTable1 <- cbind(ProjectSillys_SampleSizes, "Failure Rate" = FailureRate$Silly_Failure_Rate, "Total QC Fish" = QCColSize)
 
   tab_names <- c("Total QC Genotypes", "Discrepancy Rate", "Total Het-Het", "Het-Het Rate", "Total Het-Homo", "Het-Homo Rate", "Total Homo-Het", "Homo-Het Rate", "Total Homo-Homo", "Homo-Homo Rate", "DB Zeros", "DB Zero Rate", "QC Zeros", "QC Zero Rate")
@@ -285,13 +331,19 @@ if(FALSE){##
 
   }#locus
 
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #### Append Summary Tables to QCSummaryfile.xlsx ####
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
   write.xlsx(x = SummaryTable1, file = QCSummaryfile, sheetName = "Summary by Silly", row.names = TRUE, col.names = TRUE, append = TRUE)
 
   write.xlsx(x = SummaryTable2, file = QCSummaryfile, sheetName = "Conflicts by Silly", row.names = TRUE, col.names = TRUE, append = TRUE)
 
   if(exists("DupCheckResults")) {
 
-    lapply(conflict.silly, function(silly) {write.xlsx(x = DupCheckResults[[silly]], file = QCSummaryfile, sheetName = paste("DupCheckBetween", silly, sep = " "), row.names = TRUE, col.names = TRUE, append = TRUE)} )
+    print(DupCheckResults)
+    
+    invisible(lapply(conflict_silly, function(silly) {write.xlsx(x = DupCheckResults[[silly]], file = QCSummaryfile, sheetName = paste("DupCheckBetween", silly, sep = " "), row.names = TRUE, col.names = TRUE, append = TRUE)} ))
 
   }
 
