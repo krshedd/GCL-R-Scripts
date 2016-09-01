@@ -4,8 +4,53 @@ if(FALSE){##
 ############
 ############
 
-
-#~~~  Arguments  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #Title: K102 QC
+  #Date: Thu Sep 01 12:01:53 2016
+  #Name: Heather Hoyt; Jim Jasper; Kyle Shedd
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
+    # It is important to run this script in order, or some functions will not provide accurate results.
+  # This is by design, as this script only hits LOKI once to save time.
+  
+  # User input is only required above the '#~~~  GO! ~~~~~~~~~~~~~...`
+  
+  # Output ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
+  # Text ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # DupCheck Results (if applicable)
+  
+  # Figures ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Levelplot of genotyping success rate by silly and locus for ProjectSillys
+  # Levelplot of genotyping success rate by silly and locus for QCSillys
+  # Histogram of overall QC individual conflict rate
+  # Individual histograms of duplicate rate for conflict individuals
+  
+  # Summary excel ~~~~~~~~~~~~~~~~~~~~~~~
+  # Summary by Silly
+  # Conflicts by Silly
+  # DupCheck Results (if applicable)
+  # Conflicts by Locus
+  # Conflicts by PlateID
+  # Failure Rate by Silly
+  # Failure Rate by Locus
+  # Overall Failure Rate
+  # Original Project Sample Size by Locus
+  
+  
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #### Setup ####
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
+  date()
+  # rm(list=ls(all=TRUE))
+  
+  # This sources all of the new GCL functions to this workspace
+  # source("C:/Users/krshedd/Documents/R/Functions.GCL.R")
+  
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #### Arguments ####
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   dirQC <- "V:/Lab/Genotyping/Microsatellite Projects/Chinook/Project K102 SEAK Origins Winter Troll 2016 Part 1/QC"
 
@@ -17,7 +62,7 @@ if(FALSE){##
 
   projectID <- 2281
 
-  username <- "jjasper"
+  username <- "krshedd"
 
   password <- ""
 
@@ -72,61 +117,69 @@ if(FALSE){##
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
   QCfiles <- list.files(path = "Genotype Data Files", pattern = ".csv", full.names = TRUE, recursive = FALSE)
-
-  QCdat <- Reduce(rbind, lapply(QCfiles, read.csv))
-
-  vials <- levels(QCdat$Name)
-
-  lociQC <- levels(QCdat$Assay)  
-
-  QCdat <- data.frame(Silly = unlist(lapply(strsplit(as.character(QCdat$Name), split = "_"), "[", 1)), Vial = unlist(lapply(strsplit(as.character(QCdat$Name), split = "_"), "[", 2)), QCdat, stringsAsFactors = FALSE)
-
-  ProjectSillysQC <- unique(unlist(lapply(strsplit(as.character(QCdat$Name), split = "_"), "[", 1)))
-
-  if(sum(! ProjectSillysQC %in% ProjectSillys)){ stop(paste0(ProjectSillysQC[! ProjectSillysQC %in% ProjectSillys], " not found in ProjectSillys.")) }
-
-  if(sum(! lociQC %in% loci)){ stop(paste0(lociQC[! lociQC %in% loci], " not found in LocusControl.")) }
-
-  attNames <- colnames(get(paste0(ProjectSillys[1], ".gcl"))$attributes)
-
-  for(silly in ProjectSillysQC){
-
-    sillydat <- subset(QCdat, Silly == silly)
-
-    scores <- Reduce(bbind , lapply(c("Allele.1", "Allele.2"), function(al){ tapply(sillydat[, al], list(sillydat$Vial, sillydat$Assay), c)[,, drop = FALSE] }))
-
-    counts <- array(NA, c(nrow(scores), ncol(scores), max(nalleles)), list(rownames(scores), colnames(scores), paste0("Allele", seq(max(nalleles)))))
-
-    for(locus in loci){
-
-      for(al in seq(nalleles[locus])){
-
-        for(id in sillydat$Vial){
-
-          counts[id, locus, al] <- sum(scores[id, locus, seq(ploidy[locus])] == alleles[[locus]][al])
-
-        }#id
-
-      }#al           
-
-    }#locus
-
-    attributes <- data.frame(matrix(NA, nrow = nrow(counts), ncol = length(attNames), dimnames = list(rownames(counts), attNames)))
-
-    attributes$SillySource <- paste0(silly, "QC_", rownames(counts))
-
-    assign(paste0(silly, "QC.gcl"), list(counts = counts, scores = scores, n = nrow(scores), attributes = attributes))
-
-  }#silly
-
-  QCSillys <- paste0(ProjectSillysQC, "QC")
+  
+  if(max(nalleles) <= 2) {
+    
+    ReadBiomarkQC.GCL(QCcsvFilepaths = QCfiles)
+    
+  } else {
+    
+    QCdat <- Reduce(rbind, lapply(QCfiles, read.csv))
+    
+    vials <- levels(QCdat$Name)
+    
+    lociQC <- levels(QCdat$Assay)  
+    
+    QCdat <- data.frame(Silly = unlist(lapply(strsplit(as.character(QCdat$Name), split = "_"), "[", 1)), Vial = unlist(lapply(strsplit(as.character(QCdat$Name), split = "_"), "[", 2)), QCdat, stringsAsFactors = FALSE)
+    
+    ProjectSillysQC <- unique(unlist(lapply(strsplit(as.character(QCdat$Name), split = "_"), "[", 1)))
+    
+    if(sum(! ProjectSillysQC %in% ProjectSillys)){ stop(paste0(ProjectSillysQC[! ProjectSillysQC %in% ProjectSillys], " not found in ProjectSillys.")) }
+    
+    if(sum(! lociQC %in% loci)){ stop(paste0(lociQC[! lociQC %in% loci], " not found in LocusControl.")) }
+    
+    attNames <- colnames(get(paste0(ProjectSillys[1], ".gcl"))$attributes)
+    
+    for(silly in ProjectSillysQC){
+      
+      sillydat <- subset(QCdat, Silly == silly)
+      
+      scores <- Reduce(bbind , lapply(c("Allele.1", "Allele.2"), function(al){ tapply(sillydat[, al], list(sillydat$Vial, sillydat$Assay), c)[,, drop = FALSE] }))
+      
+      counts <- array(NA, c(nrow(scores), ncol(scores), max(nalleles)), list(rownames(scores), colnames(scores), paste0("Allele", seq(max(nalleles)))))
+      
+      for(locus in loci){
+        
+        for(al in seq(nalleles[locus])){
+          
+          for(id in sillydat$Vial){
+            
+            counts[id, locus, al] <- sum(scores[id, locus, seq(ploidy[locus])] == alleles[[locus]][al])
+            
+          }#id
+          
+        }#al           
+        
+      }#locus
+      
+      attributes <- data.frame(matrix(NA, nrow = nrow(counts), ncol = length(attNames), dimnames = list(rownames(counts), attNames)))
+      
+      attributes$SillySource <- paste0(silly, "QC_", rownames(counts))
+      
+      assign(paste0(silly, "QC.gcl"), list(counts = counts, scores = scores, n = nrow(scores), attributes = attributes))
+      
+    }#silly
+    
+    QCSillys <- paste0(ProjectSillysQC, "QC")
+    
+  }#else for usat
 
   QCColSize <- sapply(paste(QCSillys, ".gcl", sep = ''), function(x) get(x)$n)
-
+  
   QCColSizeAll <- setNames(rep(0, length(ProjectSillys)),paste0(ProjectSillys, "QC.gcl"))
-
+  
   QCColSizeAll[paste0(QCSillys, ".gcl")] <- QCColSize[paste0(QCSillys, ".gcl")]
-
+  
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #### Read in Conflict Report ####
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -141,19 +194,19 @@ if(FALSE){##
 
   types <- c(sort(union(QCtypes, c("DB Zero", "File Zero", "Het-Het", "Het-Homo", "Homo-Het", "Homo-Homo"))), "Conflict")
 
-  ConflictsByPlateID <- matrix(data = 0, nrow = length(unique(CombinedConflicts$PlateID)), ncol = length(types), dimnames = list(unique(CombinedConflicts$PlateID), types))
+  ConflictsByPlateID <- matrix(data = 0, nrow = length(unique(CombinedConflicts$PlateID)), ncol = length(types), dimnames = list(sort(unique(CombinedConflicts$PlateID)), types))
 
   ConflictsByPlateID[, QCtypes] <- table(CombinedConflicts$PlateID, CombinedConflicts$Type)
 
   ConflictsByPlateID[, "Conflict"] = rowSums(ConflictsByPlateID[, c("Het-Het", "Het-Homo", "Homo-Het", "Homo-Homo"), drop = FALSE])
 
-  ConflictsBySilly <- matrix(data = 0, nrow = length(unique(CombinedConflicts$Silly.Code)), ncol = length(types), dimnames = list(unique(CombinedConflicts$Silly.Code), types))
+  ConflictsBySilly <- matrix(data = 0, nrow = length(unique(CombinedConflicts$Silly.Code)), ncol = length(types), dimnames = list(sort(unique(CombinedConflicts$Silly.Code)), types))
 
   ConflictsBySilly[, QCtypes] <- table(CombinedConflicts$Silly.Code, CombinedConflicts$Type)
 
   ConflictsBySilly[, "Conflict"] <- rowSums(ConflictsBySilly[, c("Het-Het", "Het-Homo", "Homo-Het", "Homo-Homo"), drop = FALSE])
 
-  ConflictsByLocus <- matrix(data = 0, nrow = length(unique(CombinedConflicts$Locus)), ncol = length(types), dimnames = list(unique(CombinedConflicts$Locus), types))
+  ConflictsByLocus <- matrix(data = 0, nrow = length(unique(CombinedConflicts$Locus)), ncol = length(types), dimnames = list(sort(unique(CombinedConflicts$Locus)), types))
 
   ConflictsByLocus[, QCtypes] <- table(CombinedConflicts$Locus, CombinedConflicts$Type)
 
@@ -269,7 +322,7 @@ if(FALSE){##
 
     conflict_silly <- unique(unlist(lapply(conflict_indv, function(ind) {strsplit(x = ind, split = "_")[[1]][1]} )))
 
-    message(paste("The following individuals have > 10% loci with conflicts between project and QC:\n"), paste(conflict_indv, conflict_indv_numconflicts[conflict_indv], "conflicts", collapse = "\n"))
+    message(paste("The following individuals have > ", conflict_rate * 100, "% loci with conflicts between project and QC:\n", sep = ''), paste(conflict_indv, conflict_indv_numconflicts[conflict_indv], "conflicts", collapse = "\n"))
 
     message(paste("Running DupCheckBetweenSillys.GCL on these SILLYs"))
 
@@ -277,8 +330,11 @@ if(FALSE){##
 
     DupCheckResults <- setNames(lapply(conflict_silly, function(silly) {DupCheckBetweenSillys.GCL(KeySillys = paste0(silly, "QC"), KeySillyIDs = KeySillyIDs[paste0(silly, "QC")], BetweenSillys = ProjectSillys, loci = loci, threshold = 0.9)} ), nm = conflict_silly)
 
-  }#conflict_bool
+  } else {#conflict_bool
 
+    message(paste("No individuals have > ", conflict_rate * 100, "% loci with conflicts between project and QC", sep = ''))
+    
+  }
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #### Create Summary Tables ####
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
