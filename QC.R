@@ -124,15 +124,23 @@ if(FALSE){##
     
   } else {
     
-    QCdat <- Reduce(rbind, lapply(QCfiles, read.csv))
+    QCdat <- Reduce(rbind, lapply(QCfiles, function(fle) {
+      QCdat.temp <- read.csv(file = fle)[, 1:4]
+      colnames(QCdat.temp) <- c("Sample.Name", "Marker", "Allele.1", "Allele.2")
+      QCdat.temp} )
+    )
     
-    vials <- levels(QCdat$Name)
+    levels(QCdat$Marker) <- gsub(pattern = " ", replacement = "", x = levels(QCdat$Marker))
     
-    lociQC <- levels(QCdat$Assay)  
+    vials <- levels(QCdat$Sample.Name)
     
-    QCdat <- data.frame(Silly = unlist(lapply(strsplit(as.character(QCdat$Name), split = "_"), "[", 1)), Vial = unlist(lapply(strsplit(as.character(QCdat$Name), split = "_"), "[", 2)), QCdat, stringsAsFactors = FALSE)
+    lociQC <- levels(QCdat$Marker)  
     
-    ProjectSillysQC <- unique(unlist(lapply(strsplit(as.character(QCdat$Name), split = "_"), "[", 1)))
+    QCdat <- data.frame(Silly = unlist(lapply(strsplit(as.character(QCdat$Sample.Name), split = "_"), "[", 1)), Vial = unlist(lapply(strsplit(as.character(QCdat$Sample.Name), split = "_"), "[", 2)), QCdat, stringsAsFactors = FALSE)
+    
+    QCdat$Vial <- as.character(as.numeric(QCdat$Vial))
+    
+    ProjectSillysQC <- unique(unlist(lapply(strsplit(as.character(QCdat$Sample.Name), split = "_"), "[", 1)))
     
     if(sum(! ProjectSillysQC %in% ProjectSillys)){ stop(paste0(ProjectSillysQC[! ProjectSillysQC %in% ProjectSillys], " not found in ProjectSillys.")) }
     
@@ -144,7 +152,7 @@ if(FALSE){##
       
       sillydat <- subset(QCdat, Silly == silly)
       
-      scores <- Reduce(bbind , lapply(c("Allele.1", "Allele.2"), function(al){ tapply(sillydat[, al], list(sillydat$Vial, sillydat$Assay), c)[,, drop = FALSE] }))
+      scores <- Reduce(bbind , lapply(c("Allele.1", "Allele.2"), function(al){ tapply(sillydat[, al], list(sillydat$Vial, sillydat$Marker), c)[,, drop = FALSE] }))
       
       counts <- array(NA, c(nrow(scores), ncol(scores), max(nalleles)), list(rownames(scores), colnames(scores), paste0("Allele", seq(max(nalleles)))))
       
@@ -290,7 +298,7 @@ if(FALSE){##
 
   conflictstab <- table(CombinedConflicts[conflicts, "Silly.Source"])
 
-  hist(conflictstab / length(loci), main = "QC individual conflict rate", xlab = "Conflict rate", col = 8, breaks = seq(from = 0, to = 0.5, by = 0.02))
+  hist(conflictstab / length(loci), main = "QC individual conflict rate", xlab = "Conflict rate", col = 8, breaks = seq(from = 0, to = 1, by = 0.02))
 
   conflict_bool <- conflictstab / length(loci) > conflict_rate
 
@@ -302,6 +310,8 @@ if(FALSE){##
  
     conflict_indv_numconflicts <- table(CombinedConflicts[conflicts, "Silly.Source"])[conflict_indv_bool]   
 
+    message(paste0("The following individuals have > ", conflict_rate * 100, "% loci with conflicts between project and QC:\n"), paste(conflict_indv, conflict_indv_numconflicts[conflict_indv], "conflicts", collapse = "\n"))
+    
     new_conflict_indv <- NULL
 
     for(silly_indv in conflict_indv) {
@@ -312,6 +322,10 @@ if(FALSE){##
 
       silly <- conflict_indv_split[1]
 
+      if(id %in% MissLociQC[[paste0(silly, "QC")]]) {message(paste0("\n", silly, "QC_", id, " does not have at least 80% loci genotyped, not running DupCheck for this individual."))}
+      
+      if(! id %in% get(paste0(silly, ".gcl"))$attributes$FK_FISH_ID) {message(paste0("\n", silly, "_", id, " does not have at least 80% loci genotyped, not running DupCheck for this individual."))}
+      
       new_conflict_indv <- c(new_conflict_indv, paste(silly, id, sep = "_")[ ! id %in% MissLociQC[[paste0(silly, "QC")]] & id %in% get(paste0(silly, ".gcl"))$attributes$FK_FISH_ID ])  # Confirm QC fish and Project fish were not removed
 
     }#silly_indv
@@ -322,17 +336,17 @@ if(FALSE){##
 
     conflict_silly <- unique(unlist(lapply(conflict_indv, function(ind) {strsplit(x = ind, split = "_")[[1]][1]} )))
 
-    message(paste0("The following individuals have > ", conflict_rate * 100, "% loci with conflicts between project and QC\nwith both project and QC individuals having >80% of loci genotyped:\n"), paste(conflict_indv, conflict_indv_numconflicts[conflict_indv], "conflicts", collapse = "\n"))
-
-    message(paste("Running DupCheckBetweenSillys.GCL on these SILLYs"))
-
+    message(paste("\nRunning DupCheckBetweenSillys.GCL on these high conflict individuals, as they have at least 80% loci genotyped for Project and QC extractions."))
+    
+    message(paste(conflict_indv, conflict_indv_numconflicts[conflict_indv], "conflicts", collapse = "\n"))
+    
     KeySillyIDs <- setNames(lapply(conflict_silly, function(silly) {sapply(grep(pattern = silly, x = conflict_indv, value = TRUE), function(ind) {unlist(strsplit(x = ind, split = paste(silly, "_", sep = '')))[2]}, USE.NAMES = FALSE) }), paste0(conflict_silly, "QC"))
 
     DupCheckResults <- setNames(lapply(conflict_silly, function(silly) {DupCheckBetweenSillys.GCL(KeySillys = paste0(silly, "QC"), KeySillyIDs = KeySillyIDs[paste0(silly, "QC")], BetweenSillys = ProjectSillys, loci = loci, threshold = 0.9)} ), nm = conflict_silly)
 
   } else {#conflict_bool
 
-    message(paste("No individuals have > ", conflict_rate * 100, "% loci with conflicts between project and QC", sep = ''))
+    message(paste("No individuals have > ", conflict_rate * 100, "% loci with conflicts between project and QC.", sep = ''))
     
   }
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
