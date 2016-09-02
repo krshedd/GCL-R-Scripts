@@ -68,7 +68,7 @@ if(FALSE){##
 
   QCSummaryfile <- "Project K102 QC Summary TEST.xlsx"
   
-  conflict_rate <- 0.10
+  conflict_rate <- 0.10  # conflict rate at which dupcheck between sillys occurs
 
 #~~~  GO! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -200,7 +200,7 @@ if(FALSE){##
 
   ConflictsByPlateID[, "Conflict"] = rowSums(ConflictsByPlateID[, c("Het-Het", "Het-Homo", "Homo-Het", "Homo-Homo"), drop = FALSE])
 
-  ConflictsBySilly <- matrix(data = 0, nrow = length(unique(CombinedConflicts$Silly.Code)), ncol = length(types), dimnames = list(sort(unique(CombinedConflicts$Silly.Code)), types))
+  ConflictsBySilly <- matrix(data = 0, nrow = length(ProjectSillys), ncol = length(types), dimnames = list(ProjectSillys, types))
 
   ConflictsBySilly[, QCtypes] <- table(CombinedConflicts$Silly.Code, CombinedConflicts$Type)
 
@@ -312,7 +312,7 @@ if(FALSE){##
 
       silly <- conflict_indv_split[1]
 
-      new_conflict_indv <- c(new_conflict_indv, paste(silly, id, sep = "_")[ ! id %in% MissLociQC[[paste0(silly, "QC")]] ])     
+      new_conflict_indv <- c(new_conflict_indv, paste(silly, id, sep = "_")[ ! id %in% MissLociQC[[paste0(silly, "QC")]] & id %in% get(paste0(silly, ".gcl"))$attributes$FK_FISH_ID ])  # Confirm QC fish and Project fish were not removed
 
     }#silly_indv
 
@@ -322,7 +322,7 @@ if(FALSE){##
 
     conflict_silly <- unique(unlist(lapply(conflict_indv, function(ind) {strsplit(x = ind, split = "_")[[1]][1]} )))
 
-    message(paste("The following individuals have > ", conflict_rate * 100, "% loci with conflicts between project and QC:\n", sep = ''), paste(conflict_indv, conflict_indv_numconflicts[conflict_indv], "conflicts", collapse = "\n"))
+    message(paste0("The following individuals have > ", conflict_rate * 100, "% loci with conflicts between project and QC\nwith both project and QC individuals having >80% of loci genotyped:\n"), paste(conflict_indv, conflict_indv_numconflicts[conflict_indv], "conflicts", collapse = "\n"))
 
     message(paste("Running DupCheckBetweenSillys.GCL on these SILLYs"))
 
@@ -364,6 +364,8 @@ if(FALSE){##
     }
 
   }#silly
+  
+  SummaryTable2[is.na(SummaryTable2)] <- 0
 
   SummaryTable3 <- matrix(data = NA, nrow = length(loci), ncol = length(tab_names), dimnames = list(loci, tab_names))
 
