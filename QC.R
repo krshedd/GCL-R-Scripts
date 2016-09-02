@@ -7,21 +7,21 @@ if(FALSE){##
 
 #~~~  Arguments  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  dirQC <- "V:/Lab/Genotyping/Microsatellite Projects/Chinook/Project K102 SEAK Origins Winter Troll 2016 Part 1/QC"
+  dirQC <- "V:/Lab/Genotyping/SNP Projects/Sockeye/Project S161 Chignik Inseason 2016/QC"
 
-  species <- "chinook"
+  species <- "sockeye"
 
-  markersuite <- "GAPS_Chinook_uSATs"
+  markersuite <- "Sockeye2013Chignik_24SNPs"
 
-  project <- "K102"
+  project <- "S161"
 
-  projectID <- 2281
+  projectID <- 2284
 
   username <- "jjasper"
 
   password <- ""
 
-  QCSummaryfile <- "Project K095 QC Summary.xlsx"
+  QCSummaryfile <- "Project S161 QC Summary.xlsx"
 
 #~~~  GO! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -55,11 +55,23 @@ if(FALSE){##
 
   QCfiles <- list.files(path = "Genotype Data Files", pattern = ".csv", full.names = TRUE, recursive = FALSE)
 
-  QCdat <- Reduce(rbind, lapply(QCfiles, read.csv))
+  if(max(nalleles) > 2){ 
 
-  vials <- levels(QCdat$Name)
+    QCdat <- setNames(Reduce(rbind, lapply(QCfiles, read.csv)), c("Name", "Assay", "Allele.1", "Allele.2"))
 
-  lociQC <- levels(QCdat$Assay)  
+  } else{
+
+    QCdat <- Reduce(rbind, lapply(QCfiles, read.csv, skip  = 15))[, c("Name", "Assay", "Converted")]
+
+    QCdat <- QCdat[QCdat$Name != "NTC", ]
+
+    QCdat <- data.frame(QCdat[, c("Name", "Assay")], Allele.1 = sapply(strsplit(as.character(QCdat$Converted), split = ":"), "[", 1), Allele.2 = sapply(strsplit(as.character(QCdat$Converted), split = ":"), "[", 2))
+
+  }
+
+  vials <- unique(as.character(QCdat$Name))
+
+  lociQC <- unique(as.character(QCdat$Assay))  
 
   QCdat <- data.frame(Silly = unlist(lapply(strsplit(as.character(QCdat$Name), split = "_"), "[", 1)), Vial = unlist(lapply(strsplit(as.character(QCdat$Name), split = "_"), "[", 2)), QCdat, stringsAsFactors = FALSE)
 
@@ -75,7 +87,7 @@ if(FALSE){##
 
     sillydat <- subset(QCdat, Silly == silly)
 
-    scores <- Reduce(bbind , lapply(c("Allele.1", "Allele.2"), function(al){ tapply(sillydat[, al], list(sillydat$Vial, sillydat$Assay), c)[,, drop = FALSE] }))
+    scores <- Reduce(bbind , lapply(c("Allele.1", "Allele.2"), function(al){ tapply(as.character(sillydat[, al]), list(sillydat$Vial, sillydat$Assay), c)[,, drop = FALSE] }))
 
     counts <- array(NA, c(nrow(scores), ncol(scores), max(nalleles)), list(rownames(scores), colnames(scores), paste0("Allele", seq(max(nalleles)))))
 
@@ -117,7 +129,7 @@ if(FALSE){##
 
   QCtypes <- levels(CombinedConflicts$Type)
 
-  types <- union(QCtypes, c("DB Zero", "File Zero", "Het-Homo", "Homo-Het", "Homo-Homo", "Conflict"))
+  types <- c("DB Zero", "File Zero", "Het-Het", "Het-Homo", "Homo-Het", "Homo-Homo", "Conflict")
 
   ConflictsByPlateID <- matrix(data = 0, nrow = length(unique(CombinedConflicts$PlateID)), ncol = length(types), dimnames = list(unique(CombinedConflicts$PlateID), types))
 
@@ -159,7 +171,7 @@ if(FALSE){##
 
   ProjectSillys_SampleSizes[, "Genotyped"] <- sapply(paste(ProjectSillys, ".gcl", sep = ''), function(x) get(x)$n)
 
-  if(species == "chum" | species == "sockeye") {
+  if(species %in% c("chum", "sockeye")) {
   
     Alternate <- FindAlternateSpecies.GCL(sillyvec = ProjectSillys, species = species)
   
