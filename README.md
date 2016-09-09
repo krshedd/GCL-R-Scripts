@@ -81,7 +81,10 @@ If you need to source R scripts, but do not have access to your local C: drive (
 Another way to find the raw https url is to navigate within the repository on GitHub to the function, select *Raw*, and copy the url.  
 Once you have the url for the function you want to source there are two options to source it. The first one is easiest (less code), but the second one will always work (requires the package "RCurl").  
 
-`source(https://raw.githubusercontent.com/krshedd/GCL-R-Scripts/master/AttributesToIDs.GCL.r)`
+<pre><code>source(https://raw.githubusercontent.com/krshedd/GCL-R-Scripts/master/AttributesToIDs.GCL.r)`</code></pre>
 
 <pre><code>while(!require(RCurl)){install.packages("RCurl")}
 eval(expr = parse(text = getURL("https://raw.githubusercontent.com/krshedd/GCL-R-Scripts/master/AttributesToIDs.GCL.r", ssl.verifypeer=FALSE) ))</code></pre>
+
+## QC
+As of release [QC For Everyone v1.4.0](https://github.com/krshedd/GCL-R-Scripts/releases/tag/v1.4.0) the standard QC R script run by project leaders will work for both SNPs and uSATs and is available on the `master` branch. This is a separate script all of its own, not a full-blown function. Weird things always seem to happen during QC, so rather than have a black box function, it was decided to create a dedicated script that project leaders would then run line by line so that they can pinpoint problems if/when they arise. The idea is that when you need to perform a QC, you will do a fresh `pull` from the `master` branch in order to have the latest version of `QC.R` in your remote repository (i.e. `C:\Users\krshedd\Documents\R\GCL-R-Scripts`). You will then **copy/paste** this file to the QC project folder (i.e. `V:\Lab\Genotyping\SNP Projects\Sockeye\Project S161 Chignik Inseason 2016\QC`), modify the **Arguments**, and run the script from there. You should not have to modify anything past **GO!**, but if the function bombs on you, you will at least know where you are. This arrangement will also allow you to save your project specific QC script on the `V drive` when you are done.
