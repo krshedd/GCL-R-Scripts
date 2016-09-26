@@ -11,7 +11,7 @@ if(FALSE){
 
 # thin <- 10
 
-# wd <- "C:/Users/jjasper/Documents/LynnCannal" 
+# wd <- "C:/Users/jjasper/Documents/LynnCanal" 
 
 
 
@@ -41,8 +41,11 @@ if(FALSE){
 # group_names <- c("ChilkatLake","ChilkatMain","Chilkoot","NSEAK","Snett","Taku/StikMain","TakuLakes","Other")
 
 
-
   while(!require(coda)){install.packages("coda")}
+
+  while(!require(foreach)){install.packages("foreach")}
+
+  while(!require(doParallel)){install.packages("doParallel")}
 
   setwd(wd)
 
@@ -95,15 +98,13 @@ if(FALSE){
 
 # Analysis  #####################################################################################################################################################################################################################################################################################################################################################################################################################################################################
 
-  x <- Reduce(cbind, lapply(loci, function(locus){x0[metadat$silly_vial, locus, seq(nalleles[locus])]}))
+  metadat <- metadat[as.character(metadat$silly_vial) %in% rownames(x0), ]
+
+  x <- Reduce(cbind, lapply(loci, function(locus){x0[as.character(metadat$silly_vial), locus, seq(nalleles[locus])]}))
 
   x[is.na(x)] <- 0  
 
   chains <- paste0("Chain", seq(nchains))
-
-  require(foreach)
-
-  require(doParallel)
 
   cl <- makePSOCKcluster(nchains)
 
@@ -111,7 +112,7 @@ if(FALSE){
 
   beg_time <- Sys.time()
 
-  chain_times <- foreach(chain = chains)%dopar%{
+  invisible(foreach(chain = chains)%dopar%{ 
 
     rdirich <- function(alpha0){ vec <- rgamma(length(alpha0), alpha0, 1) ; vec / sum(vec) }
   
@@ -119,95 +120,81 @@ if(FALSE){
   
     beta_prm <- y + beta
   
-    lnq <- log(t(apply(beta_prm, 1, function(rw){Reduce(cbind, tapply(rw, list(rep(loci, nalleles)), rdirich, simplify = FALSE))})))
+    lnq <- log(t(apply(beta_prm, 1, function(rw){unlist(tapply(rw, INDEX = list(rep(loci, nalleles)), FUN = function(g){ g / sum(g) }))})))
   
     genofreq <- exp(x%*%t(lnq))
+  
+    pPrior <- matrix((1 / max(groups) / table(groups))[groups], nrow = W, ncol = K, byrow = TRUE, dimnames = list(seq(W), seq(K)))
+  
+    piPrior <- matrix((1 / A / table(age_groups))[age_groups], nrow = K, ncol = C, byrow = TRUE, dimnames = list(seq(K), seq(C)))
 
-    piPrior <- matrix((1 / A / table(age_groups))[age_groups], nrow = K, ncol = C, byrow = TRUE)
-  
-    pPrior <- matrix((1 / max(groups) / table(groups))[groups], nrow = W, ncol = K, dimnames = list(seq(W), seq(K)))
-  
     a <- metadat$a
-  
-    i <- apply(genofreq, 1, function(freqvec){sample(K, 1, TRUE, freqvec)})    
-  
-    pi0 <- table(i, a)
-  
-    dmns <- sapply(dimnames(pi0), as.numeric)
-  
-    pi <- piPrior
-  
-    pi[dmns$i, dmns$a] <- pi0 + piPrior[dmns$i, dmns$a]
-  
-    pi <- t(apply(pi, 1, rdirich))
-  
-    p0 <- table(metadat$w, i = i)
-  
-    pdmns <- sapply(dimnames(p0), as.numeric) 
   
     p <- pPrior
   
-    p[, pdmns$i] <- p0 + pPrior[, pdmns$i]
-  
-    p <- t(apply(p, 1, rdirich))
-  
-    a[is.na(metadat$a)] <- sapply(i[is.na(metadat$a)], function(ii){sample(C, 1, TRUE, pi[ii, ])})
+    i <- apply(cbind(metadat$w, genofreq), 1, function(wfreq){sample(K, 1, TRUE, p[wfreq[1], seq(K)]*wfreq[-1])}) 
   
     for(sim in seq(NSIMS)){
   
-      pi0 <- table(i, a)
-  
-      dmns <- sapply(dimnames(pi0), as.numeric)
-  
-      pi <- piPrior
-  
-      pi[dmns$i, dmns$a] <- pi0 + piPrior[dmns$i, dmns$a]
-  
-      pi <- t(apply(pi, 1, rdirich))
-  
       p0 <- table(metadat$w, i)
   
-      pdmns <- sapply(dimnames(p0), as.numeric) 
+      nms <- colnames(p0) 
   
       p <- pPrior
   
-      p[, pdmns$i] <- p0 + pPrior[, pdmns$i] 
+      p[, nms] <- p0 + pPrior[, nms] 
   
       p <- t(apply(p, 1, rdirich))
   
-      a[is.na(metadat$a)] <- sapply(i[is.na(metadat$a)], function(Z){sample(C, 1, TRUE, pi[Z, ])})
+      pi0 <- table(i, a)
   
-      a.df <- cbind(metadat$w, a)
+      nms <- dimnames(pi0)
   
-      i <- apply(cbind(a.df, genofreq), 1, function(wa){sample(K, 1, TRUE, p[wa[1], seq(K)]*pi[seq(K), wa[2]]*wa[-seq(2)])}) 
+      pi <- piPrior
   
-      x_sum <- rowsum(x, group = i, reorder = TRUE)
+      pi[nms$i, nms$a] <- pi0 + piPrior[nms$i, nms$a]
   
-      x_sum_nms <- as.numeric(rownames(x_sum))
+      pi <- t(apply(pi, 1, rdirich))
+  
+      a[is.na(metadat$a)] <- sapply(i[is.na(metadat$a)], function(ii){sample(C, 1, TRUE, pi[ii, ])})
+  
+      i <- apply(cbind(cbind(metadat$w, a), genofreq), 1, function(wafreq){sample(K, 1, TRUE, p[wafreq[1], seq(K)]*pi[seq(K), wafreq[2]]*wafreq[-seq(2)])}) 
+  
+      x_sum <- rowsum(x, group = sillyvecBase[i], reorder = TRUE)
+  
+      nms <- rownames(x_sum)
   
       beta_prm_prm <- beta_prm 
   
-      beta_prm_prm[x_sum_nms,] <- beta_prm[x_sum_nms, ] + x_sum
+      beta_prm_prm[nms,] <- beta_prm[nms, ] + x_sum
   
       lnq <- log(t(apply(beta_prm_prm, 1, function(rw){unlist(tapply(rw, INDEX = list(rep(loci, nalleles[loci])), FUN = rdirich))})))
-  
+ 
       genofreq <- exp(x%*%t(lnq))
   
       if( sim > burn & ! sim %% thin){
-  
-        invisible(lapply(seq(W), function(ww){ cat(format(rowsum(p[ww, ], group = groups), trim = TRUE, digits = 16, scientific = TRUE), "\n", file = paste0("R_Week", ww, "_", chain, ".txt"), append = sim - thin > burn) }))
 
         Pi <- t(rowsum(t(pi), group = age_groups))
 
-        PiR <- lapply(seq(W), function(ww){ rowsum(diag(p[ww, ]) %*% Pi, group = groups) })
-        
-        invisible(lapply(seq(W), function(ww){ lapply(seq(A), function(aa){ cat(format(PiR[[ww]][, aa], trim = TRUE, digits = 16, scientific = TRUE), "\n", file = paste0("PiR_Week", ww, "_", age_groups_names[aa], "_", chain, ".txt"), append = sim - thin > burn) }) }))
+        for(ww in seq(W)){
+
+          write.table(rbind(format(rowsum(p[ww, ], group = groups)[,1], trim = TRUE, digits = 16, scientific = TRUE)), file = paste0("R_Week", ww, "_", chain, ".txt"), row.names = FALSE, col.names = FALSE, quote = FALSE, append = sim - thin > burn) 
+
+          PiR <- rowsum(diag(p[ww, ]) %*% Pi, group = groups)
+
+          for(aa in seq(A)){
+
+            write.table(rbind(format(PiR[, aa], trim = TRUE, digits = 16, scientific = TRUE)), file = paste0("PiR_Week", ww, "_", age_groups_names[aa], "_", chain, ".txt"), row.names = FALSE, col.names = FALSE, quote = FALSE, append = sim - thin > burn)
+
+          }#aa
+
+        }#ww
   
       }# end if  
       
     }#sim
-     
-  }#chain
+
+  })#chain
 
   stopCluster(cl)
 
@@ -215,13 +202,10 @@ if(FALSE){
 
   print(tot_time)
 
-}
 
 
 
-  R <- lapply(seq(W), function(ww){  lapply(chains, function(chain){ read.table(paste0("R_Week", ww, "_", chain, ".txt")) }) })
-
-  R <- lapply(seq(W), function(ww){  as.mcmc.list(lapply(seq(chains), function(chain){ mcmc(R[[ww]][[chain]]) })) })
+  R <- lapply(seq(W), function(ww){  as.mcmc.list(lapply(chains, function(chain){ mcmc(read.table(paste0("R_Week", ww, "_", chain, ".txt"))) })) })
 
   GR_R <- lapply(lapply(lapply(R, gelman.diag, transform = TRUE, autoburnin = FALSE, multivariate = FALSE), "[[", 1), function(gr){ gr[, 1] })
 
@@ -231,7 +215,7 @@ if(FALSE){
 
   R <- setNames(lapply(seq(W), function(ww){ rownames(R[[ww]]) <- group_names ; R[[ww]][,"GR"] <- GR_R[[ww]] ; R[[ww]] }), stat_weeks)
 
-  sink("R_all_weeks.txt")
+  sink("R_all_weeks_with_update_and_age.txt")
 
   print(R)
 
@@ -250,5 +234,7 @@ if(FALSE){
   
   PiR <- Reduce(rbind, lapply(as.character(stat_weeks), function(ww){ Reduce(rbind, lapply(age_groups_names, function(aa){ data.frame(Group = group_names, StatWeek = ww, AgeClass = aa, PiR[[ww]][[aa]])  })) }))
 
-  write.table(PiR, "PiR.txt", col.names = NA, sep = "\t")
+  write.table(PiR, "PiR2.txt", col.names = NA, sep = "\t")
 
+
+}
