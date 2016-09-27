@@ -1,43 +1,54 @@
 
 if(FALSE){
 
-# wd <- "C:/Users/jjasper/Documents"#"V:/Analysis/Staff/Jim Jasper/Sockeye/SEAK/MarkEnhancedGSI/MarkEnhancedGSIwithAge/All 2011-2014"
+# ARGS  ########################################################################################################################################################################################################################################################################################################################################################################################################################################################
 
-# nchains <- 2
+  wd <- ""
 
-# NSIMS <- 10
+  nchains <- 6
 
-# burn <- NSIMS/2
+  NSIMS <- 40000
 
-# thin <- 1
+  burn <- NSIMS/2
 
-# Meta Data Read-In  #################################################################################################################################################################################################################################################################################################################################################################################################################################################################
+  thin <- 10
 
-# load("ReadIn2012and13.RData")
+# load("Mixture_Workspace")
 
-# sillyvecMix <- c("SGILL12D11", "SGILL12D6", "SGILL12D8", "SGILL13D11", "SGILL13D6", "SGILL13D8")
+  sillyvecMix <- c("SGILL12D11", "SGILL12D6", "SGILL12D8", "SGILL13D11", "SGILL13D6", "SGILL13D8")
 
-# meta.data.file <- "MetaDataAll.txt"
+  meta.data.file <- "MetaDataAll.txt"
 
-# agevec <- c(1, 1, 1, 1, 1, 6, 2, 3, 6, 6, 6, 6, 4, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6)
+  agevec <- c(1, 1, 1, 1, 1, 6, 2, 3, 6, 6, 6, 6, 4, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6)
 
-# attach("V:/Analysis/1_SEAK/Sockeye/Baseline/2011/Nov2011/BaselineUpdate_Nov2011.RData")
+  AgeGroups <- c("ZeroX", "Age1.2", "Age1.3", "Age2.2", "Age2.3", "AgeOther")
 
-# sillyvecBase <- SEAK151pops
+# attach("Baseline_Workspace")
 
-# loci2remove <- c("One_Cytb_26", "One_CO1", "One_Cytb_17", "One_c3-98", "One_GPDH", "One_MHC2_251")
- 
-# loci <- LocusControl$locusnames[ ! LocusControl$locusnames %in% loci2remove]
+  sillyvecBase <- SEAK151pops
 
-  setwd(wd)
+  loci <- LocusControl$locusnames[ ! LocusControl$locusnames %in% c("One_Cytb_26", "One_CO1", "One_Cytb_17", "One_c3-98", "One_GPDH", "One_MHC2_251")]
+
+  groups_list <- lapply(list(D106groups, D108groups, D111groups), function(groups){ c(groups, rep(max(groups) + 1, length(Hatcheries)))
+
+  group_names_list <- list(c(D106group_names, "Hatcheries"), c(D108group_names, "Hatcheries"), c(D111group_names, "Hatcheries"))
+
+  Hatcheries <- c("BURN", "MAIN", "MCDO", "NECK", "SPEE", "SWEE", "TAHL", "TATS", "TRAP", "TUYA")
+
+##################################################################################################################################################################################################################################################################################################################################################################################################################################################################
+
+
+
 
   while(!require(reshape)){install.packages("reshape")}
 
-  while(!require(abind)){install.packages("abind")}
+  while(!require(coda)){install.packages("coda")}
 
   while(!require(foreach)){ install.packages("foreach") }
 
   while(!require(doParallel)){ install.packages("doParallel") }
+
+  setwd(wd)
 
   metadat0 <- read.table(meta.data.file, header=TRUE, sep="\t")
 
@@ -51,7 +62,9 @@ if(FALSE){
 
   x0 <- get(paste(c(sillyvecMix, "gcl"), collapse="."))$counts[,  loci, ]
 
-  rownames(x0) <- get(paste(c(sillyvecMix, "gcl"), collapse="."))$attributes$SillySource
+  attributes0 <- get(paste(c(sillyvecMix, "gcl"), collapse="."))$attributes
+
+  rownames(x0) <- attributes0$SillySource
   
 # Meta Data Massaging  ########################################################################################################################################################################################################################################################################################################################################################################################################################################################
 
@@ -70,8 +83,6 @@ if(FALSE){
   AgeNames <- paste0("Age", EuropeanAges)
 
   agevec <- setNames(agevec, AgeNames)
-
-  AgeGroups <- c("ZeroX", "Age1.2", "Age1.3", "Age2.2", "Age2.3", "AgeOther")
 
   A <- length(AgeGroups)
 
@@ -133,13 +144,9 @@ if(FALSE){
 
 # Baseline Hatheries  ################################################################################################################################################################################################################################################################################################################################################################################################################################################################
 
-  Hatcheries <- levels(metadat2$ThermalGroupsForSEAK)
-
-  Hatcheries <- Hatcheries[Hatcheries != "WILD"]
-
   H <- length(Hatcheries)
 
-  Originmetadat <- data.frame(ThermalGroupsForSEAK = levels(metadat2$ThermalGroupsForSEAK), z = c(seq(H) + K, NA))
+  Originmetadat <- data.frame(ThermalGroupsForSEAK = c(Hatcheries, "WILD"), z = c(seq(H) + K, NA))
 
   metadat3 <- merge(metadat2, Originmetadat)
 
@@ -157,14 +164,16 @@ if(FALSE){
 
   nn <- data.frame(n0, WildNoGenetics=WildNoGenetics0, NonWild=NonWild0)
 
-# head(metadat)
-
   rownames(metadat) <- metadat$SillySource
 
   sillyvecBase <- c(sillyvecBase, Hatcheries)
 
 
+
+
 # Analysis  #####################################################################################################################################################################################################################################################################################################################################################################################################################################################################
+
+  metadat <- metadat[as.character(metadat$SillySource[metadat$WildGenetics]) %in% rownames(x0), ]
 
   x <- Reduce(cbind, lapply(loci, function(locus){x0[as.character(metadat$SillySource[metadat$WildGenetics]), locus, seq(nalleles[locus])]}))
 
@@ -186,11 +195,11 @@ if(FALSE){
    
     beta_prm <- y + beta
    
-    lnq <- log(t(apply(beta_prm, 1, function(rw){Reduce(cbind, tapply(rw, list(rep(loci, nalleles)), rdirich, simplify = FALSE))})))
+    lnq <- log(t(apply(beta_prm, 1, function(rw){unlist(tapply(rw, list(rep(loci, nalleles)), rdirich, simplify = FALSE))})))
    
     genofreq <- exp(x%*%t(lnq))
    
-    piPrior <- array(1/C, c(T, K+H, C), list(seq(T), seq(K+H), seq(C)))
+    piPrior <- array(matrix((1 / A / table(agevec))[agevec], nrow = K + H, ncol = C, byrow = TRUE), dim = c(T, K+H, C), dimnames = list(seq(T), seq(K+H), seq(C)))
    
     pPrior <- array(1/(K+H), c(T, D, S, W, K+H), list(seq(T), seq(D), seq(S), seq(W), seq(K+H)))
    
@@ -198,47 +207,25 @@ if(FALSE){
     
     i <- metadat$z
     
-    i[metadat$WildGenetics] <- apply(genofreq, 1, function(freqvec){sample(K, 1, TRUE, freqvec)})    
-    
-    pi0 <- table(t = metadat$t, i, a)
-    
-    dmns <- sapply(dimnames(pi0), as.numeric)
-    
-    pi <- piPrior
-    
-    pi[, dmns$i, dmns$a] <- pi0 + piPrior[, dmns$i, dmns$a]
-    
-    pi <- aperm(apply(pi, 1:2, rdirich), c(2, 3, 1))
-    
-    p0 <- table(cbind(metadat[,c("t", "d", "s", "w")], i=i))
-    
-    pdmns <- sapply(dimnames(p0), as.numeric) 
-    
     p <- pPrior
     
-    p[, , , , pdmns$i] <- p0 + pPrior[, , , , pdmns$i]
+    i[metadat$WildGenetics]=apply(cbind(metadat[metadat$WildGenetics,c("t", "d", "s", "w")], genofreq), 1, function(tdswa){sample(K, 1, TRUE, p[tdswa[1], tdswa[2], tdswa[3], tdswa[4], seq(K)]*tdswa[-seq(4)])}) 
+           
+    p0 <- table(cbind(metadat[,c("t", "d", "s", "w")], i=i))
+    
+    pdmns <- dimnames(p0) 
+        
+    p[, , , , pdmns$i] <- p0 + pPrior[, , , , pdmns$i] 
     
     p <- aperm(apply(p, seq(4), rdirich), c(seq(2, 5), 1))
-    
-    i[metadat$WildNoGenetics]=apply(metadat[metadat$WildNoGenetics,c("t", "d", "s", "w")], 1, function(rwvec){sample(K, 1, TRUE, p[rwvec[1], rwvec[2], rwvec[3], rwvec[4], seq(K)])})
-    
-    a[is.na(metadat$AGE_EUROPEAN)] <- unlist(lapply(seq(T), function(t){sapply(i[is.na(metadat$AGE_EUROPEAN) & metadat$t == t], function(Z){sample(C, 1, TRUE, pi[t, Z, ])})}))
+
+    i[metadat$WildNoGenetics]=apply(metadat[metadat$WildNoGenetics, c("t", "d", "s", "w")], 1, function(tdswa){sample(K, 1, TRUE, p[tdswa[1], tdswa[2], tdswa[3], tdswa[4], seq(K)])})   
     
     for(sim in seq(NSIMS)){
     
-      pi0 <- table(t = metadat$t, i, a))
-    
-      dmns <- sapply(dimnames(pi0), as.numeric)
-    
-      pi <- piPrior
-    
-      pi[, dmns$i, dmns$a] <- pi0 + piPrior[, dmns$i, dmns$a]
-    
-      pi <- aperm(apply(pi, 1:2, rdirich), c(2, 3, 1))
-    
       p0 <- table(cbind(metadat[,c("t", "d", "s", "w")], i=i))
     
-      pdmns <- sapply(dimnames(p0), as.numeric) 
+      pdmns <- dimnames(p0) 
     
       p <- pPrior
     
@@ -246,28 +233,75 @@ if(FALSE){
     
       p <- aperm(apply(p, seq(4), rdirich), c(seq(2, 5), 1))
     
+      pi0 <- table(t = metadat$t, i, a)
+    
+      dmns <- dimnames(pi0)
+    
+      pi <- piPrior
+    
+      pi[, dmns$i, dmns$a] <- pi0 + piPrior[, dmns$i, dmns$a]
+    
+      pi <- aperm(apply(pi, 1:2, rdirich), c(2, 3, 1))
+        
       a[is.na(metadat$AGE_EUROPEAN)] <- unlist(lapply(seq(T), function(t){sapply(i[is.na(metadat$AGE_EUROPEAN) & metadat$t == t], function(ii){sample(C, 1, TRUE, pi[t, ii, ])})}))
-    
+
       a.df <- cbind(metadat[,c("t", "d", "s", "w")], a)
-    
+ 
       i[metadat$WildNoGenetics]=apply(a.df[metadat$WildNoGenetics, ], 1, function(tdswa){sample(K, 1, TRUE, p[tdswa[1], tdswa[2], tdswa[3], tdswa[4], seq(K)]*pi[tdswa[1], seq(K), tdswa[5]])})   
-    
+        
       i[metadat$WildGenetics]=apply(cbind(a.df[metadat$WildGenetics, ], genofreq), 1, function(tdswa){sample(K, 1, TRUE, p[tdswa[1], tdswa[2], tdswa[3], tdswa[4], seq(K)]*pi[tdswa[1], seq(K), tdswa[5]]*tdswa[-seq(5)])}) 
-    
+
+      x_sum <- rowsum(x, group = sillyvecBase[i[metadat$WildGenetics]], reorder = TRUE)
+
+      nms <- rownames(x_sum)
+  
+      beta_prm_prm <- beta_prm 
+  
+      beta_prm_prm[nms,] <- beta_prm[nms, ] + x_sum
+  
+      lnq <- log(t(apply(beta_prm_prm, 1, function(rw){unlist(tapply(rw, INDEX = list(rep(loci, nalleles[loci])), FUN = rdirich))})))
+ 
+      genofreq <- exp(x%*%t(lnq))
+      
       if( sim > burn & ! sim %% thin){
     
-        invisible(lapply(seq(T), function(t){lapply(seq(D), function(d){lapply(seq(S), function(s){lapply(seq(W), function(w){ cat(format(p[t, d, s, w, ], trim = TRUE, digits = 16, scientific = TRUE), "\n", file = paste0("P_", years[t], "Dist", Districts[d], "Sub", SubDistricts[[d]][s], "_Week", w, chain, ".txt")) }) }) }) }) )
-    
-        invisible(lapply(seq(T), function(t){lapply(seq(C), function(c){ cat(format(pi[t, , c], trim = TRUE, digits = 16, scientific = TRUE), "\n", file = paste0("Pi_", years[t], AgeNames[c], chain, ".txt")) }) }) )
-    
+        for(t in seq(T)){
+
+          Pi <- t(rowsum(t(pi[t, , ]), group = agevec))
+
+          for(d in seq(D)){
+
+            for(s in seq(S)){
+
+              for(w in seq(W)){
+
+                PiR <- rowsum(diag(p[t, d, s, w, ]) %*% Pi, group = groups_list[[d]])
+
+                for(aa in seq(A)){
+
+                   file_name <- paste0("PiR_", years[t], "Dist", Districts[d], "Sub", SubDistricts[[d]][s], "_Week", w, "_", AgeGroups[aa], chain, ".txt")
+
+                   write.table(rbind(format(PiR[, aa], trim = TRUE, digits = 16, scientific = TRUE)), file_name, row.names = FALSE, col.names = FALSE, quote = FALSE, append = sim - thin > burn)  
+
+                }#aa
+
+              }#w
+
+            }#s
+
+          }#d
+
+        }#t
+   
       }# end if  
       
     }#sim
     
    })#chain
 
-  end.time <- Sys.time() - beg.time
+  end_time <- Sys.time() - beg_time
 
+  print(end_time)
 
   stopCluster(cl);
 
@@ -285,26 +319,51 @@ if(FALSE){
 
   Harvestvec <- Harvest$HARVEST
 
+  h <- tapply(Harvest$HARVEST, Harvest[, c("t", "d", "s", "w")], c)
+
 # Summary  #####################################################################################################################################################################################################################################################################################################################################################################################################################################################################
 
   threshold=5e-7
 
-  groups=list(dget(paste0(dir, "/GroupsD106.txt")), dget(paste0(dir, "/GroupsD108.txt")), dget(paste0(dir, "/GroupsD111.txt")))
+  
+  PiR0 <- lapply(seq(T), function(t){ lapply(seq(D), function(d){ lapply(seq(S), function(s){ lapply(seq(W), function(w){ lapply(chains, function(chain){ lapply(seq(A), function(aa){ read.table(paste0("PiR_", years[t], "Dist", Districts[d], "Sub", SubDistricts[[d]][s], "_Week", w, "_", AgeGroups[aa], chain, ".txt")) }) }) }) }) }) })
+  
+  R0 <- lapply(seq(T), function(t){ lapply(seq(D), function(d){ lapply(seq(S), function(s){ lapply(seq(W), function(w){ as.mcmc.list(lapply(seq(chains), function(chain){ mcmc(Reduce("+", lapply(seq(A), function(aa){ PiR0[[t]][[d]][[s]][[w]][[chain]][[aa]] }))) })) }) }) }) })
 
-  groupvecNames=dget(paste0(dir, "/groupvecNames.txt"))
+ 
+####   By Subdistricts By Stat Week
 
-  groupvecs=list(  setNames(dget(paste0(dir, "/GroupvecD106.txt")), groupvecNames)[sillyvecBase], 
-                   setNames(dget(paste0(dir, "/GroupvecD108.txt")), groupvecNames)[sillyvecBase], 
-                   setNames(dget(paste0(dir, "/GroupvecD111.txt")), groupvecNames)[sillyvecBase]
-                 )
+  GR_R1 <- lapply(seq(T), function(t){ lapply(seq(D), function(d){ lapply(seq(S), function(s){ lapply(seq(W), function(w){ gelman.diag(R0[[t]][[d]][[s]][[w]], autoburnin = FALSE, transform = TRUE, multivariate = FALSE)[[1]][, 1] }) }) }) })
+
+  R1 <- lapply(seq(T), function(t){ lapply(seq(D), function(d){ lapply(seq(S), function(s){ lapply(seq(W), function(w){ Reduce(rbind, R0[[t]][[d]][[s]][[w]]) }) }) }) })
+ 
+  R1 <- lapply(seq(T), function(t){ lapply(seq(D), function(d){ lapply(seq(S), function(s){ lapply(seq(W), function(w){ cbind(t(apply(R1[[t]][[d]][[s]][[w]], 2, function(cl){ c(mean = mean(cl), sd = sd(cl), median = quantile(cl, 0.5), ci = quantile(cl, 0.05), ci = quantile(cl, 0.95), P0 = sum(cl > threshold) / length(cl)) })), GR = GR_R1[[t]][[d]][[s]][[w]]) }) }) }) })
+
+####  Subdistricts Combined By Stat Week
+
+  R2 <- lapply(seq(T), function(t){ lapply(seq(D), function(d){ lapply(seq(W), function(w){ as.mcmc.list(lapply(seq(chains), function(chain){ mcmc(Reduce("+", lapply(seq(S), function(s){ (n[t, d, s, w] * h[t, d, s, w] > 0) * h[t, d, s, w] * R0[[t]][[d]][[s]][[w]][[chain]] })) / ifelse(sum((n[t, d, , w] * h[t, d, , w] > 0) * h[t, d, , w]), sum((n[t, d, , w] * h[t, d, , w] > 0) * h[t, d, , w]), 1)) })) }) }) })
+
+  GR_R2 <- lapply(seq(T), function(t){ lapply(seq(D), function(d){ lapply(seq(W), function(w){ gelman.diag(R2[[t]][[d]][[w]], autoburnin = FALSE, transform = TRUE, multivariate = FALSE)[[1]][, 1] }) }) })
+
+  R2 <- lapply(seq(T), function(t){ lapply(seq(D), function(d){ lapply(seq(W), function(w){ Reduce(rbind, R2[[t]][[d]][[w]]) }) }) })
+
+  R2 <- lapply(seq(T), function(t){ lapply(seq(D), function(d){ lapply(seq(W), function(w){ cbind(t(apply(R2[[t]][[d]][[w]], 2, function(cl){ c(mean = mean(cl), sd = sd(cl), median = quantile(cl, 0.5), ci = quantile(cl, 0.05), ci = quantile(cl, 0.95), P0 = sum(cl > threshold) / length(cl)) })), GR = GR_R2[[t]][[d]][[w]]) }) }) })
 
 
 
+####  Subdistricts Combined Full Season By Age
 
 
-  Pi <- lapply(seq(T), function(t){lapply(seq(C), function(c){ read.table(paste0("Pi_", years[t], AgeNames[c], chain, ".txt")) }) }) 
+  PiR1 <- lapply(seq(T), function(t){ lapply(seq(D), function(d){ lapply(seq(A), function(aa){ as.mcmc.list(lapply(seq(chains), function(chain){ mcmc(Reduce("+", lapply(seq(S), function(s){ Reduce("+", lapply(seq(W), function(w){(n[t, d, s, w] * h[t, d, s, w] > 0) * h[t, d, s, w] * PiR0[[t]][[d]][[s]][[w]][[chain]][[aa]] })) })) / sum((n[t, d, , ] * h[t, d, , ] > 0) * h[t, d, , ])) })) }) }) })
 
-  P <- lapply(seq(T), function(t){lapply(seq(D), function(d){lapply(seq(S), function(s){lapply(seq(W), function(w){ read.table(paste0("P_", years[t], "Dist", Districts[d], "Sub", SubDistricts[[d]][s], "_Week", w, chain, ".txt")) }) }) }) })
+  GR_PiR1 <- lapply(seq(T), function(t){ lapply(seq(D), function(d){ lapply(seq(A), function(aa){ gelman.diag(PiR1[[t]][[d]][[aa]], autoburnin = FALSE, transform = TRUE, multivariate = FALSE)[[1]][, 1]  }) }) })
+
+  PiR1 <- lapply(seq(T), function(t){ lapply(seq(D), function(d){ lapply(seq(A), function(aa){ Reduce(rbind, PiR1[[t]][[d]][[aa]]) }) }) })
+
+  PiR1 <- lapply(seq(T), function(t){ lapply(seq(D), function(d){ lapply(seq(A), function(aa){ cbind(t(apply(PiR1[[t]][[d]][[aa]], 2, function(cl){ c(mean = mean(cl), sd = sd(cl), median = quantile(cl, 0.5), ci = quantile(cl, 0.05), ci = quantile(cl, 0.95), P0 = sum(cl > threshold) / length(cl)) })), GR = GR_R2[[t]][[d]][[aa]]) }) }) })
+
+  
+
 
 
 
