@@ -29,7 +29,14 @@ if(FALSE){
 
   loci <- LocusControl$locusnames[ ! LocusControl$locusnames %in% c("One_Cytb_26", "One_CO1", "One_Cytb_17", "One_c3-98", "One_GPDH", "One_MHC2_251")]
 
-  groups_list <- lapply(list(D106groups, D108groups, D111groups), function(groups){ c(groups, rep(max(groups) + 1, length(Hatcheries)))
+  # I am assuming that I need to read in the groups names sometime before this next line of code? Something like this:
+  
+  D106groups <- dget("V/...D106groups")
+  D108groups <- dget("V/...D108groups")
+  D111groups <- dget("V/...D111groups")
+  
+  # I brought in the groups and then ran this line and it bombed. It appeared to be missing parenthesis, so I added them and I got error
+  groups_list <- lapply(list(D106groups, D108groups, D111groups), function(groups){ c(groups, rep(max(groups) + 1, length(Hatcheries)))})
 
   group_names_list <- list(c(D106group_names, "Hatcheries"), c(D108group_names, "Hatcheries"), c(D111group_names, "Hatcheries"))
 
