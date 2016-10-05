@@ -5,73 +5,83 @@ if(FALSE){
 
   wd <- ""
 
-  nchains <- 6
+nchains <- 6
 
-  NSIMS <- 40000
+NSIMS <- 40000
 
-  burn <- NSIMS/2
+burn <- NSIMS/2
 
-  thin <- 10
+thin <- 10
 
 # load("Mixture_Workspace")
 
-  sillyvecMix <- c("SGILL12D11", "SGILL12D6", "SGILL12D8", "SGILL13D11", "SGILL13D6", "SGILL13D8")
+sillyvecMix <- c("SGILL15D11","SGILL15D6","SGILL15D8")
 
-  meta.data.file <- "MetaDataAll.txt"
+meta.data.file <- "MetaDataAll_2011to2015.txt"
 
-  agevec <- c(1, 1, 1, 1, 1, 6, 2, 3, 6, 6, 6, 6, 4, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6)
+agevec <- c(1, 1, 1, 1, 1, 6, 2, 3, 6, 6, 6, 6, 4, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6)
 
-  AgeGroups <- c("ZeroX", "Age1.2", "Age1.3", "Age2.2", "Age2.3", "AgeOther")
+AgeGroups <- c("ZeroX", "Age1.2", "Age1.3", "Age2.2", "Age2.3", "AgeOther")
 
-# attach("Baseline_Workspace")
+attach("V:\\Analysis\\1_SEAK\\Sockeye\\Baseline\\2013_2014\\SRO\\SEAKbaseline2014.RData")
 
-  sillyvecBase <- SEAK151pops
+sillyvecBase <- PooledNames171
 
-  loci <- LocusControl$locusnames[ ! LocusControl$locusnames %in% c("One_Cytb_26", "One_CO1", "One_Cytb_17", "One_c3-98", "One_GPDH", "One_MHC2_251")]
+loci <- LocusControl$locusnames[ ! LocusControl$locusnames %in% c("One_Cytb_26", "One_CO1", "One_Cytb_17", "One_c3-98", "One_GPDH", "One_MHC2_251")]
 
-  # I am assuming that I need to read in the groups names sometime before this next line of code? Something like this:
-  
-  D106groups <- dget("V/...D106groups")
-  D108groups <- dget("V/...D108groups")
-  D111groups <- dget("V/...D111groups")
-  
-  # I brought in the groups and then ran this line and it bombed. It appeared to be missing parenthesis, so I added them and I got error
-  groups_list <- lapply(list(D106groups, D108groups, D111groups), function(groups){ c(groups, rep(max(groups) + 1, length(Hatcheries)))})
+D106groups <- dget("C:\\Analysis\\MAGSI\\GroupvecD106.txt")
+D108groups <- dget("C:\\Analysis\\MAGSI\\GroupvecD108.txt")
+D111groups <- dget("C:\\Analysis\\MAGSI\\GroupvecD111.txt")
 
-  group_names_list <- list(c(D106group_names, "Hatcheries"), c(D108group_names, "Hatcheries"), c(D111group_names, "Hatcheries"))
+Hatcheries <- c("BURN", "MAIN", "MCDO", "NECK", "SPEE", "SWEE", "TAHL", "TATS", "TRAP", "TUYA")
 
-  Hatcheries <- c("BURN", "MAIN", "MCDO", "NECK", "SPEE", "SWEE", "TAHL", "TATS", "TRAP", "TUYA")
+groups_list <- lapply(list(D106groups, D108groups, D111groups), function(groups){ c(groups, rep(max(groups) + 1, length(Hatcheries)))})
+
+D106group_names <- dget("C:\\Analysis\\MAGSI\\GroupsD106.txt")
+D108group_names <- dget("C:\\Analysis\\MAGSI\\GroupsD108.txt")
+D111group_names <- dget("C:\\Analysis\\MAGSI\\GroupsD111.txt")
+
+group_names_list <- list(c(D106group_names, "Hatcheries"), c(D108group_names, "Hatcheries"), c(D111group_names, "Hatcheries"))
 
 ##################################################################################################################################################################################################################################################################################################################################################################################################################################################################
 
+while(!require(reshape)){install.packages("reshape")}
 
+while(!require(coda)){install.packages("coda")}
 
+while(!require(foreach)){ install.packages("foreach") }
 
-  while(!require(reshape)){install.packages("reshape")}
+while(!require(doParallel)){ install.packages("doParallel") }
 
-  while(!require(coda)){install.packages("coda")}
+setwd(wd)
 
-  while(!require(foreach)){ install.packages("foreach") }
+source("H:\\Desktop\\R\\Functions.GCL.r")
 
-  while(!require(doParallel)){ install.packages("doParallel") }
+CreateLocusControl.GCL(markersuite="Sockeye2011_96SNPs",username,password)
 
-  setwd(wd)
+LOKI2R.GCL(sillyvec=sillyvecMix ,username,password)
 
-  metadat0 <- read.table(meta.data.file, header=TRUE, sep="\t")
+CombineLoci.GCL(sillyvec=sillyvecMix,markerset=c("One_CO1","One_Cytb_17","One_Cytb_26"),update=TRUE)
 
-  names(loci) <- loci
+loci2remove=c("One_Cytb_26","One_CO1","One_Cytb_17","One_c3-98","One_GPDH","One_MHC2_251")
 
-  nloci <- length(loci)
+loci=LocusControl$locusnames[!LocusControl$locusnames%in%loci2remove]
 
-  nalleles <- LocusControl$nalleles[loci]
+metadat0 <- read.table(meta.data.file, header=TRUE, sep="\t")
 
-  invisible(PoolCollections.GCL(collections = sillyvecMix, loci = loci))
+names(loci) <- loci
 
-  x0 <- get(paste(c(sillyvecMix, "gcl"), collapse="."))$counts[,  loci, ]
+nloci <- length(loci)
 
-  attributes0 <- get(paste(c(sillyvecMix, "gcl"), collapse="."))$attributes
+nalleles <- LocusControl$nalleles[loci]
 
-  rownames(x0) <- attributes0$SillySource
+invisible(PoolCollections.GCL(collections = sillyvecMix, loci = loci))
+
+x0 <- get(paste(c(sillyvecMix, "gcl"), collapse="."))$counts[,  loci, ]
+
+attributes0 <- get(paste(c(sillyvecMix, "gcl"), collapse="."))$attributes
+
+rownames(x0) <- attributes0$SillySource
   
 # Meta Data Massaging  ########################################################################################################################################################################################################################################################################################################################################################################################################################################################
 
