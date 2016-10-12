@@ -196,8 +196,8 @@ if(FALSE){##
 
   CombineConflictsWithPlateID.GCL(files = QCConcordanceReportfile)
 
-  if("0" %in% CombinedConflicts$Type) { CombinedConflicts$Type <- gsub(pattern = "0", replacement = "Homo-Homo", CombinedConflicts$Type) }
-
+  if("0" %in% levels(CombinedConflicts$Type)) { levels(CombinedConflicts$Type) <- gsub(pattern = "0", replacement = "Homo-Homo", levels(CombinedConflicts$Type)) }
+  
   QCtypes <- levels(CombinedConflicts$Type)
 
   types <- c("DB Zero", "File Zero", "Het-Het", "Het-Homo", "Homo-Het", "Homo-Homo", "Conflict")
