@@ -196,7 +196,9 @@ if(FALSE){##
 
   CombineConflictsWithPlateID.GCL(files = QCConcordanceReportfile)
 
-  if("0" %in% levels(CombinedConflicts$Type)) { levels(CombinedConflicts$Type) <- gsub(pattern = "0", replacement = "Homo-Homo", levels(CombinedConflicts$Type)) }
+  if("0" %in% levels(CombinedConflicts$Type)) { levels(CombinedConflicts$Type) <- gsub(pattern = "0", replacement = "Homo-Homo", levels(CombinedConflicts$Type)) }  # Old conflict report has "0" for mitochondrial conflicts
+  
+  if(" " %in% levels(CombinedConflicts$Type)) { levels(CombinedConflicts$Type)[levels(CombinedConflicts$Type) == " "] <- "Homo-Homo" }  # New conclict report has " " for mitochondrial conflicts
   
   QCtypes <- levels(CombinedConflicts$Type)
 
@@ -285,7 +287,9 @@ if(FALSE){##
   nDupsBySilly <- sapply(DuplicateCheckReportSummary, function(silly) {ifelse(is.character(silly), 0, nrow(as.matrix(silly)))})
   # RemovedDups <- RemoveDups.GCL(DuplicateCheck95MinProportion)  # Do not remove fish, just note how many per silly. Still want to catch them in conflicts later.
 
-  DuplicateCheckReportSummary[nDupsBySilly >= 8]
+  sapply(DuplicateCheckReportSummary[nDupsBySilly >=1], function(silly) {if(1 %in% abs(diff(as.numeric(levels(silly$ID1))))) {"Sequential IDs found as duplicates, check 'DuplicateCheckReportSummary' for duplicated rows"} else {"Duplicates exist, but IDs do not appear sequential"} } )
+  
+  DuplicateCheckReportSummary[nDupsBySilly >= 1]  # Show within silly duplicates
   
   ColSizePostDuplicate <- ColSizePostMissLoci - nDupsBySilly
   # ColSizePostDuplicate <- sapply(paste(ProjectSillys, ".gcl", sep = ''), function(x) get(x)$n)
