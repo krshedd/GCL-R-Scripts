@@ -8,6 +8,7 @@ genetic_msa <- function(collection_mix, collections_base, loci, groupnames, grou
 # loci <- LocusControl$locusnames  
 #
 # collection_mix <- sillyvec_14_15[1] 
+  # NOTE: This is singluar, it must be a character vector of length 1 (i.e. if you have multiple sillys, you need to pool them into one silly)
 #
 # collections_base <- PooledNames211 
 #
@@ -20,10 +21,14 @@ genetic_msa <- function(collection_mix, collections_base, loci, groupnames, grou
 # nchains <- max(groups)
 #
 # group_inits <- diag(rep(0.9, max(groups))) ; group_inits[group_inits == 0] <- 0.1 / max(groups)
+  # NOTE: ncol(group_inits) must == nchains; nrow(group_inits) must == ngroups {ngroups == max(groups)}
 #
 # group_prior <- rep(1 / max(groups), max(groups)) 
 #
 # out_dir <- "C:/Users/jjasper/Documents"
+#
+# level <- 0.1
+  # NOTE: this is for determining credibility intervals (i.e. level = 0.1 results in lower 5 and upper 95)
 #
 
   while(!require(coda)){ install.packages("coda") }
@@ -140,7 +145,7 @@ genetic_msa <- function(collection_mix, collections_base, loci, groupnames, grou
 
   R <- Reduce(rbind, lapply(R, cbind))
 
-  R <- setNames(data.frame(setNames(apply(R, 2, mean), groupnames), apply(R, 2, sd), t(apply(R, 2, quantile, probs = c(0.5, level / 2, 1 - level / 2))), GR = GR), c("mean", "sd", "median", paste0("ci", c(level / 2, 1 - level / 2)))) 
+  R <- setNames(data.frame(setNames(apply(R, 2, mean), groupnames), apply(R, 2, sd), t(apply(R, 2, quantile, probs = c(0.5, level / 2, 1 - level / 2))), GR = GR), c("mean", "sd", "median", paste0("ci", c(level / 2, 1 - level / 2)), "GR")) 
 
   return(R)
 
