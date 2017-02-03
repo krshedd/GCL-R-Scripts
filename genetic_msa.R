@@ -133,7 +133,7 @@ genetic_msa <- function(nalleles, groupnames, groups, group_prior, group_inits, 
 
   R <- Reduce(rbind, lapply(R, cbind))
 
-  R <- setNames(data.frame(setNames(apply(R, 2, mean), groupnames), apply(R, 2, sd), t(apply(R, 2, quantile, probs = c(0.5, level / 2, 1 - level / 2))), GR = GR), c("mean", "sd", "median", paste0("ci", c(level / 2, 1 - level / 2)))) 
+  R <- setNames(data.frame(setNames(apply(R, 2, mean), groupnames), apply(R, 2, sd), t(apply(R, 2, quantile, probs = c(0.5, level / 2, 1 - level / 2))), GR = GR), c("mean", "sd", "median", paste0("ci", c(level / 2, 1 - level / 2)), "GR")) 
 
   return(R)
 
