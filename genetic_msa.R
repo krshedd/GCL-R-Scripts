@@ -120,6 +120,8 @@ genetic_msa <- function(nalleles, groupnames, groups, group_prior, group_inits, 
   assign("run_time", Sys.time() - beg_time, pos = 1)
 
   print(run_time)
+  
+  print(Sys.time())
 
   R <- as.mcmc.list(lapply(paste0(chains, "_P.txt"), function(Pfile){mcmc(t(rowsum(t(read.table(Pfile)), groups)))}))
 
