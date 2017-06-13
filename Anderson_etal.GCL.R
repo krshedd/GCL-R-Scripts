@@ -1,4 +1,4 @@
-Anderson_etal.GCL <- function(popvec, loci, groups, group_names, group_comps = NULL){
+Anderson_etal.GCL <- function(popvec, loci, groups, group_names, group_comps = NULL) {
 ############################################################################################################################################################################################################################################
 #
 #  rm(list=ls(all=TRUE))
@@ -51,6 +51,6 @@ Anderson_etal.GCL <- function(popvec, loci, groups, group_names, group_comps = N
 
   group_mean_rel_like <- sapply(paste0("Into_", group_names), function(g){ tapply(group_rel_like[,g], factor(paste0("From_", group_fac), levels = paste0("From_", group_names)), mean) })
 
-  return(list(group_mean_rel_like = group_mean_rel_like, genefreq = data.frame(from_pop = pop_fac, from_group = group_fac, genefreq))
+  return(list(group_mean_rel_like = group_mean_rel_like, genefreq = data.frame(from_pop = pop_fac, from_group = group_fac, genefreq)))
 
 }
