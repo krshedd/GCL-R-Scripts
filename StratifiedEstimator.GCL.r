@@ -49,10 +49,10 @@ nstrata=length(mixvec)
 if(nstrata==1){stop("This function is for multiple strata!!!")}
 
 if(xlxs){
-  require(xlsx)
+  while(!require(xlsx)){install.packages("xlsx")}
 }
 
-require(coda)
+while(!require(coda)){install.packages("coda")}
 
 chains=paste("Chain",1:nchains,sep="")
 
