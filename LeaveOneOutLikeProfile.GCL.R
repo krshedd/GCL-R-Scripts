@@ -18,7 +18,7 @@ LeaveOneOutLikeProfile.GCL=function(popvec,loci,groupvec,groupnames,groupcomps=N
 #    
 #
 
-  begin.time=Sys.time()
+  begin.time <- Sys.time()
 
   if(sum(!loci%in%LocusControl$locusnames)){stop(paste0("'",loci[!loci%in%LocusControl$locusnames],"' from argument 'loci' not found in 'LocusControl' object!!!"))}
 
