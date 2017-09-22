@@ -85,6 +85,10 @@ LOKI2R_GAPS.GCL = function(sillyvec, username, password){
   
   ConTable <- dbGetQuery(con, "SELECT * FROM AKFINADM.GAPS_ALLELE_CONVERSION")
   
+  ConTable$VALUE_ADFG <- as.numeric(ConTable$VALUE_ADFG)  # this is crucial for allele sorting so that "99" is at the front, not the back of the allele list
+  
+  ConTable$VALUE_CTC <- as.numeric(ConTable$VALUE_CTC)  # this is crucial for allele sorting so that "99" is at the front, not the back of the allele list
+  
   alleles <- sapply(locusnames, function(loc) {as.character(sort(unique(as.vector(ConTable[ConTable[, "LOCUS_NAME"] == loc, "VALUE_CTC"]))))} )
   
   nalleles <- sapply(alleles, function(allele) {length(allele)} )
