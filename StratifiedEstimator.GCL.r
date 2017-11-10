@@ -1,4 +1,4 @@
-StratifiedEstimator.GCL=function(groupvec, groupnames, maindir, mixvec, catchvec, CVvec=rep(0,length(catchvec)), newname, priorname="", ext="RGN", nchains=5, burn=0.5, alpha=0.1,threshold=5e-7,xlxs=TRUE){
+StratifiedEstimator.GCL=function(groupvec, groupnames, maindir, mixvec, catchvec, CVvec=rep(0,length(catchvec)), newname, priorname="", ext="RGN", nchains=5, burn=0.5, alpha=0.1, threshold=5e-7, xlxs=TRUE, PosteriorOutput=FALSE){
 ##################################################################################################################################################################################################
 # This function reads in BAYES output files (all chains) from multiple temporal strata (mixtures) and, by weighting by harvest from each stratum, produces a seasonal total harvest 
 #	estimate and C.I. for all defined regions (groups).  Appologies for the number of arguments--this is necessary to give the required flexibility.  The last four arguments will rarely need to be changed.
@@ -163,7 +163,13 @@ if(xlxs){
   write.xlsx(summary, file=paste(maindir, "\\", newname, ".xlsx", sep=""))
 }
 
-return(list(Stats=summary,Output=OutputWghtAve))
+if(PosteriorOutput) {
+  ans = list(Stats=summary,Output=OutputWghtAve)
+} else {
+  ans = summary
+}
+
+return(ans)
 
 }
 
