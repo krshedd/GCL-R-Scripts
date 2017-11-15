@@ -1,6 +1,5 @@
 CombineConflictsWithPlateID.GCL= function(files){
-######################################################################################################################################################################################
-################################### 	THIS FUNCTION REQUIRES THE PACKAGE "xlsx"  ###########################################################################################################
+################################################################################################################
 #
 #   This function is for combining QC conflict reports and adding a column of PLATE_IDs associated with each individual conflict.
 #
@@ -17,7 +16,7 @@ CombineConflictsWithPlateID.GCL= function(files){
 #  Modified by Kyle Shedd 02/23/16 to accomodate new LOKI QC Concordance Report
 ################################################################################################################
 
-require("xlsx")
+# require("xlsx")  # change to .csv, no reason to be an xlsx
 
 N <- length(files)
 data = NULL
@@ -61,7 +60,7 @@ for(ind in confSillySource){
   data[data[, "Silly.Source"] == ind, "PlateID"] = PlateID[, "IDs"][PlateID[, "SillySource"] == ind]
 }
 
-write.xlsx(data, file = "Conflict Reports/CombinedConflictsWithPlateID.xlsx")
+write.csv(data, file = "Conflict Reports/CombinedConflictsWithPlateID.csv")
 
 assign(x = "CombinedConflicts", value = data, pos = 1)
 }
