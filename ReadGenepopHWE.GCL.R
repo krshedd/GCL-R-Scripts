@@ -32,7 +32,7 @@ ReadGenepopHWE.GCL=function(file){
   
   nloci=as.numeric(strsplit(hwp[grep("Number of loci detected:           ",hwp)],split="Number of loci detected:           ")[[1]][2])
   
-  popstart=grep(" Pop : ",hwp)
+  popstart=grep("Pop : ",hwp)
   
   pops=strsplit(hwp[popstart],split=" Pop : ")
   
