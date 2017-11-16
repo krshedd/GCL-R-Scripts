@@ -47,6 +47,18 @@ LeaveOneOutDist.GCL=function(sillyvec,loci,groupvec,pgroup=rep(1/max(groupvec),m
   cat("3 main function tasks: \n1) Determine qstar\n2) Determine likelihood profile for each population (longest task)\n3) Wrap up to Reporting Groups\n")
   if (.Platform$OS.type == "windows") flush.console()
   
+  Y=FreqPop.GCL(sillyvec,loci)
+  
+  if(any(sapply(loci, function(locus) sum(colSums(Y[, locus, ]) > 0, na.rm = TRUE) ) == 1)) {
+    
+    fixed_loci <- which(sapply(loci, function(locus) sum(colSums(Y[, locus, ]) > 0, na.rm = TRUE) ) == 1)
+    
+    invisible(sapply(fixed_loci, function(i) {message(paste(loci[i], "is fixed for all 'sillyvec' and was removed"))}))
+    
+    loci <- loci[-fixed_loci]
+    
+  }  # Checking for fixed loci
+  
   ORD=order(groupvec,decreasing=FALSE)
   
   sillyvec=sillyvec[ORD]
@@ -80,7 +92,7 @@ LeaveOneOutDist.GCL=function(sillyvec,loci,groupvec,pgroup=rep(1/max(groupvec),m
   counts=lapply(my.gcl,function(gcl){gcl$counts[,loci, , drop = FALSE]})
   names(counts)=sillyvec
   
-  Y=FreqPop.GCL(sillyvec,loci)
+  Y=FreqPop.GCL(sillyvec,loci)  # re-running 'Y' with potentially new 'loci' (fixed loci removed)
   
   N=sapply(loci,function(locus){sapply(sillyvec,function(silly){sum(Y[silly,locus,1:nalleles[locus]])})})
   dimnames(N)=list(sillyvec,loci)
