@@ -42,6 +42,8 @@ BayesOutputCopyPaste.GCL <- function(origindir, targetdir, sillyvec){
   
   filestocopy=sapply(sillyvec, function(silly) {outputfiles[grep(pattern=silly, x=outputfiles)]}, simplify=FALSE) # Create list of output files by sillyvec
   
+  if(!all(sillyvec %in% names(filestocopy))) {stop("'sillyvec' object does not match all output files!!!\nThis 'stop' prevents you from accidently deleting these files, because they will not be copied properly!!!\nIf sillyvec is a named vector, the names must match the vector!!!")}
+  
   invisible(sapply(sillyvec, function(silly) {file.copy(from=filestocopy[[silly]], to=paste(targetdir, "/Output/", silly, sep=""))})) # Move to appropriate V drive directory
   
   invisible(lapply(filestocopy, file.remove)) # Remove output files from server
