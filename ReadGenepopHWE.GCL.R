@@ -1,10 +1,11 @@
-ReadGenepopHWE.GCL=function(file){
+ReadGenepopHWE.GCL=function(file, sillyvec = NULL){
   #############################################################################################################################
   #This function reads in the population output from a GENEPOP Hardy-Weinberg test ("*.P") file and returns a list of 2:
   #1) is a data frame containing all of the HWE data for each locus by Pop
   #2) is a matrix containing just the PValues for each Pop and the overall PValue across Pops (Fisher's method)
   #
   # "file" - the full file path, including the ".P" extension.  Make sure the file has not been modified.
+  # "sillyvec" - optional character vector to provide for pop names as opposed to getting form genepop .P file
   #
   # Example: HWE=ReadGenepopHWE.GCL(file="V:/WORK/Chum/AHRP/Data/AHRPsamples.txt.P")
   #
@@ -24,8 +25,8 @@ ReadGenepopHWE.GCL=function(file){
   #  replaced with repzero = batches * iterations
   #############################################################################################################################
   
-  require("reshape2")
-  
+  while(!require(reshape2)){ install.packages("reshape2") }
+
   hwp=scan(file,what='',sep = "\n")
 
   npops=as.numeric(strsplit(hwp[grep("Number of populations detected:    ",hwp)],split="Number of populations detected:    ")[[1]][2])
@@ -34,9 +35,17 @@ ReadGenepopHWE.GCL=function(file){
   
   popstart=grep("Pop : ",hwp)
   
-  pops=strsplit(hwp[popstart],split=" Pop : ")
-  
-  pops=unlist(pops)[seq(2,2*npops,by=2)]
+  if(is.null(sillyvec)) {
+    
+    pops=strsplit(hwp[popstart],split=" Pop : ")
+    
+    pops=unlist(pops)[seq(2,2*npops,by=2)]
+    
+  } else {
+    
+    pops <- sillyvec
+    
+  }
   
   nmonoloci=length(grep("not diploid.",hwp))
   
