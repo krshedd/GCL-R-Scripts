@@ -30,12 +30,12 @@ genetic_msa <- function(nalleles, groupnames, groups, group_prior, group_inits, 
   x <- as.matrix(read.table("mix.txt"))
   
   y <- as.matrix(read.table("base.txt"))
-
+  
   K <- nrow(y)
 
 # Analysis  #####################################################################################################################################################################################################################################################################################################################################################################################################################################################################
 
-  rdirich <- function(alpha0){ vec <- rgamma(length(alpha0), alpha0, 1) ;  vec / sum(vec) }
+  rdirich <- function(alpha0){ vec <- rgamma(length(alpha0), alpha0, 1) ;  vec <- vec / sum(vec) ; vec[vec == 0] <- .Machine$double.xmin ; vec  }
 
   beta <- matrix(rep(1 / nalleles, times = nalleles), nrow = nrow(y), ncol = ncol(y), byrow = TRUE)
 
