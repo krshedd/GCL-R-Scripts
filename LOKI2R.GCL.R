@@ -108,7 +108,7 @@ LOKI2R.GCL=function(sillyvec,username,password){
       
     nind <- length(sillyvials)
 
-    if(!nind){
+    if(length(ids) == 0){
 
       message0 <- paste0(silly," is empty.")
 
