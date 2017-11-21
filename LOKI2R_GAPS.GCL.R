@@ -123,7 +123,13 @@ LOKI2R_GAPS.GCL = function(sillyvec, username, password){
     
     my.gno = dbGetQuery(con, gnoqry)
     
-    if(nrow(my.gno) == 0) {next()}
+    if(nrow(my.gno) == 0) {
+      
+      message(paste0(silly, ".gcl has no data, skipping ", match(silly, sillyvec), " of ", length(sillyvec), " failed."))
+      
+      next()
+      
+      }
     
     fishID = as.character(unique(my.gno$FK_FISH_ID))
     
