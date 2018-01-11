@@ -1,25 +1,26 @@
-CreateLocusControl.GCL=function(markersuite,username,password)
-{
-######################################################################################################################################################################################
-########################################################################################################################
-#
-#  This function connects to LOKI and creates a "LocusControl" object  
-#   
-#
-#    "markersuite" is the pre-defined name in LOKI for the set of markers for which you want genotypes (e.g. markersuite="KenaiChinook2010_40SNPs"). This set must be pre-defined in LOKI (see Eric Lardizabal). 
-#
-######## Example/Intended ############################################################################################################################################################
-#
-#  markersuite <- "Sockeye2011_96SNPs"
-#
-#  
-#  username <- "jjasper"; password <- "********"
-#
-#  CreateLocusControl.GCL(markersuite,username,password)
-#
-#  Written by JJ 10/05/2015; updated to new ojdbc6.jar path on V:/Analysis by Kyle Shedd on 05/05/2016
-######################################################################################################################################################################################
-
+CreateLocusControl.GCL <- function(markersuite = NULL, locusnames = NULL, username, password) {
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #
+  # This function connects to LOKI and creates a "LocusControl" object  
+  # User needs to supply either "markersuite" OR "locusnames" (character vector of loci)
+  # 
+  # "markersuite" is the pre-defined name in LOKI for the set of markers for which you want genotypes (e.g. markersuite="KenaiChinook2010_40SNPs"). 
+  #   This set must be pre-defined in LOKI (see Eric Lardizabal). 
+  #
+  # "locusnames" is a character vector of marker names for which you want genotypes.
+  #   i.e. c("One_CO1", "One_GPDH", "One_MHC2_190)
+  #
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #### Example/Intended ####
+  #
+  # markersuite <- "Sockeye2011_96SNPs"
+  #  
+  # username <- "jjasper"; password <- "********"
+  #
+  # Written by JJ 10/05/2015
+  # updated to new ojdbc6.jar path on V:/Analysis by Kyle Shedd on 05/05/2016
+  # Updated to add 'locusnames' argument by Kyle Shedd on 01/10/2018
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     if(exists("LocusControl",where=1)){
         stop("LocusControl already exists")
     }
@@ -58,18 +59,52 @@ CreateLocusControl.GCL=function(markersuite,username,password)
     
     con <- dbConnect(drv, "jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS_LIST=(ADDRESS=(PROTOCOL=TCP)(HOST=db-pcfres.dfg.alaska.local)(PORT=1521)))(CONNECT_DATA=(SID=PCFRES)))",username,password)
 
-    lociqry <- paste("SELECT * FROM AKFINADM.V_LOCUSQRY WHERE SUITE_NAME = '",markersuite,"'",sep="")#Query locus information of markers in markersuite.
+    # Query by 'markersuite', else query by 'locusnames'
 
-    locidata <- dbGetQuery(con,lociqry)
+    if(is.null(markersuite) & is.null(locusnames)) {stop("Need to provide either 'locusnames' or 'markersuite'")}
+    
+    if(is.null(locusnames) & !is.null(markersuite)) {
+      
+      lociqry <- paste("SELECT * FROM AKFINADM.V_LOCUSQRY WHERE SUITE_NAME = '",markersuite,"'",sep="")  # Query locus information of markers in markersuite.
+      
+      locidata <- dbGetQuery(con,lociqry)
+      
+      locusnames <- sort(locidata$LOCUS_NAME)
 
-    locusnames <- sort(locidata$LOCUS_NAME)
+    } else {
 
+      markersuite <- "User defined from locusnames"
+      
+      lociqry <- paste("SELECT * FROM AKFINADM.V_LOCUSQRY WHERE LOCUS_NAME IN (",paste0("'",locusnames,"'",collapse=","),")",sep="")  # Query locus information of markers in locusnames.
+      
+      locidata <- dbGetQuery(con,lociqry)
+      
+    }
+    
+  
+    # Warn user if some 'locusnames' not found
+    if(!all(locusnames %in% locidata$LOCUS_NAME)) {
+    
+      miss_loci <- locusnames[!locusnames %in% locidata$LOCUS_NAME]
+      
+      nmiss_loci <- length(miss_loci)
+      
+      message(paste(nmiss_loci, "out of", length(locusnames), "locusnames not found in LOKI!!!"))
+        
+      sapply(miss_loci, function(locus) {
+        message(locus)
+      } )
+      
+      locusnames <- locusnames[locusnames %in% locidata$LOCUS_NAME]
+      
+    }
+    
     Publishedlocusnames <- setNames(locidata$PUBLISHED_NAME,locidata$LOCUS_NAME)[locusnames]
-
+    
     nloci <- length(locusnames)
-
+    
     ploidy <- setNames(locidata$PLOIDY,locidata$LOCUS_NAME)[locusnames]
-
+    
     alleleqry <- paste("SELECT * FROM AKFINADM.V_ALLELEQRY WHERE LOCUS IN (",paste0("'",locusnames,"'",collapse=","),")",sep="")#Get possible alleles from allele lookup table.
 
     alleles0 <- dbGetQuery(con,alleleqry)
