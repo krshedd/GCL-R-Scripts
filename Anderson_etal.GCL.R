@@ -5,7 +5,7 @@ Anderson_etal.GCL <- function(popvec, loci, groups, group_names, group_comps = N
 #
 #  load("V:/Analysis/2_Central/Chinook/Kenai River/2011 Baseline/KenaiChinook2011.RData")
 #
-#  popvec <- KenaiNames10 ; loci <- loci40 ; group_names <- groups ; groups <- groupvec3 ;  group_comps <- NULL
+#  popvec <- KenaiNames10 ; loci <- loci40 ; group_names <- group_names ; groups <- groupvec3 ;  group_comps <- NULL
 #
 ############################################################################################################################################################################################################################################
 
