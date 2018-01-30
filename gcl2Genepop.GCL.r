@@ -24,6 +24,7 @@ gcl2Genepop.GCL=function(sillyvec,loci,path,VialNums=TRUE,usat=FALSE){
     scores=my.gcl$scores[,loci,]
     scores[scores == "0"] <- NA
     if(usat) {
+      scores[scores == ""] <- NA
       scores[is.na(scores)] <- paste(rep(0, max(maxchar)), collapse = '')
       scores[nchar(scores) < max(maxchar)] <- paste0(0, scores[nchar(scores) < max(maxchar)])
       scores <- matrix(data = paste0(scores[, , 1], scores[, , 2]), nrow = nrow(scores), ncol = ncol(scores), dimnames = list(rownames(scores), colnames(scores)))
