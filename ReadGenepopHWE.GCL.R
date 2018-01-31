@@ -37,7 +37,7 @@ ReadGenepopHWE.GCL=function(file, sillyvec = NULL){
   
   if(is.null(sillyvec)) {
     
-    pops=strsplit(hwp[popstart],split=" Pop : ")
+    pops=strsplit(hwp[popstart],split="Pop : ")
     
     pops=unlist(pops)[seq(2,2*npops,by=2)]
     
