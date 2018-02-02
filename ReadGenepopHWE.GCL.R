@@ -1,4 +1,4 @@
-ReadGenepopHWE.GCL=function(file, sillyvec = NULL){
+ReadGenepopHWE.GCL=function(file, sillyvec = NULL, summaryAsNumeric = TRUE){
   #############################################################################################################################
   #This function reads in the population output from a GENEPOP Hardy-Weinberg test ("*.P") file and returns a list of 2:
   #1) is a data frame containing all of the HWE data for each locus by Pop
@@ -6,6 +6,9 @@ ReadGenepopHWE.GCL=function(file, sillyvec = NULL){
   #
   # "file" - the full file path, including the ".P" extension.  Make sure the file has not been modified.
   # "sillyvec" - optional character vector to provide for pop names as opposed to getting form genepop .P file
+  # "summaryAsNumeric" - logical, indicates if you want summary p-values from exact test to be numeric or character
+  #   Note: forcing to numeric takes output such as "High. sign." and forces to 0.000 for Genepop 4.6 and below
+  #   Note: forcing to numeric takes output such as " < 0.1555" and forces to 0.1555 for Genepop 4.7 and above
   #
   # Example: HWE=ReadGenepopHWE.GCL(file="V:/WORK/Chum/AHRP/Data/AHRPsamples.txt.P")
   #
@@ -112,19 +115,47 @@ ReadGenepopHWE.GCL=function(file, sillyvec = NULL){
     
     overallpops=colsplit(hwp[grep("Locus ",hwp)+5+npops+4],pattern=" Prob :    ",names=c("Trash","P-value"))[,2]
     
-    overallpops=as.numeric(gsub(overallpops,pattern="High. sign.",replacement="0.0000"))
-    
     overallloci=colsplit(hwp[grep("Pop : ",hwp)+5+ndiploci+4],pattern=" Prob :    ",names=c("Trash","P-value"))[,2]
     
-    overallloci=as.numeric(gsub(overallloci,pattern="High. sign.",replacement="0.0000"))
+    ## Force SummaryPValues matrix to be numeric for Exact test
+    # If using Genepop version 4.6 or lower, "High. sign." is forced to "0.0000"
+    # If using Genepop version 4.7 or higher, " < 0.0511" is forced to "0.0511"
     
-  }
+    if(summaryAsNumeric) {
+      
+      if(any(grepl(pattern = "High. sign.", overallpops)) | any(grepl(pattern = "High. sign.", overallloci))) {
+        
+        overallpops=as.numeric(gsub(overallpops,pattern="High. sign.",replacement="0.0000"))
+        
+        overallloci=as.numeric(gsub(overallloci,pattern="High. sign.",replacement="0.0000"))
+        
+      }  # 4.6 and older
+      
+      if(any(grepl(pattern = "<", overallpops)) | any(grepl(pattern = "<", overallloci))) {
+        
+        overallpops=as.numeric(gsub(overallpops,pattern=" < ",replacement=""))
+        
+        overallloci=as.numeric(gsub(overallloci,pattern=" < ",replacement=""))
+        
+      }  # 4.7 and newer
+      
+    }  # summaryAsNumeric
     
+  }  # Exact test
+   
   smmry[1:nloci,"Overall Pops"]=overallpops
   
   smmry["Overall Loci",1:npops]=overallloci
   
-  smmry[nrow(smmry),ncol(smmry)]=round(pchisq(q=(-2*sum(log(smmry[1:(nrow(smmry)-1),ncol(smmry)]))), df=(2*(nrow(smmry)-1)), lower.tail=FALSE), 4)
+  if(storage.mode(smmry) == "character") {
+    
+    smmry[nrow(smmry),ncol(smmry)] = NA
+    
+  } else {
+    
+    smmry[nrow(smmry),ncol(smmry)]=round(pchisq(q=(-2*sum(log(smmry[1:(nrow(smmry)-1),ncol(smmry)]))), df=(2*(nrow(smmry)-1)), lower.tail=FALSE), 4)
+    
+  }
     
   lst=list("DataByPop"=HWdata,"SummaryPValues"=smmry)
   
