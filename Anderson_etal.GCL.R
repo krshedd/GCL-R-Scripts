@@ -45,12 +45,18 @@ Anderson_etal.GCL <- function(popvec, loci, groups, group_names, group_comps = N
 
   group_fac <- factor(group_names[groups[pop_fac]], levels = group_names)
 
-  rel_like <- genefreq %*% diag(P) / apply(genefreq %*% diag(P), 1, sum)
-
+  rel_like <- genefreq / rowSums(genefreq)  # pop flat
+  
+  colnames(rel_like) <- paste0("Into_", popvec)
+  
+  pop_mean_rel_like <- sapply(paste0("Into_", popvec), function(p){ tapply(rel_like[,p], factor(paste0("From_", pop_fac), levels = paste0("From_", popvec)), mean) })
+  
+  rel_like <- genefreq %*% diag(P) / apply(genefreq %*% diag(P), 1, sum)  # group flat (if group_comps = NULL)
+  
   group_rel_like <- t(rowsum(t(rel_like), factor(paste0("Into_", group_names[groups]), levels = paste0("Into_", group_names))))
 
   group_mean_rel_like <- sapply(paste0("Into_", group_names), function(g){ tapply(group_rel_like[,g], factor(paste0("From_", group_fac), levels = paste0("From_", group_names)), mean) })
 
-  return(list(group_mean_rel_like = group_mean_rel_like, genefreq = data.frame(from_pop = pop_fac, from_group = group_fac, genefreq)))
+  return(list(group_mean_rel_like = group_mean_rel_like, pop_mean_rel_like = pop_mean_rel_like, genefreq = data.frame(from_pop = pop_fac, from_group = group_fac, genefreq)))
 
 }
