@@ -1,4 +1,4 @@
-create_rubias_baseline <- function(sillyvec, loci, group_names, groupvec, path, baseline_name) {
+create_rubias_baseline <- function(sillyvec, loci, group_names, groupvec, path = "rubias/baseline", baseline_name) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # This function creates the baseline dataframe needed for `rubias`.
   # It reformats the "scores" from each individual in the baseline into a two column format used by `rubias`.
@@ -22,6 +22,8 @@ create_rubias_baseline <- function(sillyvec, loci, group_names, groupvec, path, 
   # chignik_7pops_22loci.rubias_base <- create_rubias_baseline(sillyvec = Chignik7Populations, loci = loci24, group_names = Groups, groupvec = Groupvec7, path = "rubias/baseline", baseline_name = "chignik_7pops_22loci")
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   while(!require(tidyverse)){install.packages("tidyverse")}
+  
+  if(!dir.exists(path)) {stop("`path` to save baseline does not exist, hoser!!!")}
   
   silly_base.lst <- lapply(sillyvec, function(silly) {
     my.gcl <- get(paste0(silly, ".gcl"))

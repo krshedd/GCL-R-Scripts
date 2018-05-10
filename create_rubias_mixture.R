@@ -1,4 +1,4 @@
-create_rubias_mixture <- function(sillyvec, loci, path) {
+create_rubias_mixture <- function(sillyvec, loci, path = "rubias/mixture") {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # This function creates the mixture dataframe needed for `rubias`.
   # It reformats the "scores" from each individual in the mixture(s) into a two column format used by `rubias`.
@@ -21,6 +21,8 @@ create_rubias_mixture <- function(sillyvec, loci, path) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   while(!require(tidyverse)){install.packages("tidyverse")}
   
+  if(!dir.exists(path)) {stop("`path` to save mixtures does not exist, hoser!!!")}
+  
   silly_mix.lst <- lapply(sillyvec, function(silly) {
     my.gcl <- get(paste0(silly, ".gcl"))
     scores.mat <- t(apply(my.gcl$scores[, loci, ], 1, function(ind) {c(t(ind))} ))
@@ -35,5 +37,5 @@ create_rubias_mixture <- function(sillyvec, loci, path) {
     write_csv(x = silly_mix.df, path = paste0(path, "/", silly, "_mix.csv"))
     } #silly
   )
-  return(do.call("rbind", silly_mix.lst))
+  return(bind_rows(silly_mix.lst))
 }

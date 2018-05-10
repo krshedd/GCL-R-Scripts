@@ -17,6 +17,7 @@ run_rubias_mixture <- function(reference, mixture, gen_start_col, method = "MCMC
   #     1) collection level trace, wide format (akin to .BOT file from BAYES)
   #     2) repunit level trace, wide format (akin to .RGN file from BAYES)
   #     3) straight dump of the `indiv_posteriors` tibble
+  #     4) straight dump of the `bootstrapped_proportions`
   #
   # Example~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # load(".RData")
