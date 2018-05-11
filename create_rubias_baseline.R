@@ -36,7 +36,7 @@ create_rubias_baseline <- function(sillyvec, loci, group_names, groupvec, path =
     scores.df$indiv <- as.character(my.gcl$attributes$SillySource)
     silly_base.df <- scores.df[, c("sample_type", "repunit", "collection", "indiv", gsub(pattern = "-", replacement = ".", x = colnames(scores.mat)))] } #silly
   )
-  baseline <- do.call("rbind", silly_base.lst)
-  write_csv(x = baseline, path = paste0(path, "/", baseline_name, "_base.csv"))
+  baseline <- dplyr::bind_rows(silly_base.lst)
+  readr::write_csv(x = baseline, path = paste0(path, "/", baseline_name, "_base.csv"))
   return(baseline)
 }

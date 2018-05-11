@@ -16,7 +16,7 @@ run_rubias_mixture <- function(reference, mixture, gen_start_col, method = "MCMC
   #   Breaks the output into each `mixture_collection` and for each saves as .csv files for posterity:
   #     1) collection level trace, wide format (akin to .BOT file from BAYES)
   #     2) repunit level trace, wide format (akin to .RGN file from BAYES)
-  #     3) straight dump of the `indiv_posteriors` tibble
+  #     3) straight dump of the `indiv_posteriors` tibble (without column `missing_loci`)
   #     4) straight dump of the `bootstrapped_proportions`
   #
   # Example~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -29,10 +29,10 @@ run_rubias_mixture <- function(reference, mixture, gen_start_col, method = "MCMC
   
   ### Run infer mixture
   
-  rubias_out <- infer_mixture(reference = reference, mixture = mixture, gen_start_col = gen_start_col, 
-                              method = method, alle_freq_prior = alle_freq_prior, reps = reps, 
-                              burn_in = burn_in, pb_iter = pb_iter, sample_int_Pi = sample_int_Pi, 
-                              pi_prior_pseudo_count_sum = pi_prior_pseudo_count_sum)
+  rubias_out <- rubias::infer_mixture(reference = reference, mixture = mixture, gen_start_col = gen_start_col, 
+                                      method = method, alle_freq_prior = alle_freq_prior, reps = reps, 
+                                      burn_in = burn_in, pb_iter = pb_iter, sample_int_Pi = sample_int_Pi, 
+                                      pi_prior_pseudo_count_sum = pi_prior_pseudo_count_sum)
   
   ### Save output
   message("Saving output as .csv files")
@@ -45,11 +45,11 @@ run_rubias_mixture <- function(reference, mixture, gen_start_col, method = "MCMC
   time_coll_trace <- system.time({
     invisible(sapply(mix_sillys, function(mixture) {
       mix_prop_trace_wide_pi <- rubias_out$mix_prop_traces %>%
-        filter(mixture_collection == mixture) %>%  # filter to mixture
-        mutate(collection = factor(x = collection, levels = baseline_pops)) %>%  # use factor to order collections same as baseline
-        select(sweep, collection, pi) %>%  # select only sweep, collection, pi
-        spread(collection, pi)  # make wide
-      write_csv(x = mix_prop_trace_wide_pi, path = paste0(path, "/", mixture, "_collection_trace.csv"))
+        dplyr::filter(mixture_collection == mixture) %>%  # filter to mixture
+        dplyr::mutate(collection = factor(x = collection, levels = baseline_pops)) %>%  # use factor to order collections same as baseline
+        dplyr::select(sweep, collection, pi) %>%  # select only sweep, collection, pi
+        tidyr:spread(collection, pi)  # make wide
+      readr:: write_csv(x = mix_prop_trace_wide_pi, path = paste0(path, "/", mixture, "_collection_trace.csv"))
     } ))
   })
   message("   time: ", sprintf("%.2f", time_coll_trace["elapsed"]), 
@@ -60,12 +60,12 @@ run_rubias_mixture <- function(reference, mixture, gen_start_col, method = "MCMC
   time_repunit_trace <- system.time({
     invisible(sapply(mix_sillys, function(mixture) {
       mix_prop_trace_wide_rho <- rubias_out$mix_prop_traces %>%
-        filter(mixture_collection == mixture) %>%  # filter to mixture
-        group_by(sweep, repunit) %>% 
-        summarise(rho = sum(pi)) %>% 
-        select(sweep, repunit, rho) %>%  # select only sweep, collection, pi
-        spread(repunit, rho)  # make wide
-      write_csv(x = mix_prop_trace_wide_rho, path = paste0(path, "/", mixture, "_repunit_trace.csv"))
+        dplyr::filter(mixture_collection == mixture) %>%  # filter to mixture
+        dplyr::group_by(sweep, repunit) %>% 
+        dplyr:: summarise(rho = sum(pi)) %>% 
+        dplyr::select(sweep, repunit, rho) %>%  # select only sweep, collection, pi
+        tidyr:spread(repunit, rho)  # make wide
+      readr:: write_csv(x = mix_prop_trace_wide_rho, path = paste0(path, "/", mixture, "_repunit_trace.csv"))
     } ))
   })
   message("   time: ", sprintf("%.2f", time_repunit_trace["elapsed"]), 
@@ -76,9 +76,9 @@ run_rubias_mixture <- function(reference, mixture, gen_start_col, method = "MCMC
   time_indiv_posteriors <- system.time({
     invisible(sapply(mix_sillys, function(mixture) {
       indiv_posteriors <- rubias_out$indiv_posteriors %>%
-        filter(mixture_collection == mixture) %>% 
-        select(-missing_loci)
-      write_csv(x = indiv_posteriors, path = paste0(path, "/", mixture, "_indiv_posteriors.csv"))
+        dplyr::filter(mixture_collection == mixture) %>% 
+        dplyr::select(-missing_loci)  # remove this unnecesary list object
+      readr:: write_csv(x = indiv_posteriors, path = paste0(path, "/", mixture, "_indiv_posteriors.csv"))
     } ))
   })
   message("   time: ", sprintf("%.2f", time_indiv_posteriors["elapsed"]), 
@@ -90,8 +90,8 @@ run_rubias_mixture <- function(reference, mixture, gen_start_col, method = "MCMC
     time_bias <- system.time({
       invisible(sapply(mix_sillys, function(mixture) {
         bias_corr <- rubias_out$bootstrapped_proportions %>%
-          filter(mixture_collection == mixture)
-        write_csv(x = bias_corr, path = paste0(path, "/", mixture, "_bias_corr.csv"))
+          dplyr::filter(mixture_collection == mixture)
+        readr:: write_csv(x = bias_corr, path = paste0(path, "/", mixture, "_bias_corr.csv"))
       } ))
     })
     message("   time: ", sprintf("%.2f", time_bias["elapsed"]), 

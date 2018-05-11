@@ -34,8 +34,8 @@ create_rubias_mixture <- function(sillyvec, loci, path = "rubias/mixture") {
     scores.df$collection <- silly
     scores.df$indiv <- as.character(my.gcl$attributes$SillySource)
     silly_mix.df <- scores.df[, c("sample_type", "repunit", "collection", "indiv", gsub(pattern = "-", replacement = ".", x = colnames(scores.mat)))] 
-    write_csv(x = silly_mix.df, path = paste0(path, "/", silly, "_mix.csv"))
+    readr::write_csv(x = silly_mix.df, path = paste0(path, "/", silly, "_mix.csv"))
     } #silly
   )
-  return(bind_rows(silly_mix.lst))
+  return(dplyr::bind_rows(silly_mix.lst))
 }
