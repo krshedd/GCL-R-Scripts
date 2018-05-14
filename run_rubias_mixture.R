@@ -48,7 +48,7 @@ run_rubias_mixture <- function(reference, mixture, gen_start_col, method = "MCMC
         dplyr::filter(mixture_collection == mixture) %>%  # filter to mixture
         dplyr::mutate(collection = factor(x = collection, levels = baseline_pops)) %>%  # use factor to order collections same as baseline
         dplyr::select(sweep, collection, pi) %>%  # select only sweep, collection, pi
-        tidyr:spread(collection, pi)  # make wide
+        tidyr::spread(collection, pi)  # make wide
       readr:: write_csv(x = mix_prop_trace_wide_pi, path = paste0(path, "/", mixture, "_collection_trace.csv"))
     } ))
   })
@@ -64,7 +64,7 @@ run_rubias_mixture <- function(reference, mixture, gen_start_col, method = "MCMC
         dplyr::group_by(sweep, repunit) %>% 
         dplyr:: summarise(rho = sum(pi)) %>% 
         dplyr::select(sweep, repunit, rho) %>%  # select only sweep, collection, pi
-        tidyr:spread(repunit, rho)  # make wide
+        tidyr::spread(repunit, rho)  # make wide
       readr:: write_csv(x = mix_prop_trace_wide_rho, path = paste0(path, "/", mixture, "_repunit_trace.csv"))
     } ))
   })
