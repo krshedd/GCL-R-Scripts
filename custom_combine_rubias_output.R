@@ -1,3 +1,5 @@
+# DO NOT RUN, NOT READY
+if(FALSE) {
 custom_combine_rubias_output <- function(rubias_output = NULL, mixvec = NULL, group_names = NULL, groupvec = NULL, 
                                          path = "rubias/output", alpha = 0.1, burn_in = 5000, 
                                          bias_corr = FALSE, threshold = 5e-7) {
@@ -106,3 +108,4 @@ custom_combine_rubias_output <- function(rubias_output = NULL, mixvec = NULL, gr
   
   return(out_sum)
 }  # end function
+}  # if(FALSE)
