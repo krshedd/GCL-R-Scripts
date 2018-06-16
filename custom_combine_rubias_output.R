@@ -42,6 +42,7 @@ custom_combine_rubias_output <- function(rubias_output = NULL, mixvec = NULL, gr
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   while(!require(tidyverse)){install.packages("tidyverse")}
   
+  #~~~~~~~~~~~~~~~~
   ## Error catching
   if(is.null(rubias_output) & is.null(mixvec)) {
     stop("Need to provide either `rubias_output` tibble to summarize or `mixvec` and `path` so that rubias output can be read, hoser!!!")
@@ -53,13 +54,15 @@ custom_combine_rubias_output <- function(rubias_output = NULL, mixvec = NULL, gr
     stop("Need to provide `group_names` if introducing a new `groupvec`, hoser!!!")
   }
   
-  
+  #~~~~~~~~~~~~~~~~
   ## If no rubias_output, make from .csv files
   if(is.null(rubias_output)) {
-    
-  }  # build rubias_output from .csv files
+    rubias_output <- sapply(mixvec, function(mixture) {
+      
+    } )
+  }  # build rubias_output from .csv files, ignore "indiv_posteriors"
   
-  
+  #~~~~~~~~~~~~~~~~
   ## Define other variables if NULL
   if(is.null(group_names)) {
     group_names <- unique(rubias_output$mix_prop_traces$repunit)
@@ -69,9 +72,21 @@ custom_combine_rubias_output <- function(rubias_output = NULL, mixvec = NULL, gr
     mixvec <- unique(rubias_output$mix_prop_traces$mixture_collection)
   }  # used to order mixtures as factor
   
+  #~~~~~~~~~~~~~~~~
+  ## Re-summarize to a new groupvec if exists
+  base_collections <- unique(rubias_output$mixing_proportions$collection)  # baseline collections are the same order as in rubias output
+  repunit_new.df <- tibble(collection = base_collections,
+                           repunit_new = group_names[groupvec])  # tibble of new repunit from groupvec
+  
+  rubias_output$mix_prop_traces <- rubias_output$mix_prop_traces %>% 
+    left_join(repunit_new.df) %>%  # join with new repunit
+    select(-repunit) %>%  # drop old repunit
+    rename(repunit = repunit_new) # rename new repunit
+  
+  #~~~~~~~~~~~~~~~~
   ## Summarize output
+  # Calculate `d_rho` for bias correction if specified
   if(bias_corr) {
-    
     if(nrow(rubias_output$bootstrapped_proportions) == 0) {stop("There is no bias corrected output, hoser!!!")}
     
     d_rho <- rubias_output$mixing_proportions %>% 
@@ -80,21 +95,33 @@ custom_combine_rubias_output <- function(rubias_output = NULL, mixvec = NULL, gr
       dplyr::ungroup() %>% 
       dplyr::left_join(rubias_output$bootstrapped_proportions, by = c("mixture_collection", "repunit")) %>% 
       dplyr::mutate(d_rho = rho - bs_corrected_repunit_ppn) %>% 
-      dplyr::select(mixture_collection, repunit, d_rho)
-    
-    
+      dplyr::select(mixture_collection, repunit, d_rho) %>% 
+      dplyr::mutate(mixture_collection = factor(x = mixture_collection, levels = mixvec)) %>%  # order by mixvec
+      dplyr::mutate(repunit = factor(x = repunit, levels = group_names))  # order by group_names
   }
-  
   
   loCI = alpha / 2
   hiCI = 1 - (alpha / 2)
   
-  out_sum <- rubias_output$mix_prop_traces %>% 
+  # Summarize traces to repunit (rho)
+  mix_prop_trace_rho <- rubias_output$mix_prop_traces %>% 
     dplyr::filter(sweep >= burn_in) %>%  # remove burn_in
     dplyr::mutate(mixture_collection = factor(x = mixture_collection, levels = mixvec)) %>%  # order by mixvec
     dplyr::mutate(repunit = factor(x = repunit, levels = group_names)) %>%  # order by group_names
     dplyr::group_by(mixture_collection, sweep, repunit) %>%  # group to summarize across collections
     dplyr::summarise(rho = sum(pi)) %>%  # summarize collections to repunits
+    dplyr::ungroup()
+  
+  # Apply bias correction if `d_rho` exists
+  if(exists("d_rho")) {
+    mix_prop_trace_rho <- mix_prop_trace_rho %>% 
+      dplyr::left_join(d_rho) %>%  # join trace with d_rho
+      dplyr::mutate(rho = rho - d_rho) %>%  # subtract d_rho
+      dplyr::select(-d_rho)
+  }
+  
+  # Summary statistics
+  out_sum <- mix_prop_trace_rho %>% 
     dplyr::group_by(mixture_collection, repunit) %>%  # group by mixture and repunit across sweeps
     dplyr::summarise(mean = mean(rho),
                      sd = sd(rho),
@@ -103,6 +130,12 @@ custom_combine_rubias_output <- function(rubias_output = NULL, mixvec = NULL, gr
                      hiCI = quantile(rho, probs = hiCI),
                      `P=0` = sum(rho < threshold) / length(rho)) %>%  # summary statistics to return
     dplyr::ungroup() %>% 
+    dplyr::mutate(loCI = replace(loCI, which(loCI < 0), 0),
+                  hiCI = replace(hiCI, which(hiCI < 0), 0),
+                  median = replace(median, which(median < 0), 0)) %>% 
+    dplyr::mutate(loCI = replace(loCI, which(loCI > 1), 1),
+                  hiCI = replace(hiCI, which(hiCI > 1), 1),
+                  median = replace(median, which(median > 1), 1)) %>% 
     magrittr::set_colnames(c("mixture_collection", "repunit", "mean", "sd", "median", 
                              paste0(loCI * 100, "%"), paste0(hiCI * 100, "%"), "P=0"))
   
