@@ -1,6 +1,7 @@
 run_rubias_mixture <- function(reference, mixture, gen_start_col, method = "MCMC", 
-                               alle_freq_prior = list(const_scaled = 1), reps = 25000, burn_in = 5000, 
-                               pb_iter = 100, sample_int_Pi = 10, pi_prior_pseudo_count_sum = 1, 
+                               alle_freq_prior = list(const_scaled = 1), pi_prior = NA,
+                               reps = 25000, burn_in = 5000, pb_iter = 100, 
+                               sample_int_Pi = 10, pi_prior_sum = 1, 
                                path = "rubias/output") {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # This function is a wrapper for `rubias` `infer_mixture`.
@@ -30,9 +31,9 @@ run_rubias_mixture <- function(reference, mixture, gen_start_col, method = "MCMC
   ### Run infer mixture
   
   rubias_out <- rubias::infer_mixture(reference = reference, mixture = mixture, gen_start_col = gen_start_col, 
-                                      method = method, alle_freq_prior = alle_freq_prior, reps = reps, 
-                                      burn_in = burn_in, pb_iter = pb_iter, sample_int_Pi = sample_int_Pi, 
-                                      pi_prior_pseudo_count_sum = pi_prior_pseudo_count_sum)
+                                      method = method, alle_freq_prior = alle_freq_prior, pi_prior = pi_prior,
+                                      reps = reps, burn_in = burn_in, pb_iter = pb_iter, 
+                                      sample_int_Pi = sample_int_Pi, pi_prior_sum = pi_prior_sum)
   
   ### Save output
   message("Saving output as .csv files")
