@@ -198,7 +198,8 @@ custom_combine_rubias_output <- function(rubias_output = NULL, mixvec = NULL, gr
       ggplot2::ylim(0, 1) +
       ggplot2::geom_vline(xintercept = burn_in) +
       # ggplot2::annotate(geom = "text", x = burn_in / 2, y = 0.9, label = "Burn-in") +
-      ggplot2::theme(legend.position = "none") +
+      ggplot2::theme(legend.position = "none",
+                     axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
       ggplot2::facet_grid(repunit ~ mixture_collection)
   }
 
