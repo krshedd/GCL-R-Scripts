@@ -42,7 +42,7 @@ PoolCollections.GCL=function(collections,loci,IDs=NULL,newname=paste(collections
 
   counts=Reduce(bbind,lapply(collections,function(collection){get(paste0(collection,".gcl"),pos=1)$counts[IDs[[collection]],loci,,drop=FALSE]}))
 
-  attributes=Reduce(rbind,lapply(collections,function(collection){get(paste0(collection,".gcl"),pos=1)$attributes[IDs[[collection]],,drop=FALSE]}))
+  attributes=Reduce(rbind,lapply(collections,function(collection){get(paste0(collection,".gcl"),pos=1)$attributes[which(get(paste0(collection,".gcl"),pos=1)$attributes$FK_FISH_ID %in% IDs[[collection]]),,drop=FALSE]}))
 
   rownames(scores)=rownames(counts)=rownames(attributes)=attributes$FK_FISH_ID=as.character(seq(n))
 

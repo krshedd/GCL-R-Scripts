@@ -196,6 +196,8 @@ if(FALSE){##
 
   CombineConflictsWithPlateID.GCL(files = QCConcordanceReportfile)
 
+  if("Agreement" %in% levels(CombinedConflicts$Conflict)) {CombinedConflicts <- subset(CombinedConflicts, Conflict == "Conflict")}
+  
   if("0" %in% levels(CombinedConflicts$Type)) { levels(CombinedConflicts$Type) <- gsub(pattern = "0", replacement = "Homo-Homo", levels(CombinedConflicts$Type)) }  # Old conflict report has "0" for mitochondrial conflicts
   
   if(" " %in% levels(CombinedConflicts$Type)) { levels(CombinedConflicts$Type)[levels(CombinedConflicts$Type) == " "] <- "Homo-Homo" }  # New conclict report has " " for mitochondrial conflicts
