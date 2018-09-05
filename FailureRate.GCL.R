@@ -1,6 +1,6 @@
 FailureRate.GCL <- function(sillyvec) {
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#  This function calculates failure rates by SILLY, loci, and project
+#  This function calculates failure rates by silly, loci, plate, and project
 #
 #  It is IMPORTANT to run this function after "RemoveNAindv.GCL" but before any
 #  other steps in the QC (i.e. removing duplicate fish, alternate fish, 
@@ -14,33 +14,67 @@ FailureRate.GCL <- function(sillyvec) {
 #  List of failure rate by SILLY, locus, and project
 #
 #  Written by Kyle Shedd 10/16/15  
+#  Updated for tidyverse by Kyle Shedd 9/5/18
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
-  numran <- t(sapply(sillyvec, function(silly) {
-    silly.gcl <- get(paste(silly, ".gcl", sep = ""))
-    apply(silly.gcl$scores, 2, function(loci) {sum(!is.na(loci[, "Dose1"]))} )
-  }))
+  while(!require(tidyverse)){ install.packages("tidyverse") }
   
-  require(Matrix)
-  numscored <- t(sapply(sillyvec, function(silly) {
-    silly.gcl <- get(paste(silly, ".gcl", sep = ""))
-    apply(silly.gcl$scores, 2, function(loci) {nnzero(loci[, "Dose1"])} )
-  }))
+  # Pool all collections in to one master silly
+  PoolCollections.GCL(collections = sillyvec, loci = loci, newname = "master")
   
+  # Tibble of Dose 1 scores and attributes
+  master.tbl <- bind_cols(as.tibble(master.gcl$scores[, , "Dose1"]), as.tibble(master.gcl$attributes[, c("SILLY_CODE", "PLATE_ID", "SillySource")])) %>% 
+    gather(locus, genotype, -SILLY_CODE, -PLATE_ID, -SillySource) %>% 
+    rename(silly = SILLY_CODE, plate = PLATE_ID, silly_source = SillySource)
   
-  if(length(sillyvec) == 1){
-    silly.failure <- 1 - (apply(numscored, 1, sum) / sum(numran))
-    locus.failure <- 1 - (apply(numscored, 2, sum) / as.vector(numran))
-    overall.failure <- silly.failure
-  }
+  # Failure rate by silly
+  fail_silly <- master.tbl %>% 
+    group_by(silly) %>% 
+    summarise(fail = sum(genotype == "0") / length(genotype)) %>% 
+    arrange(desc(fail))
   
-  if(length(sillyvec) > 1){
-    silly.failure <- 1 - (apply(numscored, 1, sum) / apply(numran, 1, sum))
-    locus.failure <- 1 - (apply(numscored, 2, sum) / apply(numran, 2, sum))
-    overall.failure <- sum(apply(numran, 1, sum) * silly.failure) / sum(apply(numran, 1, sum))
-  }
+  # Failure rate by locus
+  fail_locus <- master.tbl %>% 
+    group_by(locus) %>% 
+    summarise(fail = sum(genotype == "0") / length(genotype)) %>% 
+    arrange(desc(fail))
   
-  output <- list(Silly_Failure_Rate = silly.failure, Locus_Failure_Rate = locus.failure, Overall_Failure_Rate = overall.failure)
-
-  return(output)
+  # Failure rate by plate
+  fail_plate <- master.tbl %>% 
+    group_by(plate) %>% 
+    summarise(fail = sum(genotype == "0") / length(genotype)) %>% 
+    arrange(desc(fail))
+  
+  # Failure rate overall
+  fail_overall <- master.tbl %>% 
+    mutate(project = project) %>% 
+    group_by(project) %>% 
+    summarise(fail = sum(genotype == "0") / length(genotype))
+    
+  # Plot failure rate by silly and locus
+  fail_silly_plot <- master.tbl %>% 
+    group_by(silly, locus) %>% 
+    summarise(p_fail = sum(genotype != "0") / n()) %>% 
+    ggplot(aes(x = silly, y = locus)) +
+    geom_tile (aes(fill = p_fail)) +
+    scale_fill_gradientn(colours = colorRampPalette(colors = c("black", "white"))(101), values = seq(0.00, 1.00, by = 0.01), na.value = "red", limit = c(0, 1)) +
+    ggtitle("Failure Rate by Silly and Locus")
+  
+  # Plot failure rate by plate and locus
+  fail_plate_plot <- master.tbl %>% 
+    group_by(plate, locus) %>% 
+    summarise(p_fail = sum(genotype != "0") / n()) %>% 
+    ggplot(aes(x = plate, y = locus)) +
+    geom_tile (aes(fill = p_fail)) +
+    scale_fill_gradientn(colours = colorRampPalette(colors = c("black", "white"))(101), values = seq(0.00, 1.00, by = 0.01), na.value = "red", limit = c(0, 1)) +
+    ggtitle("Failure Rate by Plate and Locus")
+  
+  failure_rate <- list(silly_failure_rate = fail_silly, 
+                       locus_failure_rate = fail_locus, 
+                       plate_failure_rate = fail_plate, 
+                       overall_failure_rate = fail_overall, 
+                       plot_silly_failure_rate = fail_silly_plot, 
+                       plot_plate_failure_rate = fail_plate_plot)
+  
+  return(failure_rate)
 }
