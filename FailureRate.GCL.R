@@ -24,37 +24,37 @@ FailureRate.GCL <- function(sillyvec) {
   
   # Tibble of Dose 1 scores and attributes
   master.tbl <- bind_cols(as.tibble(master.gcl$scores[, , "Dose1"]), as.tibble(master.gcl$attributes[, c("SILLY_CODE", "PLATE_ID", "SillySource")])) %>% 
-    gather(locus, genotype, -SILLY_CODE, -PLATE_ID, -SillySource) %>% 
-    rename(silly = SILLY_CODE, plate = PLATE_ID, silly_source = SillySource)
+    tidyr::gather(locus, genotype, -SILLY_CODE, -PLATE_ID, -SillySource) %>% 
+    dplyr::rename(silly = SILLY_CODE, plate = PLATE_ID, silly_source = SillySource)
   
   # Failure rate by silly
   fail_silly <- master.tbl %>% 
-    group_by(silly) %>% 
-    summarise(fail = sum(genotype == "0") / length(genotype)) %>% 
-    arrange(desc(fail))
+    dplyr::group_by(silly) %>% 
+    dplyr::summarise(fail = sum(genotype == "0") / length(genotype)) %>% 
+    dplyr::arrange(dplyr::desc(fail))
   
   # Failure rate by locus
   fail_locus <- master.tbl %>% 
-    group_by(locus) %>% 
-    summarise(fail = sum(genotype == "0") / length(genotype)) %>% 
-    arrange(desc(fail))
+    dplyr::group_by(locus) %>% 
+    dplyr::summarise(fail = sum(genotype == "0") / length(genotype)) %>% 
+    dplyr::arrange(dplyr::desc(fail))
   
   # Failure rate by plate
   fail_plate <- master.tbl %>% 
-    group_by(plate) %>% 
-    summarise(fail = sum(genotype == "0") / length(genotype)) %>% 
-    arrange(desc(fail))
+    dplyr::group_by(plate) %>% 
+    dplyr::summarise(fail = sum(genotype == "0") / length(genotype)) %>% 
+    dplyr::arrange(dplyr::desc(fail))
   
   # Failure rate overall
   fail_overall <- master.tbl %>% 
-    mutate(project = project) %>% 
-    group_by(project) %>% 
-    summarise(fail = sum(genotype == "0") / length(genotype))
+    dplyr::mutate(project = project) %>% 
+    dplyr::group_by(project) %>% 
+    dplyr::summarise(fail = sum(genotype == "0") / length(genotype))
     
   # Plot failure rate by silly and locus
   fail_silly_plot <- master.tbl %>% 
-    group_by(silly, locus) %>% 
-    summarise(p_fail = sum(genotype != "0") / n()) %>% 
+    dplyr::group_by(silly, locus) %>% 
+    dplyr::summarise(p_fail = sum(genotype != "0") / n()) %>% 
     ggplot(aes(x = silly, y = locus)) +
     geom_tile (aes(fill = p_fail)) +
     scale_fill_gradientn(colours = colorRampPalette(colors = c("black", "white"))(101), values = seq(0.00, 1.00, by = 0.01), na.value = "red", limit = c(0, 1)) +
@@ -62,8 +62,8 @@ FailureRate.GCL <- function(sillyvec) {
   
   # Plot failure rate by plate and locus
   fail_plate_plot <- master.tbl %>% 
-    group_by(plate, locus) %>% 
-    summarise(p_fail = sum(genotype != "0") / n()) %>% 
+    dplyr::group_by(plate, locus) %>% 
+    dplyr::summarise(p_fail = sum(genotype != "0") / n()) %>% 
     ggplot(aes(x = plate, y = locus)) +
     geom_tile (aes(fill = p_fail)) +
     scale_fill_gradientn(colours = colorRampPalette(colors = c("black", "white"))(101), values = seq(0.00, 1.00, by = 0.01), na.value = "red", limit = c(0, 1)) +
