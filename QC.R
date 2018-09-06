@@ -5,12 +5,12 @@ if(FALSE){##
 ############
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  #Title: K102 QC
-  #Date: Thu Sep 01 12:01:53 2016
-  #Name: Heather Hoyt; Jim Jasper; Kyle Shedd
+  #Title: S187 QC
+  #Date: Wed Sep 05 10:42:19 2018
+  #Name: Heather Hoyt; Kyle Shedd
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
-    # It is important to run this script in order, or some functions will not provide accurate results.
+  # It is important to run this script in order, or some functions will not provide accurate results.
   # This is by design, as this script only hits LOKI once to save time.
   
   # User input is only required above the '#~~~  GO! ~~~~~~~~~~~~~...`
@@ -34,8 +34,10 @@ if(FALSE){##
   # Conflicts by PlateID
   # Failure Rate by Silly
   # Failure Rate by Locus
+  # Failure Rate by PlateID
   # Overall Failure Rate
   # Original Project Sample Size by Locus
+  # Duplicates within Silly
   
   
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -46,39 +48,37 @@ if(FALSE){##
   # rm(list=ls(all=TRUE))
   
   # This sources all of the new GCL functions to this workspace
-  # source("C:/Users/krshedd/Documents/R/Functions.GCL.R")
+  # source("C:/Users/krshedd/R/Functions.GCL.R")
   
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #### Arguments ####
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  dirQC <- "V:/Lab/Genotyping/SNP Projects/Sockeye/Project S161 Chignik Inseason 2016/QC"
+  dirQC <- "V:/Lab/Genotyping/SNP Projects/Sockeye/Project S187 Copper River In Season 2018/QC/"
 
   species <- "sockeye"
 
-  markersuite <- "Sockeye2013Chignik_24SNPs"
+  markersuite <- "Sockeye2011_96SNPs"
 
-  project <- "S161"
+  project <- "S187"
 
-  projectID <- 2284
+  projectID <- 2421
 
   username <- "krshedd"
 
   password <- ""
 
-  QCSummaryfile <- "Project K102 QC Summary TEST.xlsx"
+  QCSummaryfile <- "Project S187 QC Summary.xlsx"
   
   conflict_rate <- 0.10  # conflict rate at which dupcheck between sillys occurs
 
 #~~~  GO! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  while(!require(abind)){ install.packages("abind") }
+  while(!require(pacman)){ install.packages("pacman") }
 
+  p_load(tidyverse, lattice, xlsx, abind)  # use pacman to load or install + load necessary packages
+  
   bbind <- function(...) { abind(..., along = 3) }
-
-  while(!require(lattice)){ install.packages("lattice") }
-
-  while(!require(xlsx)){ install.packages("xlsx") }
 
   source(path.expand("~/R/Functions.GCL.R"))
 
@@ -111,6 +111,8 @@ if(FALSE){##
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
   FailureRate <- FailureRate.GCL(sillyvec = ProjectSillys)
+  
+  FailureRate
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #### Read in QC Genotypes ####
@@ -196,33 +198,39 @@ if(FALSE){##
 
   CombineConflictsWithPlateID.GCL(files = QCConcordanceReportfile)
 
-  if("Agreement" %in% levels(CombinedConflicts$Conflict)) {CombinedConflicts <- subset(CombinedConflicts, Conflict == "Conflict")}
+  # Old conflict report has "0" for mitochondrial conflicts, new has " " for mitochondrial conflicts, we will refer to them as "Homo-Homo".
+  level_key <- list(`DB Zero` = "DB Zero", `File Zero` = "File Zero", `Het-Het` = "Het-Het", `Het-Homo` = "Het-Homo", `Homo-Het` = "Homo-Het", `Homo-Homo` = "Homo-Homo", `0` = "Homo-Homo", ` ` = "Homo-Homo")
+  types <- c("DB Zero", "File Zero", "Het-Het", "Het-Homo", "Homo-Het", "Homo-Homo")  # order with levels
   
-  if("0" %in% levels(CombinedConflicts$Type)) { levels(CombinedConflicts$Type) <- gsub(pattern = "0", replacement = "Homo-Homo", levels(CombinedConflicts$Type)) }  # Old conflict report has "0" for mitochondrial conflicts
+  # Make tibble, recode values
+  CombinedConflicts <- CombinedConflicts %>%
+    dplyr::filter(Conflict == "Conflict") %>% 
+    dplyr::mutate(Type = dplyr::recode_factor(Type, !!!level_key)) %>%  # recode to deal with mitochondrial conflicts
+    dplyr::mutate(Type = factor(x = Type, levels = types)) %>%  # new levels
+    dplyr::mutate(Locus = factor(x = Locus, levels = loci)) %>%  # new levels
+    dplyr::mutate(Silly.Code = factor(x = Silly.Code, levels = ProjectSillys)) %>%  # new levels
+    tibble::as_tibble()
   
-  if(" " %in% levels(CombinedConflicts$Type)) { levels(CombinedConflicts$Type)[levels(CombinedConflicts$Type) == " "] <- "Homo-Homo" }  # New conclict report has " " for mitochondrial conflicts
+  conflicts_by_plate <- CombinedConflicts %>% 
+    dplyr::group_by(PlateID, Type) %>%
+    dplyr::summarise(n = n()) %>% 
+    tidyr::spread(Type, n, fill = 0, drop = FALSE) %>% 
+    dplyr::mutate(Conflict = sum(`Het-Het`, `Het-Homo`, `Homo-Het`, `Homo-Homo`)) %>% 
+    dplyr::ungroup()
+    
+  conflicts_by_silly <- CombinedConflicts %>% 
+    dplyr::group_by(Silly.Code, Type) %>% 
+    dplyr::summarise(n = n()) %>% 
+    tidyr::spread(Type, n, fill = 0, drop = FALSE) %>% 
+    dplyr::mutate(Conflict = sum(`Het-Het`, `Het-Homo`, `Homo-Het`, `Homo-Homo`)) %>% 
+    dplyr::ungroup()
   
-  QCtypes <- levels(CombinedConflicts$Type)
-
-  types <- c("DB Zero", "File Zero", "Het-Het", "Het-Homo", "Homo-Het", "Homo-Homo", "Conflict")
-
-  ConflictsByPlateID <- matrix(data = 0, nrow = length(unique(CombinedConflicts$PlateID)), ncol = length(types), dimnames = list(sort(unique(CombinedConflicts$PlateID)), types))
-
-  ConflictsByPlateID[, QCtypes] <- table(CombinedConflicts$PlateID, CombinedConflicts$Type)
-
-  ConflictsByPlateID[, "Conflict"] = rowSums(ConflictsByPlateID[, c("Het-Het", "Het-Homo", "Homo-Het", "Homo-Homo"), drop = FALSE])
-
-  ConflictsBySilly <- matrix(data = 0, nrow = length(ProjectSillys), ncol = length(types), dimnames = list(ProjectSillys, types))
-
-  ConflictsBySilly[, QCtypes] <- table(CombinedConflicts$Silly.Code, CombinedConflicts$Type)
-
-  ConflictsBySilly[, "Conflict"] <- rowSums(ConflictsBySilly[, c("Het-Het", "Het-Homo", "Homo-Het", "Homo-Homo"), drop = FALSE])
-
-  ConflictsByLocus <- matrix(data = 0, nrow = length(unique(CombinedConflicts$Locus)), ncol = length(types), dimnames = list(sort(unique(CombinedConflicts$Locus)), types))
-
-  ConflictsByLocus[, QCtypes] <- table(CombinedConflicts$Locus, CombinedConflicts$Type)
-
-  ConflictsByLocus[, "Conflict"] <- rowSums(ConflictsByLocus[, c("Het-Het", "Het-Homo", "Homo-Het", "Homo-Homo"), drop = FALSE])
+  conflicts_by_locus <- CombinedConflicts %>% 
+    dplyr::group_by(Locus, Type) %>% 
+    dplyr::summarise(n = n()) %>% 
+    tidyr::spread(Type, n, fill = 0, drop = FALSE) %>% 
+    dplyr::mutate(Conflict = sum(`Het-Het`, `Het-Homo`, `Homo-Het`, `Homo-Homo`)) %>% 
+    dplyr::ungroup()
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #### Sample Size by Locus for Project Genotypes ####
@@ -251,7 +259,7 @@ if(FALSE){##
   levelplot(t(OriginalQCPercentbyLocus), col.regions = new_colors, at = seq(0, 1, length.out = 100), main = "% Genotyped", xlab = "SILLY", ylab = "Locus", scales = list(x = list(rot = 90)), aspect = "fill") # aspect = "iso" will make squares
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  #### QC of Project Genotypes ####
+  #### QA of Project Genotypes ####
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
   ProjectSillys_SampleSizes <- matrix(data = NA, nrow = length(ProjectSillys), ncol = 5, dimnames = list(ProjectSillys, c("Genotyped", "Alternate", "Missing", "Duplicate", "Final")))
@@ -301,7 +309,7 @@ if(FALSE){##
   ProjectSillys_SampleSizes[, "Final"] <- ColSizePostDuplicate
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  #### QC of QC Genotypes ####
+  #### QA of QC Genotypes ####
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
   MissLociQC <- RemoveIndMissLoci.GCL(sillyvec = QCSillys, proportion = 0.8)
@@ -320,11 +328,11 @@ if(FALSE){##
 
   if(sum(conflict_bool)){ 
 
-    conflict_indv_bool <- table(CombinedConflicts[conflicts, "Silly.Source"]) / length(loci) > conflict_rate
+    conflict_indv_bool <- conflict_bool
 
     conflict_indv <- names(conflict_indv_bool)[conflict_indv_bool]
  
-    conflict_indv_numconflicts <- table(CombinedConflicts[conflicts, "Silly.Source"])[conflict_indv_bool]   
+    conflict_indv_numconflicts <- conflictstab[conflict_indv_bool]   
 
     message(paste0("The following individuals have > ", conflict_rate * 100, "% loci with conflicts between project and QC:\n"), paste(conflict_indv, conflict_indv_numconflicts[conflict_indv], "conflicts", collapse = "\n"))
     
@@ -377,63 +385,72 @@ if(FALSE){##
   #### Create Summary Tables ####
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
-  SummaryTable1 <- cbind(ProjectSillys_SampleSizes, "Failure Rate" = FailureRate$Silly_Failure_Rate, "Total QC Fish" = QCColSize)
-
-  tab_names <- c("Total QC Genotypes", "Discrepancy Rate", "Total Het-Het", "Het-Het Rate", "Total Het-Homo", "Het-Homo Rate", "Total Homo-Het", "Homo-Het Rate", "Total Homo-Homo", "Homo-Homo Rate", "DB Zeros", "DB Zero Rate", "QC Zeros", "QC Zero Rate")
-
-  SummaryTable2 <- matrix(NA, nrow = length(ProjectSillys), ncol = length(tab_names), dimnames = list(ProjectSillys, tab_names))
-
-  SummaryTable2[, "Total QC Genotypes"] <- QCColSizeAll * length(loci)
-
-  for(silly in ProjectSillys) {
-
-    if(silly %in% rownames(ConflictsBySilly)){
-
-      SummaryTable2[silly, c("Total Het-Het", "Total Het-Homo", "Total Homo-Het", "Total Homo-Homo", "DB Zeros", "QC Zeros")] <- ConflictsBySilly[silly, c("Het-Het", "Het-Homo", "Homo-Het", "Homo-Homo", "DB Zero", "File Zero")]
-
-      SummaryTable2[silly, "Discrepancy Rate"] <- ConflictsBySilly[silly, "Conflict"] / SummaryTable2[silly, "Total QC Genotypes"]
-
-      SummaryTable2[silly, c("Het-Het Rate", "Het-Homo Rate", "Homo-Het Rate", "Homo-Homo Rate", "DB Zero Rate", "QC Zero Rate")] <- SummaryTable2[silly, c("Total Het-Het", "Total Het-Homo", "Total Homo-Het", "Total Homo-Homo", "DB Zeros", "QC Zeros")] / SummaryTable2[silly, "Total QC Genotypes"]
-
-    } else {
-
-      SummaryTable2[silly, -1] <- 0
-
-    }
-
-  }#silly
+  summary_table_1 <- bind_cols(tibble(Silly = ProjectSillys), as.tibble(ProjectSillys_SampleSizes)) %>% 
+    dplyr::left_join(FailureRate$silly_failure_rate, by = c("Silly" = "silly")) %>% 
+    dplyr::rename("Failure Rate" = fail) %>% 
+    dplyr::mutate("Total QC Fish" = QCColSizeAll)
   
-  SummaryTable2[is.na(SummaryTable2)] <- 0
-
-  SummaryTable3 <- matrix(data = NA, nrow = length(loci), ncol = length(tab_names), dimnames = list(loci, tab_names))
-
-  SummaryTable3[, "Total QC Genotypes"] <- sum(QCColSizeAll)
-
-  for(locus in loci) {
-
-    if(locus %in% rownames(ConflictsByLocus)){
-
-      SummaryTable3[locus, c("Total Het-Het", "Total Het-Homo", "Total Homo-Het", "Total Homo-Homo", "DB Zeros", "QC Zeros")] <- ConflictsByLocus[locus, c("Het-Het", "Het-Homo", "Homo-Het", "Homo-Homo", "DB Zero", "File Zero")]
-
-      SummaryTable3[locus, "Discrepancy Rate"] <- ConflictsByLocus[locus, "Conflict"] / SummaryTable3[locus, "Total QC Genotypes"]
-
-      SummaryTable3[locus, c("Het-Het Rate", "Het-Homo Rate", "Homo-Het Rate", "Homo-Homo Rate", "DB Zero Rate", "QC Zero Rate")] <- SummaryTable3[locus, c("Total Het-Het", "Total Het-Homo", "Total Homo-Het", "Total Homo-Homo", "DB Zeros", "QC Zeros")] / SummaryTable3[locus, "Total QC Genotypes"]
-
-    } else {
-
-      SummaryTable3[locus, -1] <- 0
-
-    }
-
-  }#locus
+  qc_silly_genotypes <- tibble(Silly.Code = factor(ProjectSillys),
+                               qc_genotypes = sapply(ProjectSillys, function(silly) {
+                                 qc_silly = paste0(silly, "QC.gcl")
+                                 ifelse(qc_silly %in% names(QCColSizeAll), QCColSizeAll[qc_silly] * length(loci), 0)
+                               } ))
+  
+  summary_table_2 <- conflicts_by_silly %>% 
+    tidyr::gather(type, number, -Silly.Code) %>%  # make tall
+    dplyr::left_join(qc_silly_genotypes) %>%  # join number of QC genotypes by silly
+    dplyr::mutate(rate = number / qc_genotypes) %>%  # conflict numbers to rates
+    tidyr::gather(variable, value, -Silly.Code, -qc_genotypes, -type) %>%  # make tall
+    tidyr::unite(temp, type, variable) %>%  # unite conflict type with both number and rate
+    tidyr::spread(temp, value) %>%  # make wide
+    dplyr::rename(Silly = Silly.Code, 
+                  "Total QC Genotypes" = qc_genotypes, 
+                  "Total Discrepancies" = Conflict_number, 
+                  "Discrepancy Rate" = Conflict_rate,
+                  "DB Zeros" = `DB Zero_number`,
+                  "DB Zero Rate" = `DB Zero_rate`,
+                  "QC Zeros" = `File Zero_number`,
+                  "QC Zero Rate" = `File Zero_rate`,
+                  "Total Het-Het" = `Het-Het_number`,
+                  "Het-Het Rate" = `Het-Het_rate`,
+                  "Total Het-Homo" = `Het-Homo_number`,
+                  "Het-Homo Rate" = `Het-Homo_rate`,
+                  "Total Homo-Het" = `Homo-Het_number`,
+                  "Homo-Het Rate" = `Homo-Het_rate`,
+                  "Total Homo-Homo" = `Homo-Homo_number`,
+                  "Homo-Homo Rate" = `Homo-Homo_rate`)
+    
+    summary_table_3 <- conflicts_by_locus %>% 
+    tidyr::gather(type, number, -Locus) %>%  # make tall
+    dplyr::mutate(qc_genotypes = sum(QCColSizeAll)) %>%  # join number of QC genotypes by locus
+    dplyr::mutate(rate = number / qc_genotypes) %>%  # conflict numbers to rates
+    tidyr::gather(variable, value, -Locus, -qc_genotypes, -type) %>%  # make tall
+    tidyr::unite(temp, type, variable) %>%  # unite conflict type with both number and rate
+    tidyr::spread(temp, value) %>%  # make wide
+    dplyr::rename("Total QC Genotypes" = qc_genotypes, 
+                  "Total Discrepancies" = Conflict_number, 
+                  "Discrepancy Rate" = Conflict_rate,
+                  "DB Zeros" = `DB Zero_number`,
+                  "DB Zero Rate" = `DB Zero_rate`,
+                  "QC Zeros" = `File Zero_number`,
+                  "QC Zero Rate" = `File Zero_rate`,
+                  "Total Het-Het" = `Het-Het_number`,
+                  "Het-Het Rate" = `Het-Het_rate`,
+                  "Total Het-Homo" = `Het-Homo_number`,
+                  "Het-Homo Rate" = `Het-Homo_rate`,
+                  "Total Homo-Het" = `Homo-Het_number`,
+                  "Homo-Het Rate" = `Homo-Het_rate`,
+                  "Total Homo-Homo" = `Homo-Homo_number`,
+                  "Homo-Homo Rate" = `Homo-Homo_rate`)
+  
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #### Append Summary Tables to QCSummaryfile.xlsx ####
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
-  write.xlsx(x = SummaryTable1, file = QCSummaryfile, sheetName = "Summary by Silly", row.names = TRUE, col.names = TRUE, append = TRUE)
+  write.xlsx(x = as.data.frame(summary_table_1), file = QCSummaryfile, sheetName = "Summary by Silly", row.names = FALSE, col.names = TRUE, append = TRUE)
 
-  write.xlsx(x = SummaryTable2, file = QCSummaryfile, sheetName = "Conflicts by Silly", row.names = TRUE, col.names = TRUE, append = TRUE)
+  write.xlsx(x = as.data.frame(summary_table_2), file = QCSummaryfile, sheetName = "Conflicts by Silly", row.names = FALSE, col.names = TRUE, append = TRUE)
 
   if(exists("DupCheckResults")) {
 
@@ -443,15 +460,17 @@ if(FALSE){##
 
   }
 
-  write.xlsx(x = SummaryTable3, file = QCSummaryfile, sheetName = "Conflicts by Locus", row.names = TRUE, col.names = TRUE, append = TRUE)
+  write.xlsx(x = as.data.frame(summary_table_3), file = QCSummaryfile, sheetName = "Conflicts by Locus", row.names = FALSE, col.names = TRUE, append = TRUE)
 
-  write.xlsx(x = ConflictsByPlateID, file = QCSummaryfile, sheetName = "Conflicts by PlateID", row.names = TRUE, col.names = TRUE, append = TRUE)
+  write.xlsx(x = as.data.frame(conflicts_by_plate), file = QCSummaryfile, sheetName = "Conflicts by PlateID", row.names = FALSE, col.names = TRUE, append = TRUE)
 
-  write.xlsx(x = sort(FailureRate$Silly_Failure_Rate, decreasing = TRUE), file = QCSummaryfile, sheetName = "Failure Rate by Silly", row.names = TRUE, col.names = TRUE, append = TRUE)
+  write.xlsx(x = as.data.frame(FailureRate$silly_failure_rate), file = QCSummaryfile, sheetName = "Failure Rate by Silly", row.names = FALSE, col.names = TRUE, append = TRUE)
 
-  write.xlsx(x = sort(FailureRate$Locus_Failure_Rate, decreasing = TRUE), file = QCSummaryfile, sheetName = "Failure Rate by Locus", row.names = TRUE, col.names = TRUE, append = TRUE)
+  write.xlsx(x = as.data.frame(FailureRate$locus_failure_rate), file = QCSummaryfile, sheetName = "Failure Rate by Locus", row.names = FALSE, col.names = TRUE, append = TRUE)
 
-  write.xlsx(x = FailureRate$Overall_Failure_Rate, file = QCSummaryfile, sheetName = "Overall Failure Rate", row.names = TRUE, col.names = TRUE, append = TRUE)
+  write.xlsx(x = as.data.frame(FailureRate$plate_failure_rate), file = QCSummaryfile, sheetName = "Failure Rate by Plate", row.names = FALSE, col.names = TRUE, append = TRUE)
+
+  write.xlsx(x = as.data.frame(FailureRate$overall_failure_rate), file = QCSummaryfile, sheetName = "Overall Failure Rate", row.names = FALSE, col.names = TRUE, append = TRUE)
 
   write.xlsx(x = OriginalProjectSampleSizebyLocus, file = QCSummaryfile, sheetName = "OriginalProjectSampleSizebyLocus", row.names = TRUE, col.names = TRUE, append = TRUE)
 
