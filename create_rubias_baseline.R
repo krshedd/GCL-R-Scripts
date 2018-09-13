@@ -27,7 +27,7 @@ create_rubias_baseline <- function(sillyvec, loci, group_names, groupvec, path =
   
   silly_base.lst <- lapply(sillyvec, function(silly) {
     my.gcl <- get(paste0(silly, ".gcl"))
-    scores.mat <- t(apply(my.gcl$scores[, loci, ], 1, function(ind) {c(t(ind))} ))
+    scores.mat <- t(apply(my.gcl$scores[, loci, ,drop=FALSE], 1, function(ind) {c(t(ind))} ))
     colnames(scores.mat) <- as.vector(sapply(loci, function(locus) {c(locus, paste(locus, 1, sep = "."))} ))
     scores.df <- data.frame(scores.mat, stringsAsFactors = FALSE)
     scores.df$sample_type <- "reference"
