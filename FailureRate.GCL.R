@@ -30,43 +30,43 @@ FailureRate.GCL <- function(sillyvec) {
   # Failure rate by silly
   fail_silly <- master.tbl %>% 
     dplyr::group_by(silly) %>% 
-    dplyr::summarise(fail = sum(genotype == "0") / length(genotype)) %>% 
+    dplyr::summarise(fail = sum(genotype == "0") / n()) %>% 
     dplyr::arrange(dplyr::desc(fail))
   
   # Failure rate by locus
   fail_locus <- master.tbl %>% 
     dplyr::group_by(locus) %>% 
-    dplyr::summarise(fail = sum(genotype == "0") / length(genotype)) %>% 
+    dplyr::summarise(fail = sum(genotype == "0") / n()) %>% 
     dplyr::arrange(dplyr::desc(fail))
   
   # Failure rate by plate
   fail_plate <- master.tbl %>% 
     dplyr::group_by(plate) %>% 
-    dplyr::summarise(fail = sum(genotype == "0") / length(genotype)) %>% 
+    dplyr::summarise(fail = sum(genotype == "0") / n()) %>% 
     dplyr::arrange(dplyr::desc(fail))
   
   # Failure rate overall
   fail_overall <- master.tbl %>% 
     dplyr::mutate(project = project) %>% 
     dplyr::group_by(project) %>% 
-    dplyr::summarise(fail = sum(genotype == "0") / length(genotype))
+    dplyr::summarise(fail = sum(genotype == "0") / n())
     
   # Plot failure rate by silly and locus
   fail_silly_plot <- master.tbl %>% 
     dplyr::group_by(silly, locus) %>% 
-    dplyr::summarise(p_fail = sum(genotype != "0") / n()) %>% 
+    dplyr::summarise(p_fail = sum(genotype == "0") / n()) %>% 
     ggplot(aes(x = silly, y = locus)) +
     geom_tile (aes(fill = p_fail)) +
-    scale_fill_gradientn(colours = colorRampPalette(colors = c("black", "white"))(101), values = seq(0.00, 1.00, by = 0.01), na.value = "red", limit = c(0, 1)) +
+    scale_fill_gradientn(colours = colorRampPalette(colors = c("white", "black"))(101), values = seq(0.00, 1.00, by = 0.01), na.value = "red", limit = c(0, 1)) +
     ggtitle("Failure Rate by Silly and Locus")
   
   # Plot failure rate by plate and locus
   fail_plate_plot <- master.tbl %>% 
     dplyr::group_by(plate, locus) %>% 
-    dplyr::summarise(p_fail = sum(genotype != "0") / n()) %>% 
+    dplyr::summarise(p_fail = sum(genotype == "0") / n()) %>% 
     ggplot(aes(x = plate, y = locus)) +
     geom_tile (aes(fill = p_fail)) +
-    scale_fill_gradientn(colours = colorRampPalette(colors = c("black", "white"))(101), values = seq(0.00, 1.00, by = 0.01), na.value = "red", limit = c(0, 1)) +
+    scale_fill_gradientn(colours = colorRampPalette(colors = c("white", "black"))(101), values = seq(0.00, 1.00, by = 0.01), na.value = "red", limit = c(0, 1)) +
     ggtitle("Failure Rate by Plate and Locus")
   
   failure_rate <- list(silly_failure_rate = fail_silly, 
