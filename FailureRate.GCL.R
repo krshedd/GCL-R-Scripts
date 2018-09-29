@@ -58,6 +58,7 @@ FailureRate.GCL <- function(sillyvec) {
     ggplot(aes(x = silly, y = locus)) +
     geom_tile (aes(fill = p_fail)) +
     scale_fill_gradientn(colours = colorRampPalette(colors = c("white", "black"))(101), values = seq(0.00, 1.00, by = 0.01), na.value = "red", limit = c(0, 1)) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) +
     ggtitle("Failure Rate by Silly and Locus")
   
   # Plot failure rate by plate and locus
@@ -67,6 +68,7 @@ FailureRate.GCL <- function(sillyvec) {
     ggplot(aes(x = plate, y = locus)) +
     geom_tile (aes(fill = p_fail)) +
     scale_fill_gradientn(colours = colorRampPalette(colors = c("white", "black"))(101), values = seq(0.00, 1.00, by = 0.01), na.value = "red", limit = c(0, 1)) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) +
     ggtitle("Failure Rate by Plate and Locus")
   
   failure_rate <- list(silly_failure_rate = fail_silly, 
