@@ -198,45 +198,37 @@ if(FALSE){##
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #### Read in Conflict Report ####
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- 
+  
   QCConcordanceReportfile <- list.files (path = "Conflict Reports", pattern = "ConcordanceReport", full.names = TRUE)
-
+  
   CombineConflictsWithPlateID.GCL(files = QCConcordanceReportfile)
-
+  
   # Old conflict report has "0" for mitochondrial conflicts, new has " " for mitochondrial conflicts, we will refer to them as "Homo-Homo".
-  level_key <- list(`DB Zero` = "DB Zero", `File Zero` = "File Zero", `Het-Het` = "Het-Het", `Het-Homo` = "Het-Homo", `Homo-Het` = "Homo-Het", `Homo-Homo` = "Homo-Homo", `0` = "Homo-Homo", ` ` = "Homo-Homo")
-  types <- c("DB Zero", "File Zero", "Het-Het", "Het-Homo", "Homo-Het", "Homo-Homo")  # order with levels
   
-  # Make tibble, recode values
-  CombinedConflicts <- CombinedConflicts %>%
-    dplyr::filter(Conflict == "Conflict") %>% 
-    dplyr::mutate(Type = dplyr::recode_factor(Type, !!!level_key)) %>%  # recode to deal with mitochondrial conflicts
-    dplyr::mutate(Type = factor(x = Type, levels = types)) %>%  # new levels
-    dplyr::mutate(Locus = factor(x = Locus, levels = loci)) %>%  # new levels
-    dplyr::mutate(Silly.Code = factor(x = Silly.Code, levels = ProjectSillys)) %>%  # new levels
-    tibble::as_tibble()
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ## Conflict summaries
   
-  conflicts_by_plate <- CombinedConflicts %>% 
-    dplyr::group_by(PlateID, Type) %>%
-    dplyr::summarise(n = n()) %>% 
-    tidyr::spread(Type, n, fill = 0, drop = FALSE) %>% 
-    dplyr::mutate(Conflict = sum(`Het-Het`, `Het-Homo`, `Homo-Het`, `Homo-Homo`)) %>% 
-    dplyr::ungroup()
-    
-  conflicts_by_silly <- CombinedConflicts %>% 
-    dplyr::group_by(Silly.Code, Type) %>% 
-    dplyr::summarise(n = n()) %>% 
-    tidyr::spread(Type, n, fill = 0, drop = FALSE) %>% 
+  conflicts_by_plate <- combined_conflicts %>% 
+    dplyr::group_by(plate_id, concordance_type) %>%
+    dplyr::summarise(n = dplyr::n()) %>% 
+    tidyr::spread(concordance_type, n, fill = 0, drop = FALSE) %>% 
     dplyr::mutate(Conflict = sum(`Het-Het`, `Het-Homo`, `Homo-Het`, `Homo-Homo`)) %>% 
     dplyr::ungroup()
   
-  conflicts_by_locus <- CombinedConflicts %>% 
-    dplyr::group_by(Locus, Type) %>% 
-    dplyr::summarise(n = n()) %>% 
-    tidyr::spread(Type, n, fill = 0, drop = FALSE) %>% 
+  conflicts_by_silly <- combined_conflicts %>% 
+    dplyr::group_by(silly, concordance_type) %>% 
+    dplyr::summarise(n = dplyr::n()) %>% 
+    tidyr::spread(concordance_type, n, fill = 0, drop = FALSE) %>% 
     dplyr::mutate(Conflict = sum(`Het-Het`, `Het-Homo`, `Homo-Het`, `Homo-Homo`)) %>% 
     dplyr::ungroup()
-
+  
+  conflicts_by_locus <- combined_conflicts %>% 
+    dplyr::group_by(locus, concordance_type) %>% 
+    dplyr::summarise(n = dplyr::n()) %>% 
+    tidyr::spread(concordance_type, n, fill = 0, drop = FALSE) %>% 
+    dplyr::mutate(Conflict = sum(`Het-Het`, `Het-Homo`, `Homo-Het`, `Homo-Homo`)) %>% 
+    dplyr::ungroup()
+  
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #### Sample Size by Locus for Project Genotypes ####
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -498,7 +490,6 @@ if(FALSE){##
 }###########
 ############
 ############
-
 
 
 
