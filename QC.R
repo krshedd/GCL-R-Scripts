@@ -479,40 +479,23 @@ if(FALSE){##
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #### Append Summary Tables to QCSummaryfile.xlsx ####
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Create list object for all output to simple summary.xlsx file
+  summary_lst <- suppressWarnings(list("Summary by Silly" = summary_table_1,
+                      "Conflicts by Silly" = summary_table_2,
+                      "Conflicts by Locus" = summary_table_3,
+                      "Conflicts by PlateID" = conflicts_by_plate,
+                      "QC Duplicate Check" = dup_check_results,
+                      "Failure Rate by Silly" = failure_rate$silly_failure_rate,
+                      "Failure Rate by Locus" = failure_rate$locus_failure_rate,
+                      "Failure Rate by Plate" = failure_rate$plate_failure_rate,
+                      "Overall Failure Rate" = failure_rate$overall_failure_rate,
+                      "Project Sample Size by Locus" = OriginalProjectSampleSizebyLocus %>% tibble::rownames_to_column("silly") %>% tibble::as_tibble(),
+                      "Duplicate Check in Project" = dplyr::bind_rows(DuplicateCheckReportSummary[!DuplicateCheckReportSummary == "NO Duplicates"], .id = "silly") %>% tibble::as_tibble(),
+                      "Alternate Species" = Alternate))
   
-  write.xlsx(x = as.data.frame(summary_table_1), file = QCSummaryfile, sheetName = "Summary by Silly", row.names = FALSE, col.names = TRUE, append = TRUE)
-
-  write.xlsx(x = as.data.frame(summary_table_2), file = QCSummaryfile, sheetName = "Conflicts by Silly", row.names = FALSE, col.names = TRUE, append = TRUE)
-
-  if(exists("DupCheckResults")) {
-
-    print(DupCheckResults)
-    
-    invisible(lapply(conflict_silly, function(silly) {write.xlsx(x = DupCheckResults[[silly]], file = QCSummaryfile, sheetName = paste("DupCheckBetween", silly, sep = " "), row.names = TRUE, col.names = TRUE, append = TRUE)} ))
-
-  }
-
-  write.xlsx(x = as.data.frame(summary_table_3), file = QCSummaryfile, sheetName = "Conflicts by Locus", row.names = FALSE, col.names = TRUE, append = TRUE)
-
-  write.xlsx(x = as.data.frame(conflicts_by_plate), file = QCSummaryfile, sheetName = "Conflicts by PlateID", row.names = FALSE, col.names = TRUE, append = TRUE)
-
-  write.xlsx(x = as.data.frame(FailureRate$silly_failure_rate), file = QCSummaryfile, sheetName = "Failure Rate by Silly", row.names = FALSE, col.names = TRUE, append = TRUE)
-
-  write.xlsx(x = as.data.frame(FailureRate$locus_failure_rate), file = QCSummaryfile, sheetName = "Failure Rate by Locus", row.names = FALSE, col.names = TRUE, append = TRUE)
-
-  write.xlsx(x = as.data.frame(FailureRate$plate_failure_rate), file = QCSummaryfile, sheetName = "Failure Rate by Plate", row.names = FALSE, col.names = TRUE, append = TRUE)
-
-  write.xlsx(x = as.data.frame(FailureRate$overall_failure_rate), file = QCSummaryfile, sheetName = "Overall Failure Rate", row.names = FALSE, col.names = TRUE, append = TRUE)
-
-  write.xlsx(x = OriginalProjectSampleSizebyLocus, file = QCSummaryfile, sheetName = "OriginalProjectSampleSizebyLocus", row.names = TRUE, col.names = TRUE, append = TRUE)
-
-  if(exists("Alternate")){
-
-    write.xlsx(x = Alternate, file = QCSummaryfile, sheetName = "Alternate Species", row.names = TRUE, col.names = TRUE, append = TRUE)
-
-  }
+  # Write out a "Simple" file, can't update normal Summary File by inserting new tabs
+  writexl::write_xlsx(x = summary_lst, path = QCSummaryfile, col_names = TRUE)
   
-  write.xlsx(x = DuplicateCheckReportSummary, file = QCSummaryfile, sheetName = "Duplicates Within Silly", row.names = TRUE, col.names = TRUE, append = TRUE)
   
 
 #~~~  STOP!  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
