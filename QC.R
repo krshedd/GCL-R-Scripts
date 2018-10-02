@@ -260,19 +260,24 @@ if(FALSE){##
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
   ProjectSillys_SampleSizes <- matrix(data = NA, nrow = length(ProjectSillys), ncol = 5, dimnames = list(ProjectSillys, c("Genotyped", "Alternate", "Missing", "Duplicate", "Final")))
-
+  
   ProjectSillys_SampleSizes[, "Genotyped"] <- sapply(paste(ProjectSillys, ".gcl", sep = ''), function(x) get(x)$n)
-
+  
   if(species %in% c("chum", "sockeye")) {
-  
-    Alternate <- FindAlternateSpecies.GCL(sillyvec = ProjectSillys, species = species)
-  
+    
+    Alternate <- FindAlternateSpecies.GCL(sillyvec = ProjectSillys, species = species) %>% 
+      dplyr::as_tibble()
+    
     nAltBySilly <- sapply(ProjectSillys, function(silly) {
       AlternateSpeciesReport <- Alternate[grep(pattern = silly, x = rownames(Alternate)), ]
       sum(AlternateSpeciesReport$Alternate > 0.5 & AlternateSpeciesReport$Failure > 0.5)
     })
     # RemoveAlternateSpecies.GCL(AlternateSpeciesReport = Alternate, AlternateCutOff = 0.5, FailedCutOff = 0.5)  # Do not remove fish, just note how many per silly. Still want to catch them in conflicts later.
-
+    
+  } else {
+    
+    Alternate = tibble::tibble(x = "Not applicable")
+    
   }
   
   ColSizePostAlternate <- ProjectSillys_SampleSizes[, "Genotyped"]
@@ -490,6 +495,5 @@ if(FALSE){##
 }###########
 ############
 ############
-
 
 
