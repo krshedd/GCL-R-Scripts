@@ -320,69 +320,98 @@ if(FALSE){##
   #### Perform Duplicate Check on High Conflict Individuals ####
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
-  conflicts <- which(CombinedConflicts$Type %in% c("Het-Het", "Het-Homo", "Homo-Het", "Homo-Homo"))
-
-  conflictstab <- table(CombinedConflicts[conflicts, "Silly.Source"])
-
-  hist(conflictstab / length(loci), main = "QC individual conflict rate", xlab = "Conflict rate", col = 8, breaks = seq(from = 0, to = 1, by = 0.02))
-
-  conflict_bool <- conflictstab / length(loci) > conflict_rate
-
-  if(sum(conflict_bool)){ 
-
-    conflict_indv_bool <- conflict_bool
-
-    conflict_indv <- names(conflict_indv_bool)[conflict_indv_bool]
- 
-    conflict_indv_numconflicts <- conflictstab[conflict_indv_bool]   
-
-    message(paste0("The following individuals have > ", conflict_rate * 100, "% loci with conflicts between project and QC:\n"), paste(conflict_indv, conflict_indv_numconflicts[conflict_indv], "conflicts", collapse = "\n"))
+  # Filter for conflicts, determine conflict rate
+  conflicts <- combined_conflicts %>% 
+    dplyr::filter(concordance_type %in% c("Het-Het", "Het-Homo", "Homo-Het", "Homo-Homo")) %>% 
+    dplyr::count(silly_source) %>% 
+    dplyr::mutate(p = n / length(loci))
+  
+  # Histogram of conflict rate
+  conflicts %>% 
+    ggplot2::ggplot(aes(x = p)) +
+    ggplot2::geom_bar() +
+    ggplot2::xlim(0, 1) +
+    ggplot2::geom_vline(xintercept = conflict_rate) +
+    ggplot2::xlab("Conflict rate") +
+    ggplot2::ylab("Frequency") +
+    ggplot2::ggtitle("QC individual conflict rate")
+  
+  # Filter for conflicts > conflict_rate
+  conflicts_investigate <- conflicts %>% 
+    dplyr::filter(p > conflict_rate)
+  
+  # Duplicate check if necessary
+  if(nrow(conflicts_investigate) == 0) {
     
-    new_conflict_indv <- NULL
-
-    for(silly_indv in conflict_indv) {
-
-      conflict_indv_split <- unlist(strsplit(x = silly_indv, split = "_"))
-
-      id <- conflict_indv_split[2]
-
-      silly <- conflict_indv_split[1]
-
-      if(id %in% MissLociQC[[paste0(silly, "QC")]]) {message(paste0("\n", silly, "QC_", id, " does not have at least 80% loci genotyped, not running DupCheck for this individual."))}
+    message(paste0("No individuals have > ", conflict_rate * 100, "% loci with conflicts between project and QC."))
+    
+  } else {
+    
+    message(paste0("The following individuals have > ", conflict_rate * 100, "% loci with conflicts between project and QC:\n"), paste(conflicts_investigate$silly_source, conflicts_investigate$n, "conflicts", collapse = "\n"))
+    
+    # Loop through individuals to see if missing loci
+    conflict_indv <- NULL
+    
+    for (silly_ind in conflicts_investigate$silly_source) {
       
-      if(! id %in% get(paste0(silly, ".gcl"))$attributes$FK_FISH_ID) {message(paste0("\n", silly, "_", id, " does not have at least 80% loci genotyped, not running DupCheck for this individual."))}
+      silly <- stringr::str_split(string = silly_ind, pattern = "_", simplify = TRUE)[, 1]
       
-      new_conflict_indv <- c(new_conflict_indv, paste(silly, id, sep = "_")[ ! id %in% MissLociQC[[paste0(silly, "QC")]] & id %in% get(paste0(silly, ".gcl"))$attributes$FK_FISH_ID ])  # Confirm QC fish and Project fish were not removed
-
-    }#silly_indv
-
-    original_conflict_indv <- conflict_indv
-
-    conflict_indv <- new_conflict_indv
-
-    conflict_silly <- unique(unlist(lapply(conflict_indv, function(ind) {strsplit(x = ind, split = "_")[[1]][1]} )))
-
-    if(is.null(conflict_silly)) {
+      ind <- stringr::str_split(string = silly_ind, pattern = "_", simplify = TRUE)[, 2]
+      
+      # QC fish lost in QA?
+      if(ind %in% MissLociQC[[paste0(silly, "QC")]]) {
+        message(paste0("\n", silly, "QC_", ind, " does not have at least 80% loci genotyped, not running DupCheck for this individual."))
+      }  # if QC fish removed due to missing genotypes
+      
+      # Project fish lost in QA
+      if(ind %in% MissLoci[[silly]]) {
+        message(paste0("\n", silly, "_", ind, " does not have at least 80% loci genotyped, not running DupCheck for this individual."))
+      }  # if project fish removed due to missing genotypes
+      
+      conflict_indv <- c(conflict_indv, paste(silly, ind, sep = "_")[!(ind %in% MissLociQC[[paste0(silly, "QC")]] | ind %in% MissLoci[[silly]]) ])  # Confirm QC fish and Project fish were not removed
+      
+    }  # silly_ind
+    
+    # If no more, stop
+    if(is.null(conflict_indv) | length(conflict_indv) == 0) {
       
       message("\nNo remaining high conflict individuals.")
       
-    } else {#conflict_silly
+      dup_check_results <- tibble::tibble(x = "Not applicable")
+      
+    } else {
+      
+      conflicts_investigate <- conflicts_investigate %>% 
+        dplyr::filter(silly_source %in% conflict_indv)
       
       message("\nRunning DupCheckBetweenSillys.GCL on these high conflict individuals, as they have at least 80% loci genotyped for Project and QC extractions.")
+      message(paste(conflicts_investigate$silly_source, conflicts_investigate$n, "conflicts", collapse = "\n"))
       
-      message(paste(conflict_indv, conflict_indv_numconflicts[conflict_indv], "conflicts", collapse = "\n"))
+      conflict_silly <- unique(stringr::str_split(string = conflicts_investigate$silly_source, pattern = "_", simplify = TRUE)[, 1])
       
-      KeySillyIDs <- setNames(lapply(conflict_silly, function(silly) {sapply(grep(pattern = silly, x = conflict_indv, value = TRUE), function(ind) {unlist(strsplit(x = ind, split = paste(silly, "_", sep = '')))[2]}, USE.NAMES = FALSE) }), paste0(conflict_silly, "QC"))
+      KeySillyIDs <- setNames(
+        lapply(conflict_silly, function(silly) {
+          sapply(grep(pattern = silly, x = conflict_indv, value = TRUE), function(ind) {
+            stringr::str_split(string = ind, pattern = "_", simplify = TRUE)[, 2]
+          }, USE.NAMES = FALSE) 
+        }),
+        paste0(conflict_silly, "QC"))
       
-      DupCheckResults <- setNames(lapply(conflict_silly, function(silly) {DupCheckBetweenSillys.GCL(KeySillys = paste0(silly, "QC"), KeySillyIDs = KeySillyIDs[paste0(silly, "QC")], BetweenSillys = ProjectSillys, loci = loci, threshold = 0.9)} ), nm = conflict_silly)
+      DupCheckResults <- sapply(conflict_silly, function(silly) {
+        DupCheckBetweenSillys.GCL(KeySillys = paste0(silly, "QC"), 
+                                  KeySillyIDs = KeySillyIDs[paste0(silly, "QC")], 
+                                  BetweenSillys = ProjectSillys, 
+                                  loci = loci, 
+                                  threshold = 0.9)
+      }, simplify = FALSE)  # FALSE
       
-    }
+      dup_check_results <- dplyr::bind_rows(DupCheckResults, .id = "silly") %>% 
+        tibble::as_tibble()
+      
+    }  # conflict_ind, post missing individuals
     
-  } else {#conflict_bool
-
-    message(paste("No individuals have > ", conflict_rate * 100, "% loci with conflicts between project and QC.", sep = ''))
-    
-  }
+  }  # else, conflicts_to_investigate
+  
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #### Create Summary Tables ####
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -495,5 +524,4 @@ if(FALSE){##
 }###########
 ############
 ############
-
 
