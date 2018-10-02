@@ -110,10 +110,10 @@ if(FALSE){##
   #### Failure Rate ####
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
-  FailureRate <- FailureRate.GCL(sillyvec = ProjectSillys)
+  failure_rate <- FailureRate.GCL(sillyvec = ProjectSillys)
   
-  FailureRate
-
+  failure_rate
+  
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #### Read in QC Genotypes ####
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -493,7 +493,6 @@ if(FALSE){##
 }###########
 ############
 ############
-
 
 
 
