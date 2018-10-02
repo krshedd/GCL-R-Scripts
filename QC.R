@@ -119,76 +119,81 @@ if(FALSE){##
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
   QCfiles <- list.files(path = "Genotype Data Files", pattern = ".csv", full.names = TRUE, recursive = FALSE)
-
+  
   if(max(nalleles) <= 2) {
     
     ReadBiomarkQC.GCL(QCcsvFilepaths = QCfiles)
     
   } else {
     
-    QCdat <- Reduce(rbind, lapply(QCfiles, function(fle) {
-      QCdat.temp <- read.csv(file = fle)[, 1:4]
-      colnames(QCdat.temp) <- c("Sample.Name", "Marker", "Allele.1", "Allele.2")
-      QCdat.temp} )
-    )
+    # Read in .csv files
+    QC_genotypes <- suppressMessages(
+      suppressWarnings(
+        dplyr::bind_rows(
+          lapply(QCfiles, function(fle) {readr::read_csv(file = fle)[, 1:4]} )
+        )  # bind_rows
+      )  # supressWarnings
+    )  # suppressMessages
     
-    levels(QCdat$Marker) <- gsub(pattern = " ", replacement = "", x = levels(QCdat$Marker))
+    # Rename columns, split silly_source
+    QC_genotypes <- QC_genotypes %>% 
+      dplyr::rename(silly_source = "Sample Name", locus = Marker, allele_1 = "Allele 1", allele_2 = "Allele 2") %>% 
+      tidyr::separate(col = silly_source, into = c("silly", "fish_id"), sep = "_", remove = FALSE)
+      
+    # Verify that all QC silly are in the project
+    ProjectSillysQC <- unique(QC_genotypes$silly)
+    if(!all(ProjectSillysQC %in% ProjectSillys)){ stop(paste0(ProjectSillysQC[! ProjectSillysQC %in% ProjectSillys], " not found in ProjectSillys.")) }
     
-    vials <- levels(QCdat$Sample.Name)
+    # Verify that all QC loci are in project loci
+    lociQC <- sort(unique(QC_genotypes$locus))
+    if(!all(lociQC %in% loci)){ stop(paste0(lociQC[! lociQC %in% loci], " not found in LocusControl.")) }
     
-    lociQC <- levels(QCdat$Marker)  
-    
-    QCdat <- data.frame(Silly = unlist(lapply(strsplit(as.character(QCdat$Sample.Name), split = "_"), "[", 1)), Vial = unlist(lapply(strsplit(as.character(QCdat$Sample.Name), split = "_"), "[", 2)), QCdat, stringsAsFactors = FALSE)
-    
-    QCdat$Vial <- as.character(as.numeric(QCdat$Vial))
-    
-    ProjectSillysQC <- unique(unlist(lapply(strsplit(as.character(QCdat$Sample.Name), split = "_"), "[", 1)))
-    
-    if(sum(! ProjectSillysQC %in% ProjectSillys)){ stop(paste0(ProjectSillysQC[! ProjectSillysQC %in% ProjectSillys], " not found in ProjectSillys.")) }
-    
-    if(sum(! lociQC %in% loci)){ stop(paste0(lociQC[! lociQC %in% loci], " not found in LocusControl.")) }
-    
+    # attributes table names
     attNames <- colnames(get(paste0(ProjectSillys[1], ".gcl"))$attributes)
     
-    for(silly in ProjectSillysQC){
+    # Loop over silly to create .gcl objects
+    for(x in ProjectSillysQC){
       
-      sillydat <- subset(QCdat, Silly == silly)
+      # subset genotypes by silly
+      x_genotypes <- QC_genotypes %>% 
+        dplyr::filter(silly == x) %>% 
+        dplyr::mutate(locus = factor(locus, levels = loci))
+    
+      # create scores array
+      scores <- Reduce(bbind, lapply(c("allele_1", "allele_2"), function(al){ tapply(pull(x_genotypes, al), list(x_genotypes$fish_id, x_genotypes$locus), c)[,, drop = FALSE] }))
+      dimnames(scores)[[3]] <- paste0("Dose", 1:2)
       
-      scores <- Reduce(bbind , lapply(c("Allele.1", "Allele.2"), function(al){ tapply(sillydat[, al], list(sillydat$Vial, sillydat$Marker), c)[,, drop = FALSE] }))
-      
+      # create counts array
       counts <- array(NA, c(nrow(scores), ncol(scores), max(nalleles)), list(rownames(scores), colnames(scores), paste0("Allele", seq(max(nalleles)))))
-      
       for(locus in loci){
-        
         for(al in seq(nalleles[locus])){
-          
-          for(id in sillydat$Vial){
-            
+          for(id in x_genotypes$fish_id){
             counts[id, locus, al] <- sum(scores[id, locus, seq(ploidy[locus])] == alleles[[locus]][al])
-            
-          }#id
-          
-        }#al           
-        
-      }#locus
+          }  # id
+        }  # al           
+      }  # locus
       
+      # create attributes data.frame
       attributes <- data.frame(matrix(NA, nrow = nrow(counts), ncol = length(attNames), dimnames = list(rownames(counts), attNames)))
+      attributes$FK_FISH_ID <- rownames(counts)
+      attributes$SillySource <- paste0(x, "QC_", rownames(counts))
       
-      attributes$SillySource <- paste0(silly, "QC_", rownames(counts))
+      # assign to global environment
+      assign(paste0(x, "QC.gcl"), list(counts = counts, scores = scores, n = nrow(scores), attributes = attributes))
       
-      assign(paste0(silly, "QC.gcl"), list(counts = counts, scores = scores, n = nrow(scores), attributes = attributes))
-      
-    }#silly
+    }  # x (silly)
     
     QCSillys <- paste0(ProjectSillysQC, "QC")
     
   }#else for usat
-
+  
   QCColSize <- sapply(paste(QCSillys, ".gcl", sep = ''), function(x) get(x)$n)
   
   QCColSizeAll <- setNames(rep(0, length(ProjectSillys)),paste0(ProjectSillys, "QC.gcl"))
   
   QCColSizeAll[paste0(QCSillys, ".gcl")] <- QCColSize[paste0(QCSillys, ".gcl")]
+  
+  QCColSizeAll
   
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #### Read in Conflict Report ####
@@ -493,8 +498,6 @@ if(FALSE){##
 }###########
 ############
 ############
-
-
 
 
 
