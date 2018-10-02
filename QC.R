@@ -65,10 +65,10 @@ if(FALSE){##
   projectID <- 2421
 
   username <- "krshedd"
-
-  password <- ""
-
-  QCSummaryfile <- "Project S187 QC Summary.xlsx"
+  
+  .password <- ""
+  
+  QCSummaryfile <- paste("Project", project,"QC Summary Simple.xlsx") #  Do name normal summary file!!! If you do, it will overwrite it, not append it
   
   conflict_rate <- 0.10  # conflict rate at which dupcheck between sillys occurs
 
@@ -88,8 +88,8 @@ if(FALSE){##
   #### Create Locus Control ####
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
-  CreateLocusControl.GCL(markersuite = markersuite, username = username, password = password)
-
+  CreateLocusControl.GCL(markersuite = markersuite, username = username, password = .password)
+  
   loci <- LocusControl$locusnames
 
   nalleles <- LocusControl$nalleles
@@ -102,10 +102,10 @@ if(FALSE){##
   #### Read in Project Genotypes ####
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
-  ReadProjectLOKI2R.GCL(projectID = projectID, username = username, password = password)
-
-  rm(password)
-
+  ReadProjectLOKI2R.GCL(projectID = projectID, username = username, password = .password)
+  
+  rm(.password)
+  
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #### Failure Rate ####
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -493,9 +493,6 @@ if(FALSE){##
 }###########
 ############
 ############
-
-
-
 
 
 
