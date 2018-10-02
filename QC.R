@@ -1,12 +1,12 @@
 ##Don't Run#
 ############
 if(FALSE){##
-############
-############
-
+  ############
+  ############
+  
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  #Title: S187 QC
-  #Date: Wed Sep 05 10:42:19 2018
+  #Title: K149 QC
+  #Date: Tue Oct 02 11:49:53 2018
   #Name: Heather Hoyt; Kyle Shedd
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
@@ -53,17 +53,17 @@ if(FALSE){##
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #### Arguments ####
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-  dirQC <- "V:/Lab/Genotyping/SNP Projects/Sockeye/Project S187 Copper River In Season 2018/QC/"
-
-  species <- "sockeye"
-
-  markersuite <- "Sockeye2011_96SNPs"
-
-  project <- "S187"
-
-  projectID <- 2421
-
+  
+  dirQC <- "V:/Lab/Genotyping/Microsatellite Projects/Chinook/Project K149 SEAK Districts 8 and 11 2018/QC/"
+  
+  species <- "Chinook"
+  
+  markersuite <- "GAPS_Chinook_uSATs"
+  
+  project <- "K149"
+  
+  projectID <- 2435
+  
   username <- "krshedd"
   
   .password <- ""
@@ -71,17 +71,17 @@ if(FALSE){##
   QCSummaryfile <- paste("Project", project,"QC Summary Simple.xlsx") #  Do name normal summary file!!! If you do, it will overwrite it, not append it
   
   conflict_rate <- 0.10  # conflict rate at which dupcheck between sillys occurs
-
-#~~~  GO! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
+  
+  #~~~  GO! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
   while(!require(pacman)){ install.packages("pacman") }
-
-  p_load(tidyverse, lattice, xlsx, abind)  # use pacman to load or install + load necessary packages
+  
+  p_load(tidyverse, lattice, writexl, abind)  # use pacman to load or install + load necessary packages
   
   bbind <- function(...) { abind(..., along = 3) }
-
-  source(path.expand("~/R/Functions.GCL.R"))
-
+  
+  source(path.expand("~/../R/Functions.GCL.R"))  # user may need to change depending on where you put this directory
+  
   setwd(dirQC)
   
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -91,13 +91,13 @@ if(FALSE){##
   CreateLocusControl.GCL(markersuite = markersuite, username = username, password = .password)
   
   loci <- LocusControl$locusnames
-
+  
   nalleles <- LocusControl$nalleles
-
+  
   ploidy <- LocusControl$ploidy
-
+  
   alleles <- LocusControl$alleles
-
+  
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #### Read in Project Genotypes ####
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -234,27 +234,21 @@ if(FALSE){##
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
   OriginalProjectSampleSizebyLocus <- SampSizeByLocus.GCL(sillyvec = ProjectSillys, loci = loci)
-
-  OriginalProjectPercentbyLocus <- apply(OriginalProjectSampleSizebyLocus, 1, function(row) {row / max(row)} )
-
-  reruns <- which(apply(OriginalProjectPercentbyLocus, 2, min) < 0.8)  
-
-  new_colors <- colorRampPalette(c("black", "white"))
-
-  levelplot(t(OriginalProjectPercentbyLocus), col.regions = new_colors, at = seq(0, 1, length.out = 100), main = "% Genotyped", xlab = "SILLY", ylab = "Locus", scales = list(x = list(rot = 90)), aspect = "fill") # aspect = "iso" will make squares
-
+  
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #### Sample Size by Locus for QC Genotypes ####
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
   OriginalQCSampleSizebyLocus <- SampSizeByLocus.GCL(sillyvec = QCSillys, loci = loci)
-
+  
   OriginalQCPercentbyLocus <- apply(OriginalQCSampleSizebyLocus, 1, function(row) {row / max(row)} )
-
+  
   rerunsQC <- which(apply(OriginalQCPercentbyLocus, 2, min) < 0.8)
-
+  
+  new_colors <- colorRampPalette(c("black", "white"))
+  
   levelplot(t(OriginalQCPercentbyLocus), col.regions = new_colors, at = seq(0, 1, length.out = 100), main = "% Genotyped", xlab = "SILLY", ylab = "Locus", scales = list(x = list(rot = 90)), aspect = "fill") # aspect = "iso" will make squares
-
+  
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #### QA of Project Genotypes ####
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -283,39 +277,41 @@ if(FALSE){##
   ColSizePostAlternate <- ProjectSillys_SampleSizes[, "Genotyped"]
   if(exists(x = "nAltBySilly")) {ColSizePostAlternate <- ColSizePostAlternate - nAltBySilly}
   # ColSizePostAlternate <- sapply(paste(ProjectSillys, ".gcl", sep = ''), function(x) get(x)$n)
-
+  
   ProjectSillys_SampleSizes[, "Alternate"] <- ProjectSillys_SampleSizes[, "Genotyped"] - ColSizePostAlternate 
-
+  
   MissLoci <- RemoveIndMissLoci.GCL(sillyvec = ProjectSillys, proportion = 0.8)
-
+  
   ColSizePostMissLoci <- sapply(paste(ProjectSillys, ".gcl", sep = ''), function(x) get(x)$n) - ProjectSillys_SampleSizes[, "Alternate"]
-
+  
   ProjectSillys_SampleSizes[, "Missing"] <-  ColSizePostAlternate - ColSizePostMissLoci
-
+  
   DuplicateCheck95MinProportion <- CheckDupWithinSilly.GCL(sillyvec = ProjectSillys, loci = loci, quantile = NULL, minproportion = 0.95)
-
+  
   DuplicateCheckReportSummary <- sapply(ProjectSillys, function(x) DuplicateCheck95MinProportion[[x]]$report, simplify = FALSE)
   
   nDupsBySilly <- sapply(DuplicateCheckReportSummary, function(silly) {ifelse(is.character(silly), 0, nrow(as.matrix(silly)))})
   # RemovedDups <- RemoveDups.GCL(DuplicateCheck95MinProportion)  # Do not remove fish, just note how many per silly. Still want to catch them in conflicts later.
-
+  
   sapply(DuplicateCheckReportSummary[nDupsBySilly >=1], function(silly) {if(1 %in% abs(as.numeric(levels(silly$ID1)) - as.numeric(levels(silly$ID2)))) {"Sequential IDs found as duplicates, check 'DuplicateCheckReportSummary' for duplicated rows"} else {"Duplicates exist, but IDs do not appear sequential"} } )
   
   DuplicateCheckReportSummary[nDupsBySilly >= 1]  # Show within silly duplicates
   
   ColSizePostDuplicate <- ColSizePostMissLoci - nDupsBySilly
   # ColSizePostDuplicate <- sapply(paste(ProjectSillys, ".gcl", sep = ''), function(x) get(x)$n)
-
+  
   ProjectSillys_SampleSizes[, "Duplicate"] <- ColSizePostMissLoci - ColSizePostDuplicate
-
+  
   ProjectSillys_SampleSizes[, "Final"] <- ColSizePostDuplicate
-
+  
+  ProjectSillys_SampleSizes
+  
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #### QA of QC Genotypes ####
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
   MissLociQC <- RemoveIndMissLoci.GCL(sillyvec = QCSillys, proportion = 0.8)
-
+  
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #### Perform Duplicate Check on High Conflict Individuals ####
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -496,15 +492,13 @@ if(FALSE){##
   # Write out a "Simple" file, can't update normal Summary File by inserting new tabs
   writexl::write_xlsx(x = summary_lst, path = QCSummaryfile, col_names = TRUE)
   
-  
-
-#~~~  STOP!  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
+  #~~~  STOP!  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
   
-
-##Don't Run#
-############
+  
+  
+  ##Don't Run#
+  ############
 }###########
 ############
 ############
