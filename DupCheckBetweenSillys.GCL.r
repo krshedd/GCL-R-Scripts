@@ -111,7 +111,7 @@ DupCheckBetweenSillys.GCL=function(KeySillys,KeySillyIDs=NULL,BetweenSillys,loci
       
     } else{
       
-      thresholddups <- paste("No Duplicates at a threshold of", threshold)
+      thresholddups <- NULL #  paste("No Duplicates at a threshold of", threshold)
       
     }
     
@@ -133,9 +133,13 @@ DupCheckBetweenSillys.GCL=function(KeySillys,KeySillyIDs=NULL,BetweenSillys,loci
     
     
     
-    list(Threshold = thresholddups, MostSimilar = maxdups, Project = projectdups)
-    
+    # list(Threshold = thresholddups, MostSimilar = maxdups, Project = projectdups)
+    dplyr::bind_rows(thresholddups, maxdups, projectdups) %>% 
+      dplyr::distinct(Keysillyvial, Betweensillyvial, .keep_all = TRUE)
+  
   }, simplify = FALSE)
+  
+  duplicatesummary <- dplyr::bind_rows(duplicatesummary)
   
   return(duplicatesummary)
     
