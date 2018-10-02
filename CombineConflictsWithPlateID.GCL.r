@@ -27,7 +27,7 @@ CombineConflictsWithPlateID.GCL= function(files){
   )
   
   # Old conflict report has "0" for mitochondrial conflicts, new has " " for mitochondrial conflicts, we will refer to them as "Homo-Homo".
-  # level_key <- list(`DB Zero` = "DB Zero", `File Zero` = "File Zero", `Het-Het` = "Het-Het", `Het-Homo` = "Het-Homo", `Homo-Het` = "Homo-Het", `Homo-Homo` = "Homo-Homo", `0` = "Homo-Homo", ` ` = "Homo-Homo")
+  level_key <- list(`DB Zero` = "DB Zero", `File Zero` = "File Zero", `Het-Het` = "Het-Het", `Het-Homo` = "Het-Homo", `Homo-Het` = "Homo-Het", `Homo-Homo` = "Homo-Homo", `0` = "Homo-Homo", ` ` = "Homo-Homo")
   types <- c("DB Zero", "File Zero", "Het-Het", "Het-Homo", "Homo-Het", "Homo-Homo")  # order with levels
   
   # Pool all collections in to one master silly
@@ -53,7 +53,7 @@ CombineConflictsWithPlateID.GCL= function(files){
                   plate_id = PLATE_ID) %>% 
     dplyr::select(silly, fish_id, silly_source, locus, file_allele_1, file_allele_2, db_allele_1, db_allele_2, concordance, concordance_type, plate_id) %>% 
     dplyr::filter(concordance == "Conflict") %>% 
-    # dplyr::mutate(Type = dplyr::recode_factor(Type, !!!level_key)) %>%  # recode to deal with mitochondrial conflicts
+    dplyr::mutate(concordance_type = dplyr::recode_factor(concordance_type, !!!level_key)) %>%  # recode to deal with mitochondrial conflicts
     dplyr::mutate(concordance_type = factor(x = concordance_type, levels = types)) %>%  # new levels
     dplyr::mutate(locus = factor(x = locus, levels = loci)) %>%  # new levels
     dplyr::mutate(silly = factor(x = silly, levels = ProjectSillys)) %>% 
