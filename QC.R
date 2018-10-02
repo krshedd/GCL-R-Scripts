@@ -416,25 +416,25 @@ if(FALSE){##
   #### Create Summary Tables ####
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
-  summary_table_1 <- bind_cols(tibble(Silly = ProjectSillys), as.tibble(ProjectSillys_SampleSizes)) %>% 
-    dplyr::left_join(FailureRate$silly_failure_rate, by = c("Silly" = "silly")) %>% 
+  summary_table_1 <- dplyr::bind_cols(tibble(Silly = ProjectSillys), as.tibble(ProjectSillys_SampleSizes)) %>% 
+    dplyr::left_join(failure_rate$silly_failure_rate, by = c("Silly" = "silly")) %>% 
     dplyr::rename("Failure Rate" = fail) %>% 
     dplyr::mutate("Total QC Fish" = QCColSizeAll)
   
-  qc_silly_genotypes <- tibble(Silly.Code = factor(ProjectSillys),
+  qc_silly_genotypes <- tibble::tibble(silly = factor(ProjectSillys),
                                qc_genotypes = sapply(ProjectSillys, function(silly) {
                                  qc_silly = paste0(silly, "QC.gcl")
                                  ifelse(qc_silly %in% names(QCColSizeAll), QCColSizeAll[qc_silly] * length(loci), 0)
                                } ))
   
   summary_table_2 <- conflicts_by_silly %>% 
-    tidyr::gather(type, number, -Silly.Code) %>%  # make tall
-    dplyr::left_join(qc_silly_genotypes) %>%  # join number of QC genotypes by silly
+    tidyr::gather(type, number, -silly) %>%  # make tall
+    dplyr::left_join(qc_silly_genotypes, by = "silly") %>%  # join number of QC genotypes by silly
     dplyr::mutate(rate = number / qc_genotypes) %>%  # conflict numbers to rates
-    tidyr::gather(variable, value, -Silly.Code, -qc_genotypes, -type) %>%  # make tall
+    tidyr::gather(variable, value, -silly, -qc_genotypes, -type) %>%  # make tall
     tidyr::unite(temp, type, variable) %>%  # unite conflict type with both number and rate
     tidyr::spread(temp, value) %>%  # make wide
-    dplyr::rename(Silly = Silly.Code, 
+    dplyr::rename(Silly = silly, 
                   "Total QC Genotypes" = qc_genotypes, 
                   "Total Discrepancies" = Conflict_number, 
                   "Discrepancy Rate" = Conflict_rate,
@@ -450,15 +450,16 @@ if(FALSE){##
                   "Homo-Het Rate" = `Homo-Het_rate`,
                   "Total Homo-Homo" = `Homo-Homo_number`,
                   "Homo-Homo Rate" = `Homo-Homo_rate`)
-    
-    summary_table_3 <- conflicts_by_locus %>% 
-    tidyr::gather(type, number, -Locus) %>%  # make tall
+  
+  summary_table_3 <- conflicts_by_locus %>% 
+    tidyr::gather(type, number, -locus) %>%  # make tall
     dplyr::mutate(qc_genotypes = sum(QCColSizeAll)) %>%  # join number of QC genotypes by locus
     dplyr::mutate(rate = number / qc_genotypes) %>%  # conflict numbers to rates
-    tidyr::gather(variable, value, -Locus, -qc_genotypes, -type) %>%  # make tall
+    tidyr::gather(variable, value, -locus, -qc_genotypes, -type) %>%  # make tall
     tidyr::unite(temp, type, variable) %>%  # unite conflict type with both number and rate
     tidyr::spread(temp, value) %>%  # make wide
-    dplyr::rename("Total QC Genotypes" = qc_genotypes, 
+    dplyr::rename(Locus = locus,
+                  "Total QC Genotypes" = qc_genotypes, 
                   "Total Discrepancies" = Conflict_number, 
                   "Discrepancy Rate" = Conflict_rate,
                   "DB Zeros" = `DB Zero_number`,
@@ -474,7 +475,7 @@ if(FALSE){##
                   "Total Homo-Homo" = `Homo-Homo_number`,
                   "Homo-Homo Rate" = `Homo-Homo_rate`)
   
-
+  
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #### Append Summary Tables to QCSummaryfile.xlsx ####
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -524,4 +525,3 @@ if(FALSE){##
 }###########
 ############
 ############
-
