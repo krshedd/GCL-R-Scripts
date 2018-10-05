@@ -5,9 +5,9 @@ if(FALSE){##
   ############
   
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  #Title: K149 QC
-  #Date: Tue Oct 02 11:49:53 2018
-  #Name: Heather Hoyt; Kyle Shedd
+  #Title: K150 QC
+  #Date: Fri Oct 05 11:16:40 2018
+  #Name: Heather Hoyt; Kyle Shedd; Dan Prince
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
   # It is important to run this script in order, or some functions will not provide accurate results.
@@ -54,15 +54,15 @@ if(FALSE){##
   #### Arguments ####
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
-  dirQC <- "V:/Lab/Genotyping/Microsatellite Projects/Chinook/Project K149 SEAK Districts 8 and 11 2018/QC/"
+  dirQC <- "V:/Lab/Genotyping/SNP Projects/Chinook/Project K150 Yukon Subsistence and Post Season 2018/QC/"
   
   species <- "Chinook"
   
-  markersuite <- "GAPS_Chinook_uSATs"
+  markersuite <- "ChinookYukon2014_41SNPs"
   
-  project <- "K149"
+  project <- "K150"
   
-  projectID <- 2435
+  projectID <- 2438
   
   username <- "krshedd"
   
@@ -210,21 +210,21 @@ if(FALSE){##
   
   conflicts_by_plate <- combined_conflicts %>% 
     dplyr::group_by(plate_id, concordance_type) %>%
-    dplyr::summarise(n = dplyr::n()) %>% 
+    dplyr::summarise(n = n()) %>% 
     tidyr::spread(concordance_type, n, fill = 0, drop = FALSE) %>% 
     dplyr::mutate(Conflict = sum(`Het-Het`, `Het-Homo`, `Homo-Het`, `Homo-Homo`)) %>% 
     dplyr::ungroup()
   
   conflicts_by_silly <- combined_conflicts %>% 
     dplyr::group_by(silly, concordance_type) %>% 
-    dplyr::summarise(n = dplyr::n()) %>% 
+    dplyr::summarise(n = n()) %>% 
     tidyr::spread(concordance_type, n, fill = 0, drop = FALSE) %>% 
     dplyr::mutate(Conflict = sum(`Het-Het`, `Het-Homo`, `Homo-Het`, `Homo-Homo`)) %>% 
     dplyr::ungroup()
   
   conflicts_by_locus <- combined_conflicts %>% 
     dplyr::group_by(locus, concordance_type) %>% 
-    dplyr::summarise(n = dplyr::n()) %>% 
+    dplyr::summarise(n = n()) %>% 
     tidyr::spread(concordance_type, n, fill = 0, drop = FALSE) %>% 
     dplyr::mutate(Conflict = sum(`Het-Het`, `Het-Homo`, `Homo-Het`, `Homo-Homo`)) %>% 
     dplyr::ungroup()
