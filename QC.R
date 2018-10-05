@@ -490,8 +490,12 @@ if(FALSE){##
                       "Alternate Species" = Alternate))
   
   # Write out a "Simple" file, can't update normal Summary File by inserting new tabs
-  writexl::write_xlsx(x = summary_lst, path = QCSummaryfile, col_names = TRUE)
-  
+  if(file.exists(QCSummaryfile)) {
+    stop(paste0("QC Summary file: '", QCSummaryfile ,"' already exists, change the file name so you don't overwrite it, hoser!!!"))
+  } else {
+    writexl::write_xlsx(x = summary_lst, path = QCSummaryfile, col_names = TRUE)
+  }
+
   #~~~  STOP!  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
   
