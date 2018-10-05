@@ -1,7 +1,7 @@
 GenotypeReport.GCL=function(sillyvec=NULL,loci=NULL,path,username,password,project_name=NULL,open.file=FALSE){  
   
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  #  This function pulls a geneotypes report from LOKI and writes the data to aUTF-8 coded csv file. 
+  #  This function pulls a genotypes report from LOKI and writes the data to aUTF-8 coded csv file. 
   #
   #  **Warning - genotypes (pre October 2016) may not exist in the LOKI lookup table with a project name, so genotypes will have to be pulled by sillyvec and loci**  
   #
@@ -11,9 +11,9 @@ GenotypeReport.GCL=function(sillyvec=NULL,loci=NULL,path,username,password,proje
   #
   #  sillyvec <- character vector of SILLYs - example: c("SCIMA18","SCIMA17")
   #
-  #  loci <- charcter vector of locus names as they are spelled in LOKI - example: c("One_E2","One_MHC2_251","One_Cytb_17")
+  #  loci <- character vector of locus names as they are spelled in LOKI - example: c("One_E2","One_MHC2_251","One_Cytb_17")
   #
-  #  path <- file path with csv extension for writting output file with "\\" separator between folders example: "V:\\Analysis\\Staff\\Andy Barclay\\R\Genotypes report"
+  #  path <- file path with csv extension for writing output file with "\\" separator between folders example: "V:\\Analysis\\Staff\\Andy Barclay\\R\Genotypes report"
   #
   #  username <- your user name for accessing LOKI through R example: "awbarclay"
   #
@@ -48,7 +48,7 @@ GenotypeReport.GCL=function(sillyvec=NULL,loci=NULL,path,username,password,proje
   while(!require(tools)){install.packages("tools")}
   
   #Making sure the ojdbc jar file exists on the users C drive. 
-  #If no jar file exists it will be copied from the v drive to the appropriate locaiton on the users C drive.
+  #If no jar file exists it will be copied from the v drive to the appropriate location on the users C drive.
   if(!file.exists(path.expand("~/R"))){
     
     dir<-path.expand("~/R")
@@ -86,7 +86,7 @@ GenotypeReport.GCL=function(sillyvec=NULL,loci=NULL,path,username,password,proje
   #Creating java query when sillyvec and loci are supplied.  
   if(!is.null(sillyvec) & !is.null(loci)){
     
-    #PUlling haploid and diploid loci separetly because haploid only have ALLELE_1.
+    #PUlling haploid and diploid loci separately because haploid only have ALLELE_1.
     
     gnoqry_d <- paste0("SELECT LAB_PROJECT_NAME, FK_COLLECTION_ID, SILLY_CODE, FK_FISH_ID, LOCUS, PLOIDY, ALLELE_1, ALLELE_2 FROM AKFINADM.V_GEN_TEST_RESULTS_BOTHGENO WHERE LOCUS IN (" ,paste0("'",loci,"'",collapse=","), ") AND SILLY_CODE IN", "(",paste0("'",sillyvec,"'",collapse=","),") AND PLOIDY = 'D'")
     
@@ -97,7 +97,7 @@ GenotypeReport.GCL=function(sillyvec=NULL,loci=NULL,path,username,password,proje
   #Creating java query when only sillyvec is supplied
   if(!is.null(sillyvec) & is.null(loci)){
     
-    #PUlling haploid and diploid loci separetly because haploid only have ALLELE_1.
+    #PUlling haploid and diploid loci separately because haploid markers only have ALLELE_1.
     
     gnoqry_d <- paste0("SELECT LAB_PROJECT_NAME, FK_COLLECTION_ID, SILLY_CODE, FK_FISH_ID, LOCUS, PLOIDY, ALLELE_1, ALLELE_2 FROM AKFINADM.V_GEN_TEST_RESULTS_BOTHGENO WHERE SILLY_CODE IN", "(",paste0("'",sillyvec,"'",collapse=","),") AND PLOIDY = 'D'")
     
@@ -108,7 +108,7 @@ GenotypeReport.GCL=function(sillyvec=NULL,loci=NULL,path,username,password,proje
   #Creating java query when only project_name is supplied.
   if(!is.null(project_name)){
     
-    #PUlling haploid and diploid loci separetly because haploid only have ALLELE_1.
+    #PUlling haploid and diploid loci separately because haploid only have ALLELE_1.
     
     gnoqry_d <- paste0("SELECT LAB_PROJECT_NAME, FK_COLLECTION_ID, SILLY_CODE, FK_FISH_ID, LOCUS, PLOIDY, ALLELE_1, ALLELE_2 FROM AKFINADM.V_GEN_TEST_RESULTS_BOTHGENO WHERE LAB_PROJECT_NAME IN", "(",paste0("'",project_name,"'",collapse=","),") AND PLOIDY = 'D'")
     
@@ -116,7 +116,7 @@ GenotypeReport.GCL=function(sillyvec=NULL,loci=NULL,path,username,password,proje
     
   }
   
-  #Pull diploid data and concatinate alleles into one column with "/" separator
+  #Pull diploid data and concatenate alleles into one column with "/" separator
   data_d <- dbGetQuery(con,gnoqry_d) %>% 
     as_tibble() %>% 
     mutate(ALLELES = paste(ALLELE_1,ALLELE_2,sep="/")) %>% 
@@ -131,12 +131,12 @@ GenotypeReport.GCL=function(sillyvec=NULL,loci=NULL,path,username,password,proje
   #Disconnect from LOKI
   discon <- dbDisconnect(con)
   
-  #Combine diploid and haploid marker into one data frame and put into crosstab format (i.e., unstack table)
+  #Combine diploid and haploid marker into one data frame and put into crosstab format (i.e., unstacked table)
   dataAll <- bind_rows(data_d,data_h) %>% 
     select(-PLOIDY) %>% 
     spread(key=LOCUS,value=ALLELES)
   
-  #Checking to see if no data was pulled for a given project. If true, the function will stop and print an erorr message in the console.
+  #Checking to see if no data was pulled for a given project. If true, the function will stop and print an error message in the console.
   if(nrow(dataAll)==0 & exists("project_name")){
     
     stop("No data exist for the supplied lab project name. Check to make sure the name spelled correctly. Also, project names for genotypes imported prior to October 2016 may not be included in LOKI lookup table.")
