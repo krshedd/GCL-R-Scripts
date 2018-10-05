@@ -15,16 +15,31 @@ CombineConflictsWithPlateID.GCL= function(files){
   #  Modified by Kyle Shedd 10/16/15 attributes$plateID -> attributes$PLATE_ID (lines 47 & 64)
   #  Modified by Kyle Shedd 02/23/16 to accomodate new LOKI QC Concordance Report
   #  Modified by Kyle Shedd 09/27/18 to format for `tidyverse`
+  #  Bugfix by Kyle Shedd 10/05/18 to add forward/backward compatability for concordance file header name changes
   ################################################################################################################
   
   # Read in concordance files
   suppressMessages(
     concordance <- files %>% 
       purrr::map(readr::read_csv) %>% 
-      dplyr::bind_rows() %>% 
+      dplyr::bind_rows()
+  )
+  
+  # Rename headers if new format
+  if("Sample Number" %in% names(concordance)) {
+    concordance <- concordance %>% 
+      dplyr::rename("Fish ID" = "Sample Number", 
+             "File Allele 1" = "File: Allele 1",
+             "File Allele 2" = "File: Allele 2",
+             "DB Allele 1" = "Database: Allele 1",
+             "DB Allele 2" = "Database: Allele 2"
+             )
+  }
+  
+  # Re-format concordance tibble
+  concordance <- concordance %>% 
       tidyr::unite(silly_source, c(`Silly Code`, `Fish ID`), sep = "_", remove = FALSE) %>% 
       dplyr::mutate(`Silly Code` = factor(x = `Silly Code`, levels = ProjectSillys))
-  )
   
   # Old conflict report has "0" for mitochondrial conflicts, new has " " for mitochondrial conflicts, we will refer to them as "Homo-Homo".
   level_key <- list(`DB Zero` = "DB Zero", `File Zero` = "File Zero", `Het-Het` = "Het-Het", `Het-Homo` = "Het-Homo", `Homo-Het` = "Homo-Het", `Homo-Homo` = "Homo-Homo", `0` = "Homo-Homo", ` ` = "Homo-Homo")
