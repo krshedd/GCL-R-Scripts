@@ -12,6 +12,7 @@ gcl2Nexus.GCL=function(sillyvec,loci,path,VialNums=TRUE,PopNames=sillyvec,Allele
 #alleles - logical statement, if set to TRUE the file will contain the actual allele calls (letters). If FALSE the alleles will be 1s and 2s.
 ###################################################################################################################################################################################  
 #This function is a modification of the gcl2Genepop.GCL function written by Jim Jasper.  A.B. 11/4/2011
+#Added ability to create file with actual allele letters instead of 1s and 2s - Andy Barclay 10/12/18
 ###################################################################################################################################################################################
                          
   if(sum(is.na(match(loci,LocusControl$locusnames)))){stop(paste("'",loci[is.na(match(loci,LocusControl$locusnames))],"' from argument 'loci' not found in 'LocusControl' object!!!",sep=""))}
