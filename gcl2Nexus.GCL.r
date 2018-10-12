@@ -1,4 +1,4 @@
-gcl2Nexus.GCL=function(sillyvec,loci,path,VialNums=TRUE,PopNames=sillyvec){
+gcl2Nexus.GCL=function(sillyvec,loci,path,VialNums=TRUE,PopNames=sillyvec,Alleles=FALSE){
 
 ###################################################################################################################################################################################
 #This function writes a Nexus format file for use in GDA.  
@@ -9,6 +9,7 @@ gcl2Nexus.GCL=function(sillyvec,loci,path,VialNums=TRUE,PopNames=sillyvec){
 #path - directory where the file will be written, include the file name with the ".nex" extension.
 #VialNumbers - logical statement, if set to FALSE, no vial numbers will be written.  Default is TRUE
 #PopNames - a character vector the same length as sillyvec to give populations new names. If no vector is given, PopNames defaults to "sillyvec".  
+#alleles - logical statement, if set to TRUE the file will contain the actual allele calls (letters). If FALSE the alleles will be 1s and 2s.
 ###################################################################################################################################################################################  
 #This function is a modification of the gcl2Genepop.GCL function written by Jim Jasper.  A.B. 11/4/2011
 ###################################################################################################################################################################################
@@ -64,10 +65,23 @@ gcl2Nexus.GCL=function(sillyvec,loci,path,VialNums=TRUE,PopNames=sillyvec){
     IDs=dimnames(my.gcl$scores)[[1]]
     names(vials)=IDs    
     scores=my.gcl$scores[,loci,]
-    counts=sapply(IDs,function(ID){paste(sapply(loci,function(locus){paste(sapply(1:ploidy[locus],function(ploid){ifelse(is.na(scores[ID,locus,ploid]),paste("?",collapse=""),paste(match(scores[ID,locus,ploid],alleles[[locus]]),collapse=""))}),collapse="/  ")}),collapse="   ")})     
-    counts=as.character(sapply(IDs,function(ID){paste(paste(vials[ID]," ",sep=""),counts[ID],collapse="")}))
     
-    file=rbind(file,cbind(c(paste(PopNames[silly],":",sep=''),counts)))
+    if(Alleles==TRUE){
+      
+      geno=sapply(IDs,function(ID){paste(sapply(loci,function(locus){paste(sapply(1:ploidy[locus],function(ploid){ifelse(is.na(scores[ID,locus,ploid]),paste("?",collapse=""),scores[ID,locus,ploid])}),collapse="/  ")}),collapse="   ")}) 
+      
+      
+    }else{
+      
+      geno=sapply(IDs,function(ID){paste(sapply(loci,function(locus){paste(sapply(1:ploidy[locus],function(ploid){ifelse(is.na(scores[ID,locus,ploid]),paste("?",collapse=""),paste(match(scores[ID,locus,ploid],alleles[[locus]]),collapse=""))}),collapse="/  ")}),collapse="   ")})     
+    
+      }
+    
+    geno=gsub(pattern="0",replacement="?",x=geno)
+    
+    geno=as.character(sapply(IDs,function(ID){paste(paste(vials[ID]," ",sep=""),geno[ID],collapse="")}))
+    
+    file=rbind(file,cbind(c(paste(PopNames[silly],":",sep=''),geno)))
     file=rbind(file,cbind(c(",")))
     
   }
