@@ -23,9 +23,11 @@ FailureRate.GCL <- function(sillyvec) {
   PoolCollections.GCL(collections = sillyvec, loci = loci, newname = "master")
   
   # Tibble of Dose 1 scores and attributes
-  master.tbl <- bind_cols(as.tibble(master.gcl$scores[, , "Dose1"]), as.tibble(master.gcl$attributes[, c("SILLY_CODE", "PLATE_ID", "SillySource")])) %>% 
+  master.tbl <- dplyr::bind_cols(as.tibble(master.gcl$scores[, , "Dose1"]), as.tibble(master.gcl$attributes[, c("SILLY_CODE", "PLATE_ID", "SillySource")])) %>% 
     tidyr::gather(locus, genotype, -SILLY_CODE, -PLATE_ID, -SillySource) %>% 
     dplyr::rename(silly = SILLY_CODE, plate = PLATE_ID, silly_source = SillySource)
+  
+  rm(master.gcl, pos = 1)
   
   # Failure rate by silly
   fail_silly <- master.tbl %>% 
