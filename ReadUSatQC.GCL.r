@@ -48,7 +48,7 @@ ReadUSatQC.GCL <- function(QCcsvFilepaths) {
       dplyr::mutate(locus = factor(locus, levels = loci))
     
     # create scores array
-    scores <- Reduce(bbind, lapply(c("allele_1", "allele_2"), function(al){ tapply(pull(x_genotypes, al), list(x_genotypes$fish_id, x_genotypes$locus), c)[,, drop = FALSE] }))
+    scores <- Reduce(bbind, lapply(c("allele_1", "allele_2"), function(al){ tapply(dplyr::pull(x_genotypes, al), list(x_genotypes$fish_id, x_genotypes$locus), c)[,, drop = FALSE] }))
     dimnames(scores)[[3]] <- paste0("Dose", 1:2)
     
     # create counts array
