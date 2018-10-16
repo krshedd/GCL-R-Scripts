@@ -68,7 +68,7 @@ if(FALSE){##
   
   .password <- ""
   
-  QCSummaryfile <- paste("Project", project,"QC Summary Simple.xlsx") #  Do name normal summary file!!! If you do, it will overwrite it, not append it
+  QCSummaryfile <- paste("Project", project,"QC Summary R Script.xlsx") #  Do name normal summary file!!! If you do, it will overwrite it, not append it
   
   conflict_rate <- 0.10  # conflict rate at which dupcheck between sillys occurs
   
