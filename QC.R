@@ -5,9 +5,9 @@ if(FALSE){##
   ############
   
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  #Title: K150 QC
-  #Date: Fri Oct 05 11:16:40 2018
-  #Name: Heather Hoyt; Kyle Shedd; Dan Prince
+  #Title: P014 QC
+  #Date: Mon Oct 15 17:06:46 2018
+  #Name: Heather Hoyt; Kyle Shedd; Emily Lescak
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
   # It is important to run this script in order, or some functions will not provide accurate results.
@@ -54,15 +54,15 @@ if(FALSE){##
   #### Arguments ####
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
-  dirQC <- "V:/Lab/Genotyping/SNP Projects/Chinook/Project K150 Yukon Subsistence and Post Season 2018/QC/"
+  dirQC <- "V:/Lab/Genotyping/SNP Projects/Pink/Project P014 AHRP Parentage GTSeq Part 2/QC/"
   
-  species <- "Chinook"
+  species <- "pink"
   
-  markersuite <- "ChinookYukon2014_41SNPs"
+  markersuite <- "Pink_PWS_304"
   
-  project <- "K150"
+  project <- "P014"
   
-  projectID <- 2438
+  projectID <- 2420
   
   username <- "krshedd"
   
@@ -121,72 +121,18 @@ if(FALSE){##
   QCfiles <- list.files(path = "Genotype Data Files", pattern = ".csv", full.names = TRUE, recursive = FALSE)
   
   if(max(nalleles) <= 2) {
-    
+    # SNP
     ReadBiomarkQC.GCL(QCcsvFilepaths = QCfiles)
-    
   } else {
-    
-    # Read in .csv files
-    QC_genotypes <- suppressMessages(
-      suppressWarnings(
-        dplyr::bind_rows(
-          lapply(QCfiles, function(fle) {readr::read_csv(file = fle)[, 1:4]} )
-        )  # bind_rows
-      )  # supressWarnings
-    )  # suppressMessages
-    
-    # Rename columns, split silly_source
-    QC_genotypes <- QC_genotypes %>% 
-      dplyr::rename(silly_source = "Sample Name", locus = Marker, allele_1 = "Allele 1", allele_2 = "Allele 2") %>% 
-      tidyr::separate(col = silly_source, into = c("silly", "fish_id"), sep = "_", remove = FALSE)
-      
-    # Verify that all QC silly are in the project
-    ProjectSillysQC <- unique(QC_genotypes$silly)
-    if(!all(ProjectSillysQC %in% ProjectSillys)){ stop(paste0(ProjectSillysQC[! ProjectSillysQC %in% ProjectSillys], " not found in ProjectSillys.")) }
-    
-    # Verify that all QC loci are in project loci
-    lociQC <- sort(unique(QC_genotypes$locus))
-    if(!all(lociQC %in% loci)){ stop(paste0(lociQC[! lociQC %in% loci], " not found in LocusControl.")) }
-    
-    # attributes table names
-    attNames <- colnames(get(paste0(ProjectSillys[1], ".gcl"))$attributes)
-    
-    # Loop over silly to create .gcl objects
-    for(x in ProjectSillysQC){
-      
-      # subset genotypes by silly
-      x_genotypes <- QC_genotypes %>% 
-        dplyr::filter(silly == x) %>% 
-        dplyr::mutate(locus = factor(locus, levels = loci))
-    
-      # create scores array
-      scores <- Reduce(bbind, lapply(c("allele_1", "allele_2"), function(al){ tapply(pull(x_genotypes, al), list(x_genotypes$fish_id, x_genotypes$locus), c)[,, drop = FALSE] }))
-      dimnames(scores)[[3]] <- paste0("Dose", 1:2)
-      
-      # create counts array
-      counts <- array(NA, c(nrow(scores), ncol(scores), max(nalleles)), list(rownames(scores), colnames(scores), paste0("Allele", seq(max(nalleles)))))
-      for(locus in loci){
-        for(al in seq(nalleles[locus])){
-          for(id in x_genotypes$fish_id){
-            counts[id, locus, al] <- sum(scores[id, locus, seq(ploidy[locus])] == alleles[[locus]][al])
-          }  # id
-        }  # al           
-      }  # locus
-      
-      # create attributes data.frame
-      attributes <- data.frame(matrix(NA, nrow = nrow(counts), ncol = length(attNames), dimnames = list(rownames(counts), attNames)))
-      attributes$FK_FISH_ID <- rownames(counts)
-      attributes$SillySource <- paste0(x, "QC_", rownames(counts))
-      
-      # assign to global environment
-      assign(paste0(x, "QC.gcl"), list(counts = counts, scores = scores, n = nrow(scores), attributes = attributes))
-      
-    }  # x (silly)
-    
-    QCSillys <- paste0(ProjectSillysQC, "QC")
-    
-  }#else for usat
-  
+    if(max(nalleles) <= 4) {
+      # GTseq
+      ReadGTseqQC.GCL(QCcsvFilepaths = QCfiles)
+    } else {
+      # uSat
+      ReadUSatQC.GCL(QCcsvFilepaths = QCfiles)
+    } # else for usat
+  } # else for usat or GTseq
+
   QCColSize <- sapply(paste(QCSillys, ".gcl", sep = ''), function(x) get(x)$n)
   
   QCColSizeAll <- setNames(rep(0, length(ProjectSillys)),paste0(ProjectSillys, "QC.gcl"))
@@ -340,6 +286,8 @@ if(FALSE){##
   if(nrow(conflicts_investigate) == 0) {
     
     message(paste0("No individuals have > ", conflict_rate * 100, "% loci with conflicts between project and QC."))
+    
+    dup_check_results <- tibble::tibble(x = "Not applicable")
     
   } else {
     
