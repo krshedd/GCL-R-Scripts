@@ -222,10 +222,12 @@ custom_combine_rubias_output <- function(rubias_output = NULL, mixvec = NULL, gr
     dplyr::ungroup() %>% 
     dplyr::mutate(loCI = replace(loCI, which(loCI < 0), 0),
                   hiCI = replace(hiCI, which(hiCI < 0), 0),
-                  median = replace(median, which(median < 0), 0)) %>% 
+                  median = replace(median, which(median < 0), 0),
+                  mean = replace(mean, which(mean < 0), 0)) %>% 
     dplyr::mutate(loCI = replace(loCI, which(loCI > 1), 1),
                   hiCI = replace(hiCI, which(hiCI > 1), 1),
-                  median = replace(median, which(median > 1), 1)) %>% 
+                  median = replace(median, which(median > 1), 1),
+                  mean = replace(mean, which(mean > 1), 1)) %>% 
     magrittr::set_colnames(c("mixture_collection", "repunit", "mean", "sd", "median", 
                              paste0(loCI * 100, "%"), paste0(hiCI * 100, "%"), "P=0"))
   
