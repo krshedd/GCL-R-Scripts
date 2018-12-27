@@ -63,7 +63,7 @@ CheckDupWithinSilly.GCL=function(sillyvec,loci,quantile=0.99,minproportion=0.95)
                                   )
       }
       if(!sum(dupIND)){
-          report="NO Duplicates"
+          report="No Duplicates"
       }
         resultlist[[silly]]=list(report=report,DupDist=NULL)  
     }
@@ -115,7 +115,7 @@ CheckDupWithinSilly.GCL=function(sillyvec,loci,quantile=0.99,minproportion=0.95)
       }
       if(!sum(dupIND)){
   
-        report="NO Duplicates"
+        report="No Duplicates"
 
       }
 
