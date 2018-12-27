@@ -434,7 +434,7 @@ if(FALSE){##
                       "Failure Rate by Plate" = failure_rate$plate_failure_rate,
                       "Overall Failure Rate" = failure_rate$overall_failure_rate,
                       "Project Sample Size by Locus" = OriginalProjectSampleSizebyLocus %>% tibble::rownames_to_column("silly") %>% tibble::as_tibble(),
-                      "Duplicate Check in Project" = dplyr::bind_rows(DuplicateCheckReportSummary[!DuplicateCheckReportSummary == "NO Duplicates"], .id = "silly") %>% tibble::as_tibble(),
+                      "Duplicate Check in Project" = dplyr::bind_rows(DuplicateCheckReportSummary[!DuplicateCheckReportSummary == "No Duplicates"], .id = "silly") %>% tibble::as_tibble(),
                       "Alternate Species" = Alternate))
   
   # Write out a "Simple" file, can't update normal Summary File by inserting new tabs
