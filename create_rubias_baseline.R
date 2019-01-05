@@ -18,7 +18,7 @@ create_rubias_baseline <- function(sillyvec, loci, group_names, groupvec, path =
   #     to make sure all columns are character vectors (if homozygous for T, it will become a logical vector).
   #
   # Example~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # load("V:/Analysis/4_Westward/Sockeye/Chignik Inseason 2012-2017/Baseline 2012/Chignik2012SockeyeBaseline.RData")
+  # load("V:/Analysis/4_Westward/Sockeye/Chignik Inseason 2012-2018/Baseline/2012/Chignik2012SockeyeBaseline.RData")
   # chignik_7pops_22loci.rubias_base <- create_rubias_baseline(sillyvec = Chignik7Populations, loci = loci24, group_names = Groups, groupvec = Groupvec7, path = "rubias/baseline", baseline_name = "chignik_7pops_22loci")
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   while(!require(tidyverse)){install.packages("tidyverse")}
@@ -36,7 +36,12 @@ create_rubias_baseline <- function(sillyvec, loci, group_names, groupvec, path =
     scores.df$indiv <- as.character(my.gcl$attributes$SillySource)
     silly_base.df <- scores.df[, c("sample_type", "repunit", "collection", "indiv", gsub(pattern = "-", replacement = ".", x = colnames(scores.mat)))] } #silly
   )
-  baseline <- dplyr::bind_rows(silly_base.lst)
+  
+  baseline <- dplyr::bind_rows(silly_base.lst) %>% 
+    dplyr::as_tibble() %>% 
+    dplyr::na_if(0)
+  
   readr::write_csv(x = baseline, path = paste0(path, "/", baseline_name, "_base.csv"))
+  
   return(baseline)
 }
