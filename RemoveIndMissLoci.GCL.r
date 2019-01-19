@@ -11,6 +11,7 @@ RemoveIndMissLoci.GCL=function(sillyvec,proportion=0.8){
 #  "proportion" is the cut-off proportion of the number of non-missing loci.  
 #
 #  ReWritten by JJ 12/17/2015
+#  Update by Kyle Shedd 1/18/2019
 #
 ######################################################################################################################################################################################
 
@@ -25,7 +26,7 @@ RemoveIndMissLoci.GCL=function(sillyvec,proportion=0.8){
 
     ID=as.character(rownames(counts))
 
-    nloci=ncol(counts)
+    nloci=sum(apply(counts, 2, function(locus) {!all(is.na(locus))} ))  # exclude SNPs not run for a given silly
 
     if(my.gcl$n > 1) {
       myproportion=apply(!is.na(counts[,,1]),1,sum)/nloci
