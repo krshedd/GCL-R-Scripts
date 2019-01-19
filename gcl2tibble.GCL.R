@@ -61,6 +61,7 @@ gcl2tibble.GCL <- function(sillyvec, loci, geno_sep = "/"){
       genotype == paste("C", "NA", sep = geno_sep) ~ "C",
       genotype == paste("G", "NA", sep = geno_sep) ~ "G",
       genotype == paste("T", "NA", sep = geno_sep) ~ "T",
+      genotype == paste("NA", "NA", sep = geno_sep) ~ "NA",
       TRUE ~ as.character(genotype))) %>% 
     dplyr::mutate(genotype = dplyr::na_if(genotype, "NA"))
   
