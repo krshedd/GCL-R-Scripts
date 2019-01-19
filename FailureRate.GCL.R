@@ -23,7 +23,7 @@ FailureRate.GCL <- function(sillyvec) {
   PoolCollections.GCL(collections = sillyvec, loci = loci, newname = "master")
   
   # Tibble of Dose 1 scores and attributes
-  master.tbl <- dplyr::bind_cols(as.tibble(master.gcl$scores[, , "Dose1"]), as.tibble(master.gcl$attributes[, c("SILLY_CODE", "PLATE_ID", "SillySource")])) %>% 
+  master.tbl <- dplyr::bind_cols(as_tibble(master.gcl$scores[, , "Dose1"]), as_tibble(master.gcl$attributes[, c("SILLY_CODE", "PLATE_ID", "SillySource")])) %>% 
     tidyr::gather(locus, genotype, -SILLY_CODE, -PLATE_ID, -SillySource) %>% 
     dplyr::rename(silly = SILLY_CODE, plate = PLATE_ID, silly_source = SillySource)
   
@@ -32,26 +32,26 @@ FailureRate.GCL <- function(sillyvec) {
   # Failure rate by silly
   fail_silly <- master.tbl %>% 
     dplyr::group_by(silly) %>% 
-    dplyr::summarise(fail = sum(genotype == "0") / n()) %>% 
+    dplyr::summarise(fail = sum(genotype == "0", na.rm = TRUE) / n()) %>% 
     dplyr::arrange(dplyr::desc(fail))
   
   # Failure rate by locus
   fail_locus <- master.tbl %>% 
     dplyr::group_by(locus) %>% 
-    dplyr::summarise(fail = sum(genotype == "0") / n()) %>% 
+    dplyr::summarise(fail = sum(genotype == "0", na.rm = TRUE) / n()) %>% 
     dplyr::arrange(dplyr::desc(fail))
   
   # Failure rate by plate
   fail_plate <- master.tbl %>% 
     dplyr::group_by(plate) %>% 
-    dplyr::summarise(fail = sum(genotype == "0") / n()) %>% 
+    dplyr::summarise(fail = sum(genotype == "0", na.rm = TRUE) / n()) %>% 
     dplyr::arrange(dplyr::desc(fail))
   
   # Failure rate overall
   fail_overall <- master.tbl %>% 
     dplyr::mutate(project = project) %>% 
     dplyr::group_by(project) %>% 
-    dplyr::summarise(fail = sum(genotype == "0") / n())
+    dplyr::summarise(fail = sum(genotype == "0", na.rm = TRUE) / n())
     
   # Plot failure rate by silly and locus
   fail_silly_plot <- master.tbl %>% 
