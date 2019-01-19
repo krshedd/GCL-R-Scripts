@@ -58,12 +58,8 @@ if(FALSE){##
   
   species <- "pink"
   
-  markersuite <- "Pink_PWS_304"
-  
   project <- "P014"
-  
-  projectID <- 2420
-  
+
   username <- "krshedd"
   
   .password <- ""
@@ -85,24 +81,10 @@ if(FALSE){##
   setwd(dirQC)
   
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  #### Create Locus Control ####
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  
-  CreateLocusControl.GCL(markersuite = markersuite, username = username, password = .password)
-  
-  loci <- LocusControl$locusnames
-  
-  nalleles <- LocusControl$nalleles
-  
-  ploidy <- LocusControl$ploidy
-  
-  alleles <- LocusControl$alleles
-  
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #### Read in Project Genotypes ####
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
-  ReadProjectLOKI2R.GCL(projectID = projectID, username = username, password = .password)
+  read_project_genotypes.GCL(project_name = project, username = username, password = .password)
   
   rm(.password)
   
@@ -110,10 +92,8 @@ if(FALSE){##
   #### Failure Rate ####
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
-  failure_rate <- FailureRate.GCL(sillyvec = ProjectSillys)
-  
-  failure_rate
-  
+  (failure_rate <- FailureRate.GCL(sillyvec = ProjectSillys))
+
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #### Read in QC Genotypes ####
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -360,7 +340,7 @@ if(FALSE){##
   #### Create Summary Tables ####
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
-  summary_table_1 <- dplyr::bind_cols(tibble(Silly = ProjectSillys), as.tibble(ProjectSillys_SampleSizes)) %>% 
+  summary_table_1 <- dplyr::bind_cols(tibble(Silly = ProjectSillys), as_tibble(ProjectSillys_SampleSizes)) %>% 
     dplyr::left_join(failure_rate$silly_failure_rate, by = c("Silly" = "silly")) %>% 
     dplyr::rename("Failure Rate" = fail) %>% 
     dplyr::mutate("Total QC Fish" = QCColSizeAll)
