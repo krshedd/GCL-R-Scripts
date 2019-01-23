@@ -5,9 +5,9 @@ if(FALSE){##
   ############
   
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  #Title: P014 QC
-  #Date: Mon Oct 15 17:06:46 2018
-  #Name: Heather Hoyt; Kyle Shedd; Emily Lescak
+  # Title: P014 QC
+  # Date: Mon Oct 15 17:06:46 2018
+  # Name: Heather Hoyt; Kyle Shedd; Emily Lescak
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
   # It is important to run this script in order, or some functions will not provide accurate results.
@@ -253,7 +253,7 @@ if(FALSE){##
     ggplot2::ggplot(aes(x = p)) +
     ggplot2::geom_bar() +
     ggplot2::xlim(0, 1) +
-    ggplot2::geom_vline(xintercept = conflict_rate) +
+    ggplot2::geom_vline(xintercept = conflict_rate, colour = "red", lwd = 1.5) +
     ggplot2::xlab("Conflict rate") +
     ggplot2::ylab("Frequency") +
     ggplot2::ggtitle("QC individual conflict rate")
