@@ -73,40 +73,22 @@ read_project_genotypes.GCL <- function(project_name = NULL, sillyvec = NULL, loc
   # Get genotypes
   # Creating java query when sillyvec and loci are supplied.  
   if(!is.null(sillyvec) & !is.null(loci)){
-    # Pulling haploid and diploid loci separately because haploid only have ALLELE_1.
-    gnoqry_d <- paste0("SELECT LAB_PROJECT_NAME, FK_COLLECTION_ID, SILLY_CODE, FK_FISH_ID, LOCUS, PLOIDY, ALLELE_1, ALLELE_2 FROM AKFINADM.V_GEN_TEST_RESULTS_BOTHGENO WHERE LOCUS IN (", paste0("'", loci, "'", collapse = ","), ") AND SILLY_CODE IN", "(", paste0("'", sillyvec, "'", collapse = ","), ") AND PLOIDY = 'D'")
-    gnoqry_h <- paste0("SELECT LAB_PROJECT_NAME, FK_COLLECTION_ID, SILLY_CODE, FK_FISH_ID, LOCUS, PLOIDY, ALLELE_1 FROM AKFINADM.V_GEN_TEST_RESULTS_BOTHGENO WHERE LOCUS IN (", paste0("'", loci, "'", collapse = ","), ") AND SILLY_CODE IN", "(", paste0("'", sillyvec, "'", collapse = ","), ") AND PLOIDY = 'H'")
+    gnoqry <- paste0("SELECT LAB_PROJECT_NAME, FK_COLLECTION_ID, SILLY_CODE, FK_FISH_ID, LOCUS, PLOIDY, ALLELE_1, ALLELE_2, ALLELE_1_FIXED, ALLELE_2_FIXED FROM AKFINADM.V_GEN_TEST_RESULTS_BOTHGENO WHERE LOCUS IN (", paste0("'", loci, "'", collapse = ","), ") AND SILLY_CODE IN", "(", paste0("'", sillyvec, "'", collapse = ","), ")")
   } 
   
   # Creating java query when only sillyvec is supplied
   if(!is.null(sillyvec) & is.null(loci)){
-    # Pulling haploid and diploid loci separately because haploid markers only have ALLELE_1.
-    gnoqry_d <- paste0("SELECT LAB_PROJECT_NAME, FK_COLLECTION_ID, SILLY_CODE, FK_FISH_ID, LOCUS, PLOIDY, ALLELE_1, ALLELE_2 FROM AKFINADM.V_GEN_TEST_RESULTS_BOTHGENO WHERE SILLY_CODE IN", "(", paste0("'", sillyvec, "'", collapse = ","), ") AND PLOIDY = 'D'")
-    gnoqry_h <- paste0("SELECT LAB_PROJECT_NAME, FK_COLLECTION_ID, SILLY_CODE, FK_FISH_ID, LOCUS, PLOIDY, ALLELE_1 FROM AKFINADM.V_GEN_TEST_RESULTS_BOTHGENO WHERE SILLY_CODE IN", "(", paste0("'", sillyvec, "'", collapse = ","), ") AND PLOIDY = 'H'")
+    gnoqry <- paste0("SELECT LAB_PROJECT_NAME, FK_COLLECTION_ID, SILLY_CODE, FK_FISH_ID, LOCUS, PLOIDY, ALLELE_1, ALLELE_2 ALLELE_1_FIXED, ALLELE_2_FIXED FROM AKFINADM.V_GEN_TEST_RESULTS_BOTHGENO WHERE SILLY_CODE IN", "(", paste0("'", sillyvec, "'", collapse = ","), ")")
   }
   
   # Creating java query when only project_name is supplied.
   if(!is.null(project_name)){
-    # Pulling haploid and diploid loci separately because haploid only have ALLELE_1.
-    gnoqry_d <- paste0("SELECT LAB_PROJECT_NAME, FK_COLLECTION_ID, SILLY_CODE, FK_FISH_ID, LOCUS, PLOIDY, ALLELE_1, ALLELE_2 FROM AKFINADM.V_GEN_TEST_RESULTS_BOTHGENO WHERE LAB_PROJECT_NAME IN", "(", paste0("'", project_name, "'", collapse = ","), ") AND PLOIDY = 'D'")
-    gnoqry_h <- paste0("SELECT LAB_PROJECT_NAME, FK_COLLECTION_ID, SILLY_CODE, FK_FISH_ID, LOCUS, PLOIDY, ALLELE_1 FROM AKFINADM.V_GEN_TEST_RESULTS_BOTHGENO WHERE LAB_PROJECT_NAME IN", "(", paste0("'", project_name, "'", collapse = ","), ") AND PLOIDY = 'H'")
+    gnoqry <- paste0("SELECT * FROM AKFINADM.V_GEN_TEST_RESULTS_BOTHGENO GENO WHERE EXISTS (SELECT * FROM AKFINADM.V_LAB_PROJECT_WELL LPW WHERE LPW.LAB_PROJECT_NAME IN (", paste0("'", project_name, "'", collapse = ","), ") AND LPW.SILLY_CODE = GENO.SILLY_CODE AND LPW.FISH_NO = GENO.FK_FISH_ID)")
   }
   
-  # Pull diploid data and concatenate alleles into one column with "/" separator
-  data_d <- RJDBC::dbGetQuery(con, gnoqry_d) %>% 
-    dplyr::as_tibble() %>% 
-    dplyr::mutate(ALLELES = paste(pmin(ALLELE_1, ALLELE_2), pmax(ALLELE_1, ALLELE_2), sep = "/")) %>%
-    dplyr::select(-ALLELE_1, -ALLELE_2) %>% 
-    tidyr::separate(ALLELES, into = c("ALLELE_1", "ALLELE_2"), sep = "/", remove = FALSE)
-    
-  
-  # Pull haploid data
-  data_h <- RJDBC::dbGetQuery(con, gnoqry_h) %>% 
-    dplyr::as_tibble()%>% 
-    dplyr::mutate(ALLELES = ALLELE_1)
-  
-  # Combine diploid and haploid marker into one data frame and put into crosstab format (i.e., unstacked table)
-  dataAll <- dplyr::bind_rows(data_d, data_h)
+  # Pull genotypes
+  dataAll <- RJDBC::dbGetQuery(con, gnoqry) %>% 
+    dplyr::as_tibble()
   
   # Get list of unique sillys and assign `ProjectSillys` this is needed for QC script
   sillyvec <- unique(dataAll$SILLY_CODE)
@@ -114,10 +96,17 @@ read_project_genotypes.GCL <- function(project_name = NULL, sillyvec = NULL, loc
   
   #~~~~~~~~~~~~~~~~
   # Get PLATE_ID from the extraction table
+  # This still needs work because it pulls all plates per fish, not just the project plates!!!
   extr_qry <- paste0("SELECT FK_PLATE_ID, TISSUETYPE, SILLY_CODE, FISH_NO FROM AKFINADM.GEN_DNA_WELL WHERE SILLY_CODE IN", "(", paste0("'", sillyvec, "'", collapse = ","), ")")
   
-  data_ex <- RJDBC::dbGetQuery(con,extr_qry) %>% 
-    dplyr::as_tibble() 
+  data_ex <- RJDBC::dbGetQuery(con, extr_qry) %>% 
+    dplyr::as_tibble() %>% 
+    dplyr::group_by(SILLY_CODE, FISH_NO) %>% 
+    dplyr::mutate(plateID = paste(sort(FK_PLATE_ID), collapse = "/")) %>% 
+    dplyr::ungroup() %>% 
+    dplyr::select(-FK_PLATE_ID) %>% 
+    dplyr::rename(FK_PLATE_ID = plateID) %>% 
+    dplyr::distinct()
   
   # Disconnect from LOKI
   discon <- RJDBC::dbDisconnect(con)
@@ -136,9 +125,19 @@ read_project_genotypes.GCL <- function(project_name = NULL, sillyvec = NULL, loc
   
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Join genotypes with extraction information (PLATE_ID) and make .gcl objects
+  # This still needs work because it pulls all plates per fish, not just the project plates!!!
+  
+  attnames <- c("FK_FISH_ID", "FK_COLLECTION_ID", "SILLY_CODE", "FK_PLATE_ID", "TISSUETYPE", "SillySource")
+  
   data_master <- dataAll %>% 
     dplyr::left_join(data_ex, by = c("SILLY_CODE" = "SILLY_CODE", "FK_FISH_ID" = "FISH_NO")) %>%
-    tidyr::unite(SillySource, SILLY_CODE, FK_FISH_ID, sep = "_", remove = FALSE) #%>% 
+    tidyr::unite(SillySource, SILLY_CODE, FK_FISH_ID, sep = "_", remove = FALSE) %>% 
+    dplyr::select(-ALLELE_1, -ALLELE_2) %>%
+    dplyr::rename(ALLELE_1 = ALLELE_1_FIXED, ALLELE_2 = ALLELE_2_FIXED) %>% 
+    tidyr::unite(GENO, ALLELE_1, ALLELE_2, sep = "/", remove = FALSE) %>% 
+    dplyr::mutate(ALLELES = dplyr::case_when(PLOIDY == "D" ~ GENO,
+                                             PLOIDY == "H" ~ ALLELE_1)) %>% 
+    dplyr::select(c(attnames, "LOCUS", "ALLELE_1", "ALLELE_2", "ALLELES"))
   # dplyr::select(-PLOIDY) %>%
   # tidyr::spread(key = LOCUS, value = ALLELES)
   
@@ -146,9 +145,6 @@ read_project_genotypes.GCL <- function(project_name = NULL, sillyvec = NULL, loc
   
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Make .gcl objects by silly
-  
-  attnames <- c("FK_FISH_ID", "FK_COLLECTION_ID", "SILLY_CODE", "FK_PLATE_ID", "TISSUETYPE", "SillySource")
-  
   for(silly in sillyvec) {  
     
     data_silly <- dplyr::filter(data_master, SILLY_CODE == silly)
@@ -164,17 +160,12 @@ read_project_genotypes.GCL <- function(project_name = NULL, sillyvec = NULL, loc
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     
     ids <- as.character(sort(unique(data_silly$FK_FISH_ID)))
-    
     nind <- length(ids)
     
     if(!nind){
-      
       message0 <- paste0(silly," is empty.")
-      
       message(message0)
-      
       next
-      
     }
     
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -216,25 +207,15 @@ read_project_genotypes.GCL <- function(project_name = NULL, sillyvec = NULL, loc
     )
     
     for(ind in ids) {
-      
       for(locus in loci) {
-        
         for(al in seq(nalleles[locus])) {
-          
           counts[ind, locus, al] <- sum(scores[ind, locus, seq(ploidy[locus])] == alleles[[locus]][al])
-          
-        }  # al          
-        
+        }  # al
       }  # locus
-      
       counts0 = counts[ind, , ]
-      
       counts0[is.na(counts0)] <- 0
-      
       zeroBOOL <- apply(counts0,1,sum) != ploidy
-      
       counts[ind, zeroBOOL, ] <- NA
-      
     }  # ind
     
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -258,9 +239,6 @@ read_project_genotypes.GCL <- function(project_name = NULL, sillyvec = NULL, loc
   }  # silly
   
   stop.time <- Sys.time()
-  
   fulltime <- stop.time - start.time
-  
   print(fulltime) 
-  
 }
