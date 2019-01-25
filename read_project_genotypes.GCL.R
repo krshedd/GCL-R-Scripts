@@ -73,17 +73,17 @@ read_project_genotypes.GCL <- function(project_name = NULL, sillyvec = NULL, loc
   # Get genotypes
   # Creating java query when sillyvec and loci are supplied.  
   if(!is.null(sillyvec) & !is.null(loci)){
-    gnoqry <- paste0("SELECT LAB_PROJECT_NAME, FK_COLLECTION_ID, SILLY_CODE, FK_FISH_ID, LOCUS, PLOIDY, ALLELE_1, ALLELE_2, ALLELE_1_FIXED, ALLELE_2_FIXED FROM AKFINADM.V_GEN_TEST_RESULTS_BOTHGENO WHERE LOCUS IN (", paste0("'", loci, "'", collapse = ","), ") AND SILLY_CODE IN", "(", paste0("'", sillyvec, "'", collapse = ","), ")")
+    gnoqry <- paste0("SELECT * FROM AKFINADM.R_READ_PROJECT_GENOTYPES WHERE LOCUS IN (", paste0("'", loci, "'", collapse = ","), ") AND SILLY_CODE IN (", paste0("'", sillyvec, "'", collapse = ","), ")")
   } 
   
   # Creating java query when only sillyvec is supplied
   if(!is.null(sillyvec) & is.null(loci)){
-    gnoqry <- paste0("SELECT LAB_PROJECT_NAME, FK_COLLECTION_ID, SILLY_CODE, FK_FISH_ID, LOCUS, PLOIDY, ALLELE_1, ALLELE_2 ALLELE_1_FIXED, ALLELE_2_FIXED FROM AKFINADM.V_GEN_TEST_RESULTS_BOTHGENO WHERE SILLY_CODE IN", "(", paste0("'", sillyvec, "'", collapse = ","), ")")
+    gnoqry <- paste0("SELECT * FROM AKFINADM.R_READ_PROJECT_GENOTYPES WHERE SILLY_CODE IN (", paste0("'", sillyvec, "'", collapse = ","), ")")
   }
   
   # Creating java query when only project_name is supplied.
   if(!is.null(project_name)){
-    gnoqry <- paste0("SELECT * FROM AKFINADM.V_GEN_TEST_RESULTS_BOTHGENO GENO WHERE EXISTS (SELECT * FROM AKFINADM.V_LAB_PROJECT_WELL LPW WHERE LPW.LAB_PROJECT_NAME IN (", paste0("'", project_name, "'", collapse = ","), ") AND LPW.SILLY_CODE = GENO.SILLY_CODE AND LPW.FISH_NO = GENO.FK_FISH_ID)")
+    gnoqry <- paste0("SELECT * FROM AKFINADM.R_READ_PROJECT_GENOTYPES GENO WHERE EXISTS (SELECT * FROM AKFINADM.V_LAB_PROJECT_WELL LPW WHERE LPW.LAB_PROJECT_NAME IN (", paste0("'", project_name, "'", collapse = ","), ") AND LPW.SILLY_CODE = GENO.SILLY_CODE AND LPW.FISH_NO = GENO.FK_FISH_ID)")
   }
   
   # Pull genotypes
@@ -93,20 +93,6 @@ read_project_genotypes.GCL <- function(project_name = NULL, sillyvec = NULL, loc
   # Get list of unique sillys and assign `ProjectSillys` this is needed for QC script
   sillyvec <- unique(dataAll$SILLY_CODE)
   assign(x = "ProjectSillys", value = sillyvec, pos = 1)
-  
-  #~~~~~~~~~~~~~~~~
-  # Get PLATE_ID from the extraction table
-  # This still needs work because it pulls all plates per fish, not just the project plates!!!
-  extr_qry <- paste0("SELECT FK_PLATE_ID, TISSUETYPE, SILLY_CODE, FISH_NO FROM AKFINADM.GEN_DNA_WELL WHERE SILLY_CODE IN", "(", paste0("'", sillyvec, "'", collapse = ","), ")")
-  
-  data_ex <- RJDBC::dbGetQuery(con, extr_qry) %>% 
-    dplyr::as_tibble() %>% 
-    dplyr::group_by(SILLY_CODE, FISH_NO) %>% 
-    dplyr::mutate(plateID = paste(sort(FK_PLATE_ID), collapse = "/")) %>% 
-    dplyr::ungroup() %>% 
-    dplyr::select(-FK_PLATE_ID) %>% 
-    dplyr::rename(FK_PLATE_ID = plateID) %>% 
-    dplyr::distinct()
   
   # Disconnect from LOKI
   discon <- RJDBC::dbDisconnect(con)
@@ -127,18 +113,17 @@ read_project_genotypes.GCL <- function(project_name = NULL, sillyvec = NULL, loc
   # Join genotypes with extraction information (PLATE_ID) and make .gcl objects
   # This still needs work because it pulls all plates per fish, not just the project plates!!!
   
-  attnames <- c("FK_FISH_ID", "FK_COLLECTION_ID", "SILLY_CODE", "FK_PLATE_ID", "TISSUETYPE", "SillySource")
+  attnames <- c("FK_FISH_ID", "COLLECTION_ID", "SILLY_CODE", "PLATE_ID", "PK_TISSUE_TYPE", "SillySource")
   
   data_master <- dataAll %>% 
-    dplyr::left_join(data_ex, by = c("SILLY_CODE" = "SILLY_CODE", "FK_FISH_ID" = "FISH_NO")) %>%
     tidyr::unite(SillySource, SILLY_CODE, FK_FISH_ID, sep = "_", remove = FALSE) %>% 
     dplyr::select(-ALLELE_1, -ALLELE_2) %>%
     dplyr::rename(ALLELE_1 = ALLELE_1_FIXED, ALLELE_2 = ALLELE_2_FIXED) %>% 
     tidyr::unite(GENO, ALLELE_1, ALLELE_2, sep = "/", remove = FALSE) %>% 
     dplyr::mutate(ALLELES = dplyr::case_when(PLOIDY == "D" ~ GENO,
                                              PLOIDY == "H" ~ ALLELE_1)) %>% 
-    dplyr::select(c(attnames, "LOCUS", "ALLELE_1", "ALLELE_2", "ALLELES"))
-  # dplyr::select(-PLOIDY) %>%
+    dplyr::select(c(attnames, "LOCUS", "ALLELE_1", "ALLELE_2", "ALLELES")) #%>% 
+  # dplyr::select(-PLOIDY) %>% 
   # tidyr::spread(key = LOCUS, value = ALLELES)
   
   message("Data successfully pulled from LOKI, building SILLY.gcl objects\n")
@@ -225,10 +210,7 @@ read_project_genotypes.GCL <- function(project_name = NULL, sillyvec = NULL, loc
       dplyr::select(attnames) %>% 
       dplyr::distinct() %>% 
       dplyr::mutate(FISH_ID = as.character(FK_FISH_ID),
-                    FK_PLATE_ID = as.character(FK_PLATE_ID)) %>% 
-      dplyr::rename(COLLECTION_ID = FK_COLLECTION_ID,
-                    PLATE_ID = FK_PLATE_ID,
-                    PK_TISSUE_TYPE = TISSUETYPE) %>% 
+                    PLATE_ID = as.character(PLATE_ID)) %>% 
       dplyr::arrange(FK_FISH_ID) %>% 
       tibble::column_to_rownames(var = "FISH_ID")
     
