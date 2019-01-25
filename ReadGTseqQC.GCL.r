@@ -60,10 +60,14 @@ ReadGTseqQC.GCL <- function(QCcsvFilepaths) {
     dimnames(scores)[[3]] <- paste0("Dose", 1:2)
     
     # create counts array
-    counts <- array(NA, c(nrow(scores), ncol(scores), max(nalleles)), list(rownames(scores), colnames(scores), paste0("Allele", seq(max(nalleles)))))
+    counts <- array(data = NA, 
+                    dim = c(nrow(scores), ncol(scores), max(nalleles)), 
+                    dimnames = list(rownames(scores), colnames(scores), paste0("Allele", seq(max(nalleles))))
+    )
+
     for(locus in loci){
       for(al in seq(nalleles[locus])){
-        for(id in x_genotypes$fish_id){
+        for(id in unique(x_genotypes$fish_id)){
           counts[id, locus, al] <- sum(scores[id, locus, seq(ploidy[locus])] == alleles[[locus]][al])
         }  # id
       }  # al           
