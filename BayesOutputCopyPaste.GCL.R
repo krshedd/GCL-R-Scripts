@@ -30,19 +30,21 @@ BayesOutputCopyPaste.GCL <- function(origindir, targetdir, sillyvec){
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
   # Removing input files (".ctl" and ".mix")
-  controlfiles=list.files(path=origindir, pattern=".ctl", full.names=TRUE, recursive=TRUE) # All control files in origindir
-  mixturefiles=list.files(path=origindir, pattern=".mix", full.names=TRUE, recursive=TRUE) # All mixture files in origindir
+  controlfiles = list.files(path=origindir, pattern=".ctl", full.names=TRUE, recursive=TRUE) # All control files in origindir
+  mixturefiles = list.files(path=origindir, pattern=".mix", full.names=TRUE, recursive=TRUE) # All mixture files in origindir
   
-  filestoremove=sapply(sillyvec, function(silly) {c(controlfiles[grep(pattern=silly, x=controlfiles)], mixturefiles[grep(pattern=silly, x=mixturefiles)])}, simplify=FALSE) # Just the control/mixture files for sillyvec 
+  filestoremove = sapply(sillyvec, function(silly) {c(controlfiles[grep(pattern=silly, x=controlfiles)], mixturefiles[grep(pattern=silly, x=mixturefiles)])}, simplify=FALSE) # Just the control/mixture files for sillyvec 
   
   invisible(lapply(filestoremove, file.remove)) # Remove input files from server
   
   # Copy/paste output files (".BO1", ".BOT", ".RGN", ".SUM", and ".CLS")
-  outputfiles=unlist(sapply(c(".BO1", ".BOT", ".RGN", ".SUM", ".CLS"), function(outfile) {list.files(path=origindir, pattern=outfile, full.names=TRUE, recursive=TRUE)})) # All output files in origindir
+  outputfiles = unlist(sapply(c(".BO1", ".BOT", ".RGN", ".SUM", ".CLS"), function(outfile) {list.files(path=origindir, pattern=outfile, full.names=TRUE, recursive=TRUE)})) # All output files in origindir
   
-  filestocopy=sapply(sillyvec, function(silly) {outputfiles[grep(pattern=silly, x=outputfiles)]}, simplify=FALSE) # Create list of output files by sillyvec
+  filestocopy = sapply(sillyvec, function(silly) {outputfiles[grep(pattern=silly, x=outputfiles)]}, simplify=FALSE) # Create list of output files by sillyvec
   
-  if(!all(sillyvec %in% names(filestocopy))) {stop("'sillyvec' object does not match all output files!!!\nThis 'stop' prevents you from accidently deleting these files, because they will not be copied properly!!!\nIf sillyvec is a named vector, the names must match the vector!!!")}
+  names(filestocopy) = sillyvec
+  
+  if(!all(sillyvec %in% names(filestocopy))) {stop("'sillyvec' object does not match all output files!!!\nThis 'stop' prevents you from accidently deleting these files, because they will not be copied properly!!!\nIf sillyvec is a named vector, then the vector is used, not the names!!!")}
   
   invisible(sapply(sillyvec, function(silly) {file.copy(from=filestocopy[[silly]], to=paste(targetdir, "/Output/", silly, sep=""))})) # Move to appropriate V drive directory
   

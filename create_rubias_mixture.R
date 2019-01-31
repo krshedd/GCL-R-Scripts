@@ -16,7 +16,7 @@ create_rubias_mixture <- function(sillyvec, loci, path = "rubias/mixture") {
   #     to make sure all columns are character vectors (if homozygous for T, it will become a logical vector).
   #
   # Example~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # load("V:/Analysis/4_Westward/Sockeye/Chignik Inseason 2012-2017/Mixtures/2017/2017ChignikInseason_rubias.RData")
+  # load("V:/Analysis/4_Westward/Sockeye/Chignik Inseason 2012-2018/Mixtures/2017/2017ChignikInseason_rubias.RData")
   # chignik_2017.rubias_mix <- create_rubias_mixture(sillyvec = paste0("SCHIG17_Strata", 1:6), loci = loci22, path = "rubias/mixture")
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   while(!require(tidyverse)){install.packages("tidyverse")}
@@ -34,8 +34,14 @@ create_rubias_mixture <- function(sillyvec, loci, path = "rubias/mixture") {
     scores.df$collection <- silly
     scores.df$indiv <- as.character(my.gcl$attributes$SillySource)
     silly_mix.df <- scores.df[, c("sample_type", "repunit", "collection", "indiv", gsub(pattern = "-", replacement = ".", x = colnames(scores.mat)))] 
-    readr::write_csv(x = silly_mix.df, path = paste0(path, "/", silly, "_mix.csv"))
-    } #silly
+    silly_mix <- silly_mix.df %>% 
+      dplyr::as_tibble() %>% 
+      dplyr::na_if(0)
+    readr::write_csv(x = silly_mix, path = paste0(path, "/", silly, "_mix.csv"))
+    } #  silly
   )
-  return(dplyr::bind_rows(silly_mix.lst))
+  
+  mixture <- dplyr::bind_rows(silly_mix.lst)
+  
+  return(mixture)
 }

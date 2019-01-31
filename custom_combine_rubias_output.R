@@ -1,6 +1,6 @@
-custom_combine_rubias_output <- function(rubias_output = NULL, mixvec = NULL, group_names = NULL, groupvec = NULL, 
-                                         path = "rubias/output", alpha = 0.1, burn_in = 5000, 
-                                         bias_corr = FALSE, threshold = 5e-7, plot_trace = TRUE) {
+custom_combine_rubias_output <- function(rubias_output = NULL, mixvec = NULL, group_names = NULL, group_names_new = NULL,
+                                         groupvec = NULL, groupvec_new = NULL,path = "rubias/output", alpha = 0.1, 
+                                         burn_in = 5000, bias_corr = FALSE, threshold = 5e-7, plot_trace = TRUE) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # This function computes summary statistics from `rubias` output, similar to `CustomCombineBAYESOutput.
   # However, output is a tibble with `mixture_collection` as a column, instead of each mixture as its own list.
@@ -11,11 +11,19 @@ custom_combine_rubias_output <- function(rubias_output = NULL, mixvec = NULL, gr
   # It can not do bias correction for different baseline groupvecs, because current `rubias` output only
   # gives the bias corrected means for each `mixture_collection` and `repunit` (i.e. `rho`, not `pi`)
   #
+  # UPDATE: This function CAN do bias correction if you are rolling up groups from fine-scale to broad-scale.
+  # To use this functionality, specify `group_names` as the original, fine-scale groups, `groupvec_new` as 
+  # the groupvec to go from fine-scale to broad-scale groups, and `group_names_new` as the broad-scale groups
+  # (i.e. length(groupvec_new) = length(group_names), and max(groupvec_new) == length(group_names_new))
+  #
   # Inputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #   rubias_output - output list object from `run_rubias_mixture` or `infer_mixture`
   #   mixvec - character vector of mixture sillys, used to read in output .csv files if `rubias_output = NULL`
   #   group_names - character vector of group_names, used to sort repunit as a factor, can get from .csv
+  #   group_names_new - character vector of new group_names, used to roll up groups from fine-scale to broad-scale for bias correction
+  #                     if specified, `groupvec_new` must be = length(group_names_new)
   #   groupvec - numeric vector indicating the group affiliation of each pop in sillyvec, used if resumarizing to new groups
+  #   groupvec_new - a numeric vector indicating the new group affiliation of each group, used if resumarizing fine-scale groups to broad-scale groups with bias correction
   #   path - character vector of where to find output from each mixture as a .csv (created by `run_rubias_mixture`)
   #   alpha - numeric constant specifying credibility intervals, default is 0.1, which gives 90% CIs (i.e. 5% and 95%)
   #   burn_in - numeric constant specifying how many sweeps were used for burn_in in `run_rubias_mixture` or `infer_mixture`
@@ -55,7 +63,14 @@ custom_combine_rubias_output <- function(rubias_output = NULL, mixvec = NULL, gr
     stop("Not all mixtures in `mixvec` have .csv output in `path`, hoser!!!")
   }
   if(!is.null(groupvec) & bias_corr) {
-    stop("Can not perform bias correction if you are changing the groupvec from what was originally run.\n  Unfortunately since `rubias` only outputs bias corrected means for each `repunit`, we can't compute\n  bias corrected summary statistics on a new `groupvec`.")
+    stop("Can not perform bias correction if you are changing the groupvec (pop to group) from what was originally run.\n  Unfortunately since `rubias` only outputs bias corrected means for each `repunit`, we can't compute\n  bias corrected summary statistics on a new `groupvec`.")
+  }
+  if(!is.null(groupvec_new) & is.null(group_names_new)) {
+    stop("Need to provide `group_names_new` if introducing `groupvec_new`, hoser!!!")
+  }
+  if(!is.null(groupvec_new)) {
+    if(length(groupvec_new) != length(group_names) | max(groupvec_new) != length(group_names_new))
+      stop("If specifying `groupvec_new`, you must be rolling up from fine-scale groups to broad-scale groups (i.e. length(groupvec_new) = length(group_names), and max(groupvec_new) == length(group_names_new))")
   }
   if(!is.null(groupvec) & is.null(group_names)) {
     stop("Need to provide `group_names` if introducing a new `groupvec`, hoser!!!")
@@ -188,6 +203,20 @@ custom_combine_rubias_output <- function(rubias_output = NULL, mixvec = NULL, gr
   }
   
   #~~~~~~~~~~~~~~~~
+  ## Roll up to broad-scale groups if `groupvec_new` specified
+  if(!is.null(groupvec_new)) {
+    level_key <- sapply(group_names, function(grp) {
+      i = which(group_names == grp)
+      group_names_new[groupvec_new[i]]
+    }, simplify = FALSE )  # set up level_key to use with recode to roll up groups
+    repunit_trace <- repunit_trace %>% 
+      dplyr::mutate(repunit = recode(repunit, !!!level_key)) %>% 
+      dplyr::group_by(mixture_collection, sweep, repunit) %>% 
+      dplyr::summarise(rho = sum(rho)) %>% 
+      dplyr::ungroup()  
+  }  
+  
+  #~~~~~~~~~~~~~~~~
   ## Plot repunit trace
   if(plot_trace) {
     trace_plot <- repunit_trace %>% 
@@ -222,10 +251,12 @@ custom_combine_rubias_output <- function(rubias_output = NULL, mixvec = NULL, gr
     dplyr::ungroup() %>% 
     dplyr::mutate(loCI = replace(loCI, which(loCI < 0), 0),
                   hiCI = replace(hiCI, which(hiCI < 0), 0),
-                  median = replace(median, which(median < 0), 0)) %>% 
+                  median = replace(median, which(median < 0), 0),
+                  mean = replace(mean, which(mean < 0), 0)) %>% 
     dplyr::mutate(loCI = replace(loCI, which(loCI > 1), 1),
                   hiCI = replace(hiCI, which(hiCI > 1), 1),
-                  median = replace(median, which(median > 1), 1)) %>% 
+                  median = replace(median, which(median > 1), 1),
+                  mean = replace(mean, which(mean > 1), 1)) %>% 
     magrittr::set_colnames(c("mixture_collection", "repunit", "mean", "sd", "median", 
                              paste0(loCI * 100, "%"), paste0(hiCI * 100, "%"), "P=0"))
   

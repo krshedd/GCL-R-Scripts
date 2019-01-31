@@ -31,6 +31,7 @@ CheckDupWithinSilly.GCL=function(sillyvec,loci,quantile=0.99,minproportion=0.95)
 
   if(is.null(quantile)){
     require("reshape")
+    library("dplyr")
     for(silly in sillyvec){
       my.gcl=get(paste(silly,".gcl",sep=""),pos=1)
       scores=my.gcl$scores[,loci,,drop=FALSE]
@@ -54,12 +55,15 @@ CheckDupWithinSilly.GCL=function(sillyvec,loci,quantile=0.99,minproportion=0.95)
         dups=t(sapply((1:(n-1))[dupIND],function(id){c(ID1=sortIDs[id],ID2=sortIDs[id+1])}))
         missing=t(sapply(1:nrow(dups),function(dup){
                   vec=match(dups[dup,],sortIDs);
-                  data.frame(Missing1=sum(is.na(sort.scores.df[vec[1],])),Missing2=sum(is.na(sort.scores.df[vec[2],])))
-                }))
-        report=data.frame(dups,missing,proportion=duplication[dupIND])
+                  c("Missing1"=sum(is.na(sort.scores.df[vec[1],])),"Missing2"=sum(is.na(sort.scores.df[vec[2],])))
+                }, simplify = TRUE))
+        report = dplyr::bind_cols(dplyr::as_tibble(dups), 
+                                  dplyr::as_tibble(missing), 
+                                  proportion = duplication[dupIND]
+                                  )
       }
       if(!sum(dupIND)){
-          report="NO Duplicates"
+          report="No Duplicates"
       }
         resultlist[[silly]]=list(report=report,DupDist=NULL)  
     }
@@ -111,7 +115,7 @@ CheckDupWithinSilly.GCL=function(sillyvec,loci,quantile=0.99,minproportion=0.95)
       }
       if(!sum(dupIND)){
   
-        report="NO Duplicates"
+        report="No Duplicates"
 
       }
 
