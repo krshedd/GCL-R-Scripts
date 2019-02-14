@@ -21,7 +21,7 @@ gcl2Genepop.GCL=function(sillyvec,loci,path,VialNums=TRUE,usat=FALSE){
     if(!VialNums){vials=sapply(vials,function(vial){strsplit(vial,"_")[[1]][1]})}
     IDs=dimnames(my.gcl$scores)[[1]]
     names(vials)=IDs    
-    scores=my.gcl$scores[,loci,]
+    scores=my.gcl$scores[ , loci, , drop = FALSE]
     scores[scores == "0"] <- NA
     if(usat) {
       scores[scores == ""] <- NA
