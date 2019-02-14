@@ -143,7 +143,7 @@ LOKI2R_GAPS.GCL = function(sillyvec, username, password){
     
     if(sum(lociIND)) {stop(paste0("No available data for loci '", loci[lociIND], "' for silly '", silly, "', hoser!!!"))}
     
-    scoredIND = table(my.gno$FK_FISH_ID, my.gno$LOCUS)[fishID, loci]
+    scoredIND = table(my.gno$FK_FISH_ID, my.gno$LOCUS)[fishID, loci, drop = FALSE]
     
     includeIND = apply(scoredIND, 1, sum) == nloci
     
@@ -152,9 +152,9 @@ LOKI2R_GAPS.GCL = function(sillyvec, username, password){
     #nind=length(fishID)
     
     scores = abind(tapply(X = my.gno$ALLELE1_CONV, INDEX = data.frame(my.gno$FK_FISH_ID, my.gno$LOCUS),
-                          FUN = function(allele) {as.character(allele)} )[fishID, loci],
+                          FUN = function(allele) {as.character(allele)} )[fishID, loci, drop = FALSE],
                    tapply(X = my.gno$ALLELE2_CONV, INDEX = data.frame(my.gno$FK_FISH_ID, my.gno$LOCUS),
-                          FUN = function(allele) {as.character(allele)} )[fishID, loci], along = 3)
+                          FUN = function(allele) {as.character(allele)} )[fishID, loci, drop = FALSE], along = 3)
     
     dimnames(scores)[[3]] = c("Dose_1", "Dose_2")
     
