@@ -1,5 +1,5 @@
 custom_combine_rubias_output <- function(rubias_output = NULL, mixvec = NULL, group_names = NULL, group_names_new = NULL,
-                                         groupvec = NULL, groupvec_new = NULL,path = "rubias/output", alpha = 0.1, 
+                                         groupvec = NULL, groupvec_new = NULL, path = "rubias/output", alpha = 0.1, 
                                          burn_in = 5000, bias_corr = FALSE, threshold = 5e-7, plot_trace = TRUE) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # This function computes summary statistics from `rubias` output, similar to `CustomCombineBAYESOutput.
@@ -46,7 +46,7 @@ custom_combine_rubias_output <- function(rubias_output = NULL, mixvec = NULL, gr
   #   Also returns a trace plot for each mixture and repunit if `plot_trace = TRUE`
   #
   # Example~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # load("V:/Analysis/1_SEAK/Sockeye/Mixture/Lynn Canal Inseason/2018/rubias/output/test/custom_combine_rubias_output_test.RData")
+  # load("V:/Analysis/1_SEAK/Sockeye/Mixture/Lynn Canal Inseason/2018/OLD rubias/output/test/custom_combine_rubias_output_test.RData")
   # lynncanal_2015_SW26_27.sum <- custom_combine_rubias_output(rubias_output = lynncanal_test.out, group_names = LynnCanal_groups7, bias_corr = TRUE)
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   while(!require(tidyverse)){install.packages("tidyverse")}
@@ -99,7 +99,7 @@ custom_combine_rubias_output <- function(rubias_output = NULL, mixvec = NULL, gr
         group_names <- colnames(suppressMessages(readr::read_csv(file = paste0(path, "/", mixvec[1], "_repunit_trace.csv"))))[-1]
       }  # assign `group_names` from "repunit_trace.csv", if NULL
       
-    } else {
+    } else {  # groupvec
       
       if(!all(file.exists(paste0(path, "/", mixvec, "_collection_trace.csv")))) {
         stop("Not all mixtures in `mixvec` have a `collection_trace.csv` file in `path`, hoser!!!")
