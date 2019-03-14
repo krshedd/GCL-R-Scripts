@@ -101,7 +101,9 @@ stratified_estimator_rubias <- function(rubias_output = NULL, mixvec = NULL, gro
       if(is.null(group_names)) {
         group_names <- colnames(suppressMessages(readr::read_csv(file = paste0(path, "/", mixvec[1], "_repunit_trace.csv"))))[-1]
       }  # assign `group_names` from "repunit_trace.csv", if NULL
-      
+      repunit_trace <- repunit_trace %>% 
+        dplyr::mutate(repunit = factor(x = repunit, levels = group_names))  # order repunit
+        
     } else {  # groupvec
       
       if(!all(file.exists(paste0(path, "/", mixvec, "_collection_trace.csv")))) {
@@ -134,7 +136,8 @@ stratified_estimator_rubias <- function(rubias_output = NULL, mixvec = NULL, gro
       bootstrapped_proportions <- dplyr::bind_rows(lapply(mixvec, function(mixture) {
         bias_corr_mix <- suppressMessages(readr::read_csv(file = paste0(path, "/", mixture, "_bias_corr.csv")))
         bias_corr_mix <- bias_corr_mix %>% 
-          dplyr::mutate(mixture_collection = mixture)
+          dplyr::mutate(mixture_collection = mixture) %>% 
+          dplyr::mutate(repunit = factor(x = repunit, levels = group_names))  # order repunit
       } ))  # build bootstrapped_proportions from "bias_corr.csv" files
     }  # bias_corr
     
