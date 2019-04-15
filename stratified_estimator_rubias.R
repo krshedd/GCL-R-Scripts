@@ -1,9 +1,10 @@
-custom_combine_rubias_output <- function(rubias_output = NULL, mixvec = NULL, group_names = NULL, group_names_new = NULL,
-                                         groupvec = NULL, groupvec_new = NULL, path = "rubias/output", alpha = 0.1, 
-                                         burn_in = 5000, bias_corr = FALSE, threshold = 5e-7, plot_trace = TRUE) {
+stratified_estimator_rubias <- function(rubias_output = NULL, mixvec = NULL, group_names = NULL, 
+                                        catchvec, newname = NULL, group_names_new = NULL, 
+                                        groupvec = NULL, groupvec_new = NULL, path = "rubias/output", alpha = 0.1, 
+                                        burn_in = 5000, bias_corr = FALSE, threshold = 5e-7) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # This function computes summary statistics from `rubias` output, similar to `CustomCombineBAYESOutput.
-  # However, output is a tibble with `mixture_collection` as a column, instead of each mixture as its own list.
+  # This function computes summary statistics from a stratified estimate of `rubias` output, similar to `StratifiedEstiamteor`.
+  # However, output is a tibble with `stratified_mixture` as a column, instead of a single matrix.
   # It can take either the `rubias_output` list object from `run_rubias_mixture` or `infer_mixture`,
   # OR it can read in the .csv files created by `run_rubias_mixture`.
   #
@@ -20,6 +21,8 @@ custom_combine_rubias_output <- function(rubias_output = NULL, mixvec = NULL, gr
   #   rubias_output - output list object from `run_rubias_mixture` or `infer_mixture`
   #   mixvec - character vector of mixture sillys, used to read in output .csv files if `rubias_output = NULL`
   #   group_names - character vector of group_names, used to sort repunit as a factor, can get from .csv
+  #   catchvec - numeric vector of harvest for each strata, must be in the same order as `mixvec`
+  #   newname - character vector of length 1 specifying the name of the stratified estimate
   #   group_names_new - character vector of new group_names, used to roll up groups from fine-scale to broad-scale for bias correction
   #                     if specified, `groupvec_new` must be = length(group_names_new)
   #   groupvec - numeric vector indicating the group affiliation of each pop in sillyvec, used if resumarizing to new groups
@@ -30,11 +33,10 @@ custom_combine_rubias_output <- function(rubias_output = NULL, mixvec = NULL, gr
   #   bias_corr - logical switch indicating whether you want bias corrected values from `method = "PB"` or not, 
   #               currently can NOT do bias correction if not using the same repunits that were run in the mixture
   #   threshold - numeric constant specifying how low stock comp is before assume 0, used for `P=0` calculation, default is from BAYES
-  #   plot_trace - logical switch, when on will create a trace plot for each mixture and repunit (reporting group)
   #
   # Outputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  #   Returns a tibble with 8 fields for each mixture and repunit (reporting group)
-  #   mixture_collection - factor of mixtures (only a factor for ordering, plotting purposes)
+  #   Returns a tibble with 8 fields for each repunit (reporting group)
+  #   stratified_mixture - character of stratified mixture
   #   repunit - factor of reporting groups (only a factor for ordering, plotting purposes)
   #   mean - mean stock composition
   #   sd - standard deviation
@@ -42,8 +44,6 @@ custom_combine_rubias_output <- function(rubias_output = NULL, mixvec = NULL, gr
   #   loCI - lower bound of credibility interval
   #   hiCI - upper bound of credibility interval
   #   P=0 - the proportion of the stock comp distribution that was below `threshold` (i.e posterior probability that stock comp = 0)
-  #
-  #   Also returns a trace plot for each mixture and repunit if `plot_trace = TRUE`
   #
   # Example~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # load("V:/Analysis/1_SEAK/Sockeye/Mixture/Lynn Canal Inseason/2018/OLD rubias/output/test/custom_combine_rubias_output_test.RData")
@@ -75,6 +75,9 @@ custom_combine_rubias_output <- function(rubias_output = NULL, mixvec = NULL, gr
   if(!is.null(groupvec) & is.null(group_names)) {
     stop("Need to provide `group_names` if introducing a new `groupvec`, hoser!!!")
   }
+  if(is.null(newname)) {
+    stop("Need to provide a `newname` for this stratified estiamte, hoser!!!")
+  }
   
   #~~~~~~~~~~~~~~~~
   ## If no rubias_output, make from .csv files
@@ -98,7 +101,9 @@ custom_combine_rubias_output <- function(rubias_output = NULL, mixvec = NULL, gr
       if(is.null(group_names)) {
         group_names <- colnames(suppressMessages(readr::read_csv(file = paste0(path, "/", mixvec[1], "_repunit_trace.csv"))))[-1]
       }  # assign `group_names` from "repunit_trace.csv", if NULL
-      
+      repunit_trace <- repunit_trace %>% 
+        dplyr::mutate(repunit = factor(x = repunit, levels = group_names))  # order repunit
+        
     } else {  # groupvec
       
       if(!all(file.exists(paste0(path, "/", mixvec, "_collection_trace.csv")))) {
@@ -131,7 +136,8 @@ custom_combine_rubias_output <- function(rubias_output = NULL, mixvec = NULL, gr
       bootstrapped_proportions <- dplyr::bind_rows(lapply(mixvec, function(mixture) {
         bias_corr_mix <- suppressMessages(readr::read_csv(file = paste0(path, "/", mixture, "_bias_corr.csv")))
         bias_corr_mix <- bias_corr_mix %>% 
-          dplyr::mutate(mixture_collection = mixture)
+          dplyr::mutate(mixture_collection = mixture) %>% 
+          dplyr::mutate(repunit = factor(x = repunit, levels = group_names))  # order repunit
       } ))  # build bootstrapped_proportions from "bias_corr.csv" files
     }  # bias_corr
     
@@ -177,6 +183,12 @@ custom_combine_rubias_output <- function(rubias_output = NULL, mixvec = NULL, gr
   }  # rubias_output
   
   #~~~~~~~~~~~~~~~~
+  ## Verify that catchvec specifies all mixtures
+  if(length(mixvec) != length(catchvec)) {
+    stop("`mixvec` and `catchvec` are not the same length, hoser!!!")
+  }
+  
+  #~~~~~~~~~~~~~~~~
   ## Calculate `d_rho` for bias correction if specified
   if(bias_corr) {
     if(nrow(bootstrapped_proportions) == 0) {stop("There is no bias corrected output, hoser!!!")}
@@ -217,31 +229,21 @@ custom_combine_rubias_output <- function(rubias_output = NULL, mixvec = NULL, gr
   }  
   
   #~~~~~~~~~~~~~~~~
-  ## Plot repunit trace
-  if(plot_trace) {
-    trace_plot <- repunit_trace %>% 
-      dplyr::mutate(mixture_collection = factor(x = mixture_collection, levels = mixvec)) %>%  # order mixture_collection
-      dplyr::mutate(repunit = factor(x = repunit, levels = group_names)) %>%  # order repunit
-      ggplot2::ggplot(aes(x = sweep, y = rho, colour = repunit)) +
-      ggplot2::geom_line() +
-      ggplot2::ylim(0, 1) +
-      ggplot2::geom_vline(xintercept = burn_in) +
-      # ggplot2::annotate(geom = "text", x = burn_in / 2, y = 0.9, label = "Burn-in") +
-      ggplot2::theme(legend.position = "none",
-                     axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
-      ggplot2::facet_grid(repunit ~ mixture_collection)
-  }
-
-  #~~~~~~~~~~~~~~~~
-  ## Summary statistics
+  ## Summary statistics for stratified estimate
+  harvest <- dplyr::tibble(mixture_collection = mixvec, harvest = catchvec)
+  
   loCI = alpha / 2
   hiCI = 1 - (alpha / 2)
   
   out_sum <- repunit_trace %>% 
     dplyr::filter(sweep >= burn_in) %>%  # remove burn_in
-    dplyr::mutate(mixture_collection = factor(x = mixture_collection, levels = mixvec)) %>%  # order mixture_collection
-    dplyr::mutate(repunit = factor(x = repunit, levels = group_names)) %>%  # order repunit
-    dplyr::group_by(mixture_collection, repunit) %>%  # group by mixture and repunit across sweeps
+    dplyr::left_join(harvest, by = "mixture_collection") %>%  # join harvest data from `catchvec`
+    dplyr::mutate(rho_stratified = rho * harvest / sum(catchvec)) %>%  # multiply each strata by strata harvest and divide by total harvest
+    dplyr::group_by(sweep, repunit) %>%  # summarise mixtures by sweep and repunit
+    dplyr::summarise(rho = sum(rho_stratified)) %>% 
+    dplyr::mutate(stratified = newname) %>%  # define newname
+    dplyr::select(stratified, sweep, repunit, rho) %>% 
+    dplyr::group_by(stratified, repunit) %>%  # calculate summary statistics
     dplyr::summarise(mean = mean(rho),
                      sd = sd(rho),
                      median = median(rho),
@@ -257,9 +259,8 @@ custom_combine_rubias_output <- function(rubias_output = NULL, mixvec = NULL, gr
                   hiCI = replace(hiCI, which(hiCI > 1), 1),
                   median = replace(median, which(median > 1), 1),
                   mean = replace(mean, which(mean > 1), 1)) %>% 
-    magrittr::set_colnames(c("mixture_collection", "repunit", "mean", "sd", "median", 
+    magrittr::set_colnames(c("stratified_mixture", "repunit", "mean", "sd", "median", 
                              paste0(loCI * 100, "%"), paste0(hiCI * 100, "%"), "P=0"))
   
-  if(exists("trace_plot")) {suppressWarnings(print(trace_plot))}  # plot the trace for each mixture, repunit
   return(out_sum)
 }  # end function
