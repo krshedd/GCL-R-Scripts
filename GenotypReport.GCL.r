@@ -26,7 +26,9 @@ GenotypeReport.GCL <- function(project_name = NULL, sillyvec = NULL, loci = NULL
   #  Output:
   #  Crosstab format of silly individuals by loci with both alleles in one column
   #
-  #  Written by Andy Barclay 10/5/18
+  #  Written by Andy Barclay 10/5/18. 
+  #  Updated by Andy Barclay 4/15/19; updated driver from ojdbc6.jar to ojdbc8.jar and changed the LOKI connection URL
+  #  to connect to the new Oracle cloud database.
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
   # Recording function start time
@@ -52,25 +54,27 @@ GenotypeReport.GCL <- function(project_name = NULL, sillyvec = NULL, loci = NULL
   if(!file.exists(path.expand("~/R"))){
     dir<-path.expand("~/R")
     dir.create(dir)
-    bool <- file.copy(from="V:/Analysis/R files/Scripts/DEV/jars/ojdbc6.jar",to=path.expand("~/R/ojdbc6.jar"))
+    bool <- file.copy(from="V:/Analysis/R files/OJDBC_Jar/ojdbc8.jar",to=path.expand("~/R/ojdbc8.jar"))
   } else {
-    if(!file.exists(path.expand("~/R/ojdbc6.jar"))){
-      bool <- file.copy(from="V:/Analysis/R files/Scripts/DEV/jars/ojdbc6.jar",to=path.expand("~/R/ojdbc6.jar"))
+    if(!file.exists(path.expand("~/R/ojdbc8.jar"))){
+      bool <- file.copy(from="V:/Analysis/R files/OJDBC_Jar/ojdbc8.jar",to=path.expand("~/R/ojdbc8.jar"))
     }
   }
   
   # Setting default java.parameters
   options(java.parameters = "-Xmx10g")
   
-  if(file.exists("C:/Program Files/R/RequiredLibraries/ojdbc6.jar")) {
-    drv <- JDBC("oracle.jdbc.OracleDriver",classPath="C:/Program Files/R/RequiredLibraries/ojdbc6.jar"," ")#https://blogs.oracle.com/R/entry/r_to_oracle_database_connectivity    C:/app/awbarclay/product/11.1.0/db_1/jdbc/lib
+  if(file.exists("C:/Program Files/R/RequiredLibraries/ojdbc8.jar")) {
+    drv <- JDBC("oracle.jdbc.OracleDriver",classPath="C:/Program Files/R/RequiredLibraries/ojdbc8.jar"," ")#https://blogs.oracle.com/R/entry/r_to_oracle_database_connectivity    C:/app/awbarclay/product/11.1.0/db_1/jdbc/lib
   } else {
-    drv <- JDBC("oracle.jdbc.OracleDriver",classPath=path.expand("~/R/ojdbc6.jar")," ")
+    drv <- JDBC("oracle.jdbc.OracleDriver",classPath=path.expand("~/R/ojdbc8.jar")," ")
   }
   
-  # Connect to LOKI
-  con <- dbConnect(drv, "jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS_LIST=(ADDRESS=(PROTOCOL=TCP)(HOST=db-pcfres.dfg.alaska.local)(PORT=1521)))(CONNECT_DATA=(SID=PCFRES)))",username,password)
+  url <-LOKI_URL.GCL()
   
+  # Connect to LOKI
+  con <- dbConnect(drv,url=url,user=username,password=password)
+         
   # Creating java query when sillyvec and loci are supplied.  
   if(!is.null(sillyvec) & !is.null(loci)){
     gnoqry <- paste0("SELECT LAB_PROJECT_NAME, FK_COLLECTION_ID, SILLY_CODE, FK_FISH_ID, LOCUS, PLOIDY, ALLELE_1, ALLELE_2, ALLELE_1_FIXED, ALLELE_2_FIXED FROM AKFINADM.V_GEN_TEST_RESULTS_BOTHGENO WHERE LOCUS IN (", paste0("'", loci, "'", collapse = ","), ") AND SILLY_CODE IN", "(", paste0("'", sillyvec, "'", collapse = ","), ")")
