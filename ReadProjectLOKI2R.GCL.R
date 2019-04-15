@@ -18,6 +18,8 @@ ReadProjectLOKI2R.GCL <- function(projectID, username, password){
   #  Updated by Kyle Shedd with code from Eric Lardizabal to change sql query for markersuite on 10/15/15
   #  Also changed from using RODBC (ReadLOKI) to JDBC (LOKI2R), code is direct copy/paste from LOKI2R
   #  Updated to new ojdbc6.jar path on V:/Analysis by Kyle Shedd on 05/05/2016
+  #  Updated by Andy Barclay 4/15/19; updated driver from ojdbc6.jar to ojdbc8.jar and changed the LOKI connection URL
+  #  to connect to the new Oracle cloud database
   ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
   if(!exists("LocusControl")){
