@@ -21,23 +21,23 @@ LOKI2R_GAPS.GCL = function(sillyvec, username, password){
   #  LOKI2R.GCL(sillyvec,username,password)
   #
   #  Written by AB, EL, & JJ,  10/06/2015
+  #  Updated by Andy Barclay 4/15/19; updated driver from ojdbc6.jar to ojdbc8.jar and changed the LOKI connection URL
+  #  to connect to the new Oracle cloud database.
   ######################################################################################################################################################################################
   
-  if(!file.exists(path.expand("~/R"))) {
+  if(!file.exists(path.expand("~/R"))){
     
-    dir <- path.expand("~/R")
+    dir<-path.expand("~/R")
     
     dir.create(dir)
     
-    bool <- file.copy(from = "V:/DATA/R_GEN/JJs GCL/jars/ojdbc6.jar", to = path.expand("~/R/ojdbc6.jar"))
+    bool <- file.copy(from="V:/Analysis/R files/OJDBC_Jar/ojdbc8.jar",to=path.expand("~/R/ojdbc8.jar"))
     
-  }
-  
-  if(file.exists(path.expand("~/R"))) {
+  } else {
     
-    if(!file.exists(path.expand("~/R/ojdbc6.jar"))) {
+    if(!file.exists(path.expand("~/R/ojdbc8.jar"))){
       
-      bool <- file.copy(from = "V:/DATA/R_GEN/JJs GCL/jars/ojdbc6.jar", to = path.expand("~/R/ojdbc6.jar"))
+      bool <- file.copy(from="V:/Analysis/R files/OJDBC_Jar/ojdbc8.jar",to=path.expand("~/R/ojdbc8.jar"))
       
     }
     
@@ -55,9 +55,11 @@ LOKI2R_GAPS.GCL = function(sillyvec, username, password){
   
   options(java.parameters = "-Xmx10g")
   
-  drv <- JDBC("oracle.jdbc.OracleDriver", classPath = "~/R/ojdbc6.jar", " ")#https://blogs.oracle.com/R/entry/r_to_oracle_database_connectivity    C:/app/awbarclay/product/11.1.0/db_1/jdbc/lib
+  drv <- JDBC("oracle.jdbc.OracleDriver", classPath = "~/R/ojdbc8.jar", " ")#https://blogs.oracle.com/R/entry/r_to_oracle_database_connectivity    C:/app/awbarclay/product/11.1.0/db_1/jdbc/lib
   
-  con <- dbConnect(drv, "jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS_LIST=(ADDRESS=(PROTOCOL=TCP)(HOST=db-pcfres.dfg.alaska.local)(PORT=1521)))(CONNECT_DATA=(SID=PCFRES)))", username, password)
+  url <-LOKI_URL.GCL()
+  
+  con <- dbConnect(drv,url=url,user=username,password=password)
   
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   markersuite <- "GAPS_Chinook_uSATs"

@@ -34,13 +34,13 @@ ReadProjectLOKI2R.GCL <- function(projectID, username, password){
     
     dir.create(dir)
     
-    bool <- file.copy(from="V:/Analysis/R files/Scripts/DEV/jars/ojdbc6.jar",to=path.expand("~/R/ojdbc6.jar"))
+    bool <- file.copy(from="V:/Analysis/R files/OJDBC_Jar/ojdbc8.jar",to=path.expand("~/R/ojdbc8.jar"))
     
   } else {
     
-    if(!file.exists(path.expand("~/R/ojdbc6.jar"))){
+    if(!file.exists(path.expand("~/R/ojdbc8.jar"))){
       
-      bool <- file.copy(from="V:/Analysis/R files/Scripts/DEV/jars/ojdbc6.jar",to=path.expand("~/R/ojdbc6.jar"))
+      bool <- file.copy(from="V:/Analysis/R files/OJDBC_Jar/ojdbc8.jar",to=path.expand("~/R/ojdbc8.jar"))
       
     }
     
@@ -52,17 +52,19 @@ ReadProjectLOKI2R.GCL <- function(projectID, username, password){
   
   options(java.parameters = "-Xmx10g")
   
-  if(file.exists("C:/Program Files/R/RequiredLibraries/ojdbc6.jar")) {
+  if(file.exists("C:/Program Files/R/RequiredLibraries/ojdbc8.jar")) {
     
-    drv <- JDBC("oracle.jdbc.OracleDriver",classPath="C:/Program Files/R/RequiredLibraries/ojdbc6.jar"," ")#https://blogs.oracle.com/R/entry/r_to_oracle_database_connectivity    C:/app/awbarclay/product/11.1.0/db_1/jdbc/lib
+    drv <- JDBC("oracle.jdbc.OracleDriver",classPath="C:/Program Files/R/RequiredLibraries/ojdbc8.jar"," ")#https://blogs.oracle.com/R/entry/r_to_oracle_database_connectivity    C:/app/awbarclay/product/11.1.0/db_1/jdbc/lib
     
   } else {
     
-    drv <- JDBC("oracle.jdbc.OracleDriver",classPath=path.expand("~/R/ojdbc6.jar")," ")
+    drv <- JDBC("oracle.jdbc.OracleDriver",classPath=path.expand("~/R/ojdbc8.jar")," ")
     
   }
   
-  con <- dbConnect(drv, "jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS_LIST=(ADDRESS=(PROTOCOL=TCP)(HOST=db-pcfres.dfg.alaska.local)(PORT=1521)))(CONNECT_DATA=(SID=PCFRES)))",username,password)
+  url <-LOKI_URL.GCL()
+  
+  con <- dbConnect(drv,url=url,user=username,password=password)
   
   loci <- LocusControl$locusnames
   
