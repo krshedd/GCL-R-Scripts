@@ -1,86 +1,159 @@
-ReadGenepopDis.GCL<-function(file){
+ReadGenepopDis.GCL<-function(file, loci=NULL){
 #################################################################################################################
 #
-# This function reads in the population output from a GENEPOP disequilibrium ("*.dis") file and returns a data.frame.
+# This function reads in the output from a GENEPOP disequillibrium ("*.dis") file and returns a tibble with p-value columns for each population
+# and a column of overall population p-values. 
+#
 # P-values with "No contingency table" are replaced with "1" and p-values = "0" are replaced with 1/(#Batches*#Iterations per batch).
 # 
 # Input parameters~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # 
-# file - "V:/WORK/Sockeye/Kodiak/Kodiak Afognak Baseline Look 2014/Kyle/Genepop/Kodiak50Pops92NuclearLoci.txt.DIS"
+# file <- "V:/Analysis/2_Central/Coho/Cook Inlet/2018/Baseline/Genepop/CI94pops82loci.DIS"
 #   ~ the full file path, including the ".dis" extension.  Make sure the file has not been modified.
+#
+# loci <- NULL
+#   ~ defult is NULL or a vector of locus names the same order as the genepop input file used for the tests. 
+# If a vector of locus names is supplied the Locus1 and Locus2 columns will contain the correct locus names
+# otherwise the locus names will be the same as in the .DIS file (tuncated to 8 characters)
 # 
 # Output~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #
-# Data.frame
+# tibble
 # nrow = number of pairwise combinations of loci (i.e. choose(n = nloci, k = 2)).
-# ncol = number of populations + 2
+# ncol = number of populations + 3
 #   ~ The first two columns are the locus names for the pair (Locus1 and Locus2)
 #   ~ Subsequent columns contain the LD p-values for that locus pair for a given population
+#   ~ The last column contains the overall p-values for all populations. 
+#     If only one population is tested the overall p-value column will contain NA's
 #
 # Example~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # How many populations have a p-value of < 0.05 for a given locus pair?
 # Create an additional column with the number of pops below a given p-value threshold (i.e. 0.05)
-# LD <- ReadGenepopDis.GCL(file = "V:/Analysis/3_AYK/Chum/WASC/Genepop/WASCchum.DIS")
+# LD <- ReadGenepopDis.GCL(file = "V:/Analysis/3_AYK/Chum/WASC/Genepop/WASCchum.DIS",loci=NULL)
 # LD$npopsfail <- apply(LD[, 3:dim(LD)[2]] < 0.05, 1, function(locuspair) {sum(locuspair)} )
 #
-# Written 2/5/13 Andy Barclay
-# updated 8/6/14 Kyle Shedd - data.frame with p-values for each pop + overall
+# Written 4/25/19 Andy Barclay 
 #################################################################################################################
 
-  require("reshape2")
+  require(tidyverse)
 
-  dis<-scan(file,what='',sep = "\n")
-
-  batches<-as.numeric(strsplit(dis[grep("	Batches              :",dis)],split="\tBatches              : ")[[1]][2])
-
-  iterations<-as.numeric(strsplit(dis[grep("	Iterations per batch : ",dis)],split="\tIterations per batch : ")[[1]][2])
-
-  repzero<-format(1/(batches*iterations),scientific=F,digits=6)
-
-  popstart<-grep("Pop             Locus#1  Locus#2    P-Value      S.E.     Switches",dis)+2
-
-  popend<-grep("P-value for each locus pair across all populations",dis)-1
-
-  poptable<-sapply(popstart:popend,function(row){gsub(pattern="[[:blank:]]+",x=dis[row],replacement="/",fixed=F)})
-
-  poptable<-colsplit(poptable,pattern="/",names=c("Pop","Locus#1","Locus#2","PValue","S.E.","Switches"))
-
-  popscol<-gsub(poptable$Pop,pattern="_\\d+",replacement='')
-
-  poptable$Pop=popscol
-
-  npops<-as.numeric(strsplit(dis[grep("Number of populations detected : ",dis)],split="Number of populations detected : ")[[1]][2])
-
-  ncomps<-length(popscol)/npops
-
-  pops=popscol[c(ncomps*1:npops)]
-
-  if(sum(duplicated(x = pops)) > 0) {pops[duplicated(x = pops)] = paste(pops[duplicated(x = pops)], "dup", sep = '')}
-
-  poptable$PValue[poptable$PValue=="No"]=1
+  dis <- scan(file,what='',sep = "\n")
   
-  poptable$PValue[as.numeric(poptable$PValue)==0]=repzero
+  npops <- as.numeric(strsplit(dis[grep("Number of populations detected :",dis)],split="Number of populations detected :")[[1]][2])
+  
+  nloci <- as.numeric(strsplit(dis[grep("Number of loci detected        :",dis)],split="Number of loci detected        :")[[1]][2])
 
-  locstart<-popend+6
+  batches <- as.numeric(strsplit(dis[grep("	Batches              :",dis)],split="\tBatches              : ")[[1]][2])
 
-  locend<-grep("Normal ending.",dis)-1
+  iterations <- as.numeric(strsplit(dis[grep("	Iterations per batch : ",dis)],split="\tIterations per batch : ")[[1]][2])
 
-  loctable<-sapply(locstart:locend,function(row){gsub(pattern="[[:blank:]]+",x=dis[row],replacement="/",fixed=F)})
+  repzero <- format(1/(batches*iterations),scientific=F,digits=6)
 
-  loctable<-gsub("/&/",loctable,replacement="/")
-
-  loctable<-colsplit(loctable,pattern="/",names=c("Locus#1","Locus#2","Chi2","df","PValue"))
-
-  loctable$PValue<-gsub(loctable$PValue,pattern="Highly/sign.",replacement='0')
-
-  summary=data.frame(Locus1=loctable[,"Locus#1"], Locus2=loctable[,"Locus#2"], stringsAsFactors = FALSE)
-
-  for (i in 1:npops){
-    summary[,paste(pops[i])]=as.numeric(poptable[(((i-1)*ncomps)+1):(i*ncomps),"PValue"])
+  popstart <- grep("Pop             Locus#1  Locus#2    P-Value      S.E.     Switches",dis)+2
+  
+  ncomps<-choose(nloci,2)
+  
+  popend <- popstart+ncomps*npops-1
+  
+  if(!is.null(loci)){
+    
+    loc1 <- sapply(seq(length(loci)-1),function(i){
+      
+      loci[1:i]
+    
+    }) %>% unlist()
+    
+    loc2 <- sapply(seq(length(loci)),function(i){
+      
+      rep(loci[i],i-1)
+    
+    }) %>% unlist()
+    
+    
+    if(npops==1){
+      
+      pop_df <- separate(data=tibble(dat=dis[popstart:popend]),col=dat,sep="[[:blank:]]+",into = c("Pop","Locus1","Locus2","PValue",NA,NA),remove=TRUE) %>% 
+    mutate(Pop=gsub(Pop,pattern="_\\d+",replacement=''),`Locus1`= loc1,`Locus2`= loc2, PValue=gsub(PValue,pattern="No",replacement="1")) %>% 
+    mutate(PValue=gsub(PValue,pattern="$$0",replacement=repzero) %>% as.numeric())
+      
+      summary_df <- pop_df %>%
+        group_by_at(vars(-PValue)) %>%
+        mutate(row_id=1:n()) %>% 
+        ungroup() %>%
+        spread(key=Pop,value=PValue) %>% 
+        select(-row_id) %>% 
+        mutate(Overall=NA)
+  
+  } else{
+    
+    
+    pop_df <- separate(data=tibble(dat=dis[popstart:popend]),col=dat,sep="[[:blank:]]+",into = c("Pop","Locus1","Locus2","PValue",NA,NA),remove=TRUE) %>% 
+      mutate(Pop=gsub(Pop,pattern="_\\d+",replacement=''), PValue=gsub(PValue,pattern="No",replacement="1")) %>% 
+      mutate(PValue=gsub(PValue,pattern="$$0",replacement=repzero) %>% as.numeric()) %>% 
+      group_by_at(vars(-PValue)) %>%
+      mutate(row_id=1:n()) %>% 
+      ungroup() %>%
+      spread(key=Pop,value=PValue) %>% 
+      select(-row_id) %>% 
+      mutate(Locus1 = loc1,Locus2 = loc2)
+    
+    locstart<-popend+6
+    
+    locend<-locstart+ncomps-1
+    
+    loc_df <- tibble(dat=dis[locstart:locend]) %>%
+      mutate(dat =substr(dat, start=46, stop=54)) %>% 
+      mutate(dat = gsub(pattern="Highly si",x=dat,replacement="0.000000") %>% as.numeric()) 
+    
+    summary_df=pop_df %>% 
+      mutate(Overall=loc_df %>% pull(dat))
+    
   }
-
-  summary[,"Overall"]=as.numeric(loctable[,"PValue"])
-
-  return(summary)
+    
+    
+    }else{
+      
+      
+      if(npops==1){
+        
+        pop_df <- separate(data=tibble(dat=dis[popstart:popend]),col=dat,sep="[[:blank:]]+",into = c("Pop","Locus1","Locus2","PValue",NA,NA),remove=TRUE) %>% 
+          mutate(Pop=gsub(Pop,pattern="_\\d+",replacement=''), PValue=gsub(PValue,pattern="No",replacement="1")) %>% 
+          mutate(PValue=gsub(PValue,pattern="$$0",replacement=repzero) %>% as.numeric())
+        
+        summary_df <- pop_df %>%
+          group_by_at(vars(-PValue)) %>%
+          mutate(row_id=1:n()) %>% 
+          ungroup() %>%
+          spread(key=Pop,value=PValue) %>% 
+          select(-row_id)%>% 
+          mutate(Overall=NA)
+        
+      } else{
+        
+        
+        pop_df <- separate(data=tibble(dat=dis[popstart:popend]),col=dat,sep="[[:blank:]]+",into = c("Pop","Locus1","Locus2","PValue",NA,NA),remove=TRUE) %>% 
+          mutate(Pop=gsub(Pop,pattern="_\\d+",replacement=''), PValue=gsub(PValue,pattern="No",replacement="1")) %>% 
+          mutate(PValue=gsub(PValue,pattern="$$0",replacement=repzero) %>% as.numeric()) %>% 
+          group_by_at(vars(-PValue)) %>%
+          mutate(row_id=1:n()) %>% 
+          ungroup() %>%
+          spread(key=Pop,value=PValue) %>% 
+          select(-row_id)
+        
+        locstart<-popend+6
+        
+        locend<-locstart+ncomps-1
+        
+        loc_df <- tibble(dat=dis[locstart:locend]) %>%
+          mutate(dat =substr(dat, start=46, stop=54)) %>% 
+          mutate(dat = gsub(pattern="Highly si",x=dat,replacement="0.000000") %>% as.numeric()) 
+        
+        summary_df=pop_df %>% 
+          mutate(Overall=loc_df %>% pull(dat))
+        
+      }
+ 
+  }  
+    return(summary_df)
 
 }
