@@ -1,4 +1,4 @@
-ReadGenepopDis.GCL<-function(file, loci=NULL){
+ReadGenepopDis.GCL <- function(file, loci = NULL) {
 #################################################################################################################
 #
 # This function reads in the output from a GENEPOP disequillibrium ("*.dis") file and returns a tibble with p-value columns for each population
@@ -56,7 +56,7 @@ ReadGenepopDis.GCL<-function(file, loci=NULL){
   popend <- popstart+ncomps*npops-1
   
   #Loci
-  if(!is.null(loci)){
+  if(!is.null(loci)) {
     
     loc1 <- sapply(seq(length(loci)-1),function(i){
       
@@ -75,13 +75,13 @@ ReadGenepopDis.GCL<-function(file, loci=NULL){
       mutate(PValue = gsub(PValue,pattern = "$$0", replacement = repzero) %>% as.numeric())
     
     
-  } else{
+  } else {
     
     pop_df0 <- separate(data = tibble(dat = dis[popstart:popend]), col = dat,sep ="[[:blank:]]+",into = c("PopG","Locus1","Locus2","PValue",NA,NA), remove = TRUE) %>% 
       mutate(Pop = gsub(PopG, pattern ="_\\d+", replacement = ''), PValue = gsub(PValue, pattern = "No", replacement = "1")) %>% 
       mutate(PValue = gsub(PValue,pattern = "$$0", replacement = repzero) %>% as.numeric())
     
-  }#end Loci
+  } #end Loci
   
   pop_names <- pop_df0 %>% pull(Pop) %>% unique() %>% sort()
   
@@ -94,13 +94,13 @@ ReadGenepopDis.GCL<-function(file, loci=NULL){
     select(-row_id)
   
   #npops
-  if(npops==1){
+  if(npops==1) {
     
       summary_df <- pop_df%>% 
         mutate(Overall = NA) %>% 
         set_names("Locus1","Locus2",pop_names,"Overall")
   
-  } else{
+  } else {
     
     pop_df <- pop_df%>% 
       set_names("Locus1","Locus2",pop_names)
@@ -116,7 +116,7 @@ ReadGenepopDis.GCL<-function(file, loci=NULL){
     summary_df = pop_df %>% 
       mutate(Overall = loc_df %>% pull(dat))
     
-  }#end npops
+  } #end npops
     
      return(summary_df)
 
