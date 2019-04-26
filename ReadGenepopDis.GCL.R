@@ -1,8 +1,8 @@
-ReadGenepopDis.GCL <- function(file, loci = NULL) {
+ReadGenepopDis.GCL <- function(file, loci = NULL, sillyvec = NULL) {
 #################################################################################################################
 #
 # This function reads in the output from a GENEPOP disequillibrium ("*.dis") file and returns a tibble with p-value columns for each population
-# and a column of overall population p-values. 
+# and a column of overall population p-values. If the disequillibrium file contains tests for only 1 population, the tibble will not contain on 'Overall' column.
 #
 # P-values with "No contingency table" are replaced with "1" and p-values = "0" are replaced with 1/(#Batches*#Iterations per batch).
 # 
@@ -11,11 +11,19 @@ ReadGenepopDis.GCL <- function(file, loci = NULL) {
 # file <- "V:/Analysis/2_Central/Coho/Cook Inlet/2018/Baseline/Genepop/CI94pops82loci.DIS"
 #   ~ the full file path, including the ".dis" extension.  Make sure the file has not been modified.
 #
-# loci <- NULL
-#   ~ defult is NULL or a vector of locus names the same order as the genepop input file used for the tests. 
+# attach("V:/Analysis/2_Central/Coho/Cook Inlet/2018/Baseline/CI_Coho2018Baseline.RData")
+# 
+# loci <- loci82
+#   ~ default is NULL or a vector of locus names the same order as the genepop input file used for the tests. 
 # If a vector of locus names is supplied the Locus1 and Locus2 columns will contain the correct locus names
 # otherwise the locus names will be the same as in the .DIS file (tuncated to 8 characters)
-# 
+#
+# sillyvec <- sillyvec94
+#   ~ default is NULL or a vector of population sillys the same order as in the genepop inpufile used for the tests. 
+#     If a vector of silly's is supplied the header names for each pop in the output tibble will be the correct sillys, 
+#     otherwise, if no vector is supplied, the header names will be the SillySource of the last fish in the population.
+#
+# detach("file:V:/Analysis/2_Central/Coho/Cook Inlet/2018/Baseline/CI_Coho2018Baseline.RData")
 # Output~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #
 # tibble
@@ -24,7 +32,7 @@ ReadGenepopDis.GCL <- function(file, loci = NULL) {
 #   ~ The first two columns are the locus names for the pair (Locus1 and Locus2)
 #   ~ Subsequent columns contain the LD p-values for that locus pair for a given population
 #   ~ The last column contains the overall p-values for all populations. 
-#     If only one population is tested the overall p-value column will contain NA's
+#     If only one population is tested, the tibble will not include an 'Overall' column. 
 #
 # Example~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # How many populations have a p-value of < 0.05 for a given locus pair?
@@ -70,40 +78,50 @@ ReadGenepopDis.GCL <- function(file, loci = NULL) {
     
     }) %>% unlist()
     
-    pop_df0 <- separate(data = tibble(dat = dis[popstart:popend]), col = dat,sep ="[[:blank:]]+",into = c("PopG","Locus1","Locus2","PValue",NA,NA), remove = TRUE) %>% 
-      mutate(Pop = gsub(PopG, pattern ="_\\d+", replacement = ''),`Locus1`= loc1,`Locus2`= loc2, PValue = gsub(PValue, pattern = "No", replacement = "1")) %>% 
-      mutate(PValue = gsub(PValue,pattern = "$$0", replacement = repzero) %>% as.numeric())
-    
+    pop_df0 <- separate(data = tibble(dat = dis[popstart:popend]), col = dat, sep ="[[:blank:]]+", into = c("Pop","Locus1","Locus2","PValue",NA,NA), remove = TRUE) %>% 
+      mutate(`Locus1`= rep(loc1, npops), `Locus2`= rep(loc2, npops), PValue = gsub(PValue, pattern = "No", replacement = "1")) %>% 
+      mutate(PValue = gsub(PValue, pattern = "$$0", replacement = repzero) %>% as.numeric())
     
   } else {
     
-    pop_df0 <- separate(data = tibble(dat = dis[popstart:popend]), col = dat,sep ="[[:blank:]]+",into = c("PopG","Locus1","Locus2","PValue",NA,NA), remove = TRUE) %>% 
-      mutate(Pop = gsub(PopG, pattern ="_\\d+", replacement = ''), PValue = gsub(PValue, pattern = "No", replacement = "1")) %>% 
-      mutate(PValue = gsub(PValue,pattern = "$$0", replacement = repzero) %>% as.numeric())
+    pop_df0 <- separate(data = tibble(dat = dis[popstart:popend]), col = dat, sep ="[[:blank:]]+", into = c("Pop","Locus1","Locus2","PValue",NA,NA), remove = TRUE) %>% 
+      mutate(PValue = gsub(PValue, pattern = "No", replacement = "1")) %>% 
+      mutate(PValue = gsub(PValue, pattern = "$$0", replacement = repzero) %>% as.numeric())
     
   } #end Loci
   
-  pop_names <- pop_df0 %>% pull(Pop) %>% unique() %>% sort()
+  if(!is.null(sillyvec)){
+    
+    pop_names <- lapply(sillyvec, function(silly){
+      
+      rep(silly,ncomps)
+      
+    }) %>% 
+      unlist()
+  }else{
+    
+    pop_names <- pop_df0 %>% 
+      pull(Pop)
+    
+  } #end sillyvec
+
   
   pop_df <- pop_df0 %>%
-    select(-Pop) %>% 
+    mutate(Pop=pop_names) %>% 
     group_by_at(vars(-PValue)) %>%
     mutate(row_id = 1:n()) %>% 
     ungroup() %>%
-    spread(key = PopG, value = PValue) %>% 
+    spread(key = Pop, value = PValue) %>% 
     select(-row_id)
   
   #npops
   if(npops==1) {
     
-      summary_df <- pop_df%>% 
-        mutate(Overall = NA) %>% 
-        set_names("Locus1","Locus2",pop_names,"Overall")
+      summary_df <- pop_df
   
   } else {
     
-    pop_df <- pop_df%>% 
-      set_names("Locus1","Locus2",pop_names)
+    pop_df <- pop_df
     
     locstart<-popend+6
     
