@@ -55,6 +55,7 @@ ReadGenepopDis.GCL<-function(file, loci=NULL){
   
   popend <- popstart+ncomps*npops-1
   
+  #Loci
   if(!is.null(loci)){
     
     loc1 <- sapply(seq(length(loci)-1),function(i){
@@ -69,91 +70,54 @@ ReadGenepopDis.GCL<-function(file, loci=NULL){
     
     }) %>% unlist()
     
+    pop_df0 <- separate(data = tibble(dat = dis[popstart:popend]), col = dat,sep ="[[:blank:]]+",into = c("PopG","Locus1","Locus2","PValue",NA,NA), remove = TRUE) %>% 
+      mutate(Pop = gsub(PopG, pattern ="_\\d+", replacement = ''),`Locus1`= loc1,`Locus2`= loc2, PValue = gsub(PValue, pattern = "No", replacement = "1")) %>% 
+      mutate(PValue = gsub(PValue,pattern = "$$0", replacement = repzero) %>% as.numeric())
     
-    if(npops==1){
-      
-      pop_df <- separate(data=tibble(dat=dis[popstart:popend]),col=dat,sep="[[:blank:]]+",into = c("Pop","Locus1","Locus2","PValue",NA,NA),remove=TRUE) %>% 
-    mutate(Pop=gsub(Pop,pattern="_\\d+",replacement=''),`Locus1`= loc1,`Locus2`= loc2, PValue=gsub(PValue,pattern="No",replacement="1")) %>% 
-    mutate(PValue=gsub(PValue,pattern="$$0",replacement=repzero) %>% as.numeric())
-      
-      summary_df <- pop_df %>%
-        group_by_at(vars(-PValue)) %>%
-        mutate(row_id=1:n()) %>% 
-        ungroup() %>%
-        spread(key=Pop,value=PValue) %>% 
-        select(-row_id) %>% 
-        mutate(Overall=NA)
+    
+  } else{
+    
+    pop_df0 <- separate(data = tibble(dat = dis[popstart:popend]), col = dat,sep ="[[:blank:]]+",into = c("PopG","Locus1","Locus2","PValue",NA,NA), remove = TRUE) %>% 
+      mutate(Pop = gsub(PopG, pattern ="_\\d+", replacement = ''), PValue = gsub(PValue, pattern = "No", replacement = "1")) %>% 
+      mutate(PValue = gsub(PValue,pattern = "$$0", replacement = repzero) %>% as.numeric())
+    
+  }#end Loci
+  
+  pop_names <- pop_df0 %>% pull(Pop) %>% unique() %>% sort()
+  
+  pop_df <- pop_df0 %>%
+    select(-Pop) %>% 
+    group_by_at(vars(-PValue)) %>%
+    mutate(row_id = 1:n()) %>% 
+    ungroup() %>%
+    spread(key = PopG, value = PValue) %>% 
+    select(-row_id)
+  
+  #npops
+  if(npops==1){
+    
+      summary_df <- pop_df%>% 
+        mutate(Overall = NA) %>% 
+        set_names("Locus1","Locus2",pop_names,"Overall")
   
   } else{
     
-    
-    pop_df <- separate(data=tibble(dat=dis[popstart:popend]),col=dat,sep="[[:blank:]]+",into = c("Pop","Locus1","Locus2","PValue",NA,NA),remove=TRUE) %>% 
-      mutate(Pop=gsub(Pop,pattern="_\\d+",replacement=''), PValue=gsub(PValue,pattern="No",replacement="1")) %>% 
-      mutate(PValue=gsub(PValue,pattern="$$0",replacement=repzero) %>% as.numeric()) %>% 
-      group_by_at(vars(-PValue)) %>%
-      mutate(row_id=1:n()) %>% 
-      ungroup() %>%
-      spread(key=Pop,value=PValue) %>% 
-      select(-row_id) %>% 
-      mutate(Locus1 = loc1,Locus2 = loc2)
+    pop_df <- pop_df%>% 
+      set_names("Locus1","Locus2",pop_names)
     
     locstart<-popend+6
     
     locend<-locstart+ncomps-1
     
-    loc_df <- tibble(dat=dis[locstart:locend]) %>%
-      mutate(dat =substr(dat, start=46, stop=54)) %>% 
-      mutate(dat = gsub(pattern="Highly si",x=dat,replacement="0.000000") %>% as.numeric()) 
+    loc_df <- tibble(dat = dis[locstart:locend]) %>%
+      mutate(dat = substr(dat, start = 46, stop = 54)) %>% 
+      mutate(dat = gsub(pattern = "Highly si", x = dat, replacement = "0.000000") %>% as.numeric()) 
     
-    summary_df=pop_df %>% 
-      mutate(Overall=loc_df %>% pull(dat))
+    summary_df = pop_df %>% 
+      mutate(Overall = loc_df %>% pull(dat))
     
-  }
+  }#end npops
     
-    
-    }else{
-      
-      
-      if(npops==1){
-        
-        pop_df <- separate(data=tibble(dat=dis[popstart:popend]),col=dat,sep="[[:blank:]]+",into = c("Pop","Locus1","Locus2","PValue",NA,NA),remove=TRUE) %>% 
-          mutate(Pop=gsub(Pop,pattern="_\\d+",replacement=''), PValue=gsub(PValue,pattern="No",replacement="1")) %>% 
-          mutate(PValue=gsub(PValue,pattern="$$0",replacement=repzero) %>% as.numeric())
-        
-        summary_df <- pop_df %>%
-          group_by_at(vars(-PValue)) %>%
-          mutate(row_id=1:n()) %>% 
-          ungroup() %>%
-          spread(key=Pop,value=PValue) %>% 
-          select(-row_id)%>% 
-          mutate(Overall=NA)
-        
-      } else{
-        
-        
-        pop_df <- separate(data=tibble(dat=dis[popstart:popend]),col=dat,sep="[[:blank:]]+",into = c("Pop","Locus1","Locus2","PValue",NA,NA),remove=TRUE) %>% 
-          mutate(Pop=gsub(Pop,pattern="_\\d+",replacement=''), PValue=gsub(PValue,pattern="No",replacement="1")) %>% 
-          mutate(PValue=gsub(PValue,pattern="$$0",replacement=repzero) %>% as.numeric()) %>% 
-          group_by_at(vars(-PValue)) %>%
-          mutate(row_id=1:n()) %>% 
-          ungroup() %>%
-          spread(key=Pop,value=PValue) %>% 
-          select(-row_id)
-        
-        locstart<-popend+6
-        
-        locend<-locstart+ncomps-1
-        
-        loc_df <- tibble(dat=dis[locstart:locend]) %>%
-          mutate(dat =substr(dat, start=46, stop=54)) %>% 
-          mutate(dat = gsub(pattern="Highly si",x=dat,replacement="0.000000") %>% as.numeric()) 
-        
-        summary_df=pop_df %>% 
-          mutate(Overall=loc_df %>% pull(dat))
-        
-      }
- 
-  }  
-    return(summary_df)
+     return(summary_df)
 
 }
