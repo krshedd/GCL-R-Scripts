@@ -18,7 +18,7 @@ ReadGTseqQC.GCL <- function(QCcsvFilepaths) {
   QC_genotypes <- suppressMessages(
     suppressWarnings(
       dplyr::bind_rows(
-        lapply(QCcsvFilepaths, function(fle) {readr::read_csv(file = fle, na = c("", "NA", "0"))} )  # GENOTYPE == "0" is NA
+        lapply(QCcsvFilepaths, function(fle) {readr::read_csv(file = fle, na = c("", "NA", "0", "0/0"))} )  # GENOTYPE == "0" is NA
       )  # bind_rows
     )  # supressWarnings
   )  # suppressMessages
