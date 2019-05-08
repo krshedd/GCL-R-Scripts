@@ -68,7 +68,7 @@ for(chain in chains){
   
   output0[[chain]]=setNames(vector("list",nstrata),mixvec)
 
-  for(mix in mixvec){
+  for(mix in seq_along(mixvec)){
     
     nsamps00[chain,mix]=nrow(output00[[mix]][[chain]])
 
@@ -91,7 +91,7 @@ for(chain in chains){
 
   Keep[[chain]]=setNames(vector("list",nstrata),mixvec)
 
-  for(mix in mixvec){
+  for(mix in seq_along(mixvec)){
     
     ans0=1:nsamps0[chain,mix]
 
@@ -127,9 +127,9 @@ WghtAve0=WghtAve=H0=setNames(vector("list",nchains),chains)
 
 for(chain in chains){
 
-  H0[[chain]]=sapply(mixvec,function(mix){lnvar=log(CVvec[mix]^2+1);lnmean=log(catchvec[mix])-lnvar/2;rlnorm(nsamps[chain,mix],lnmean,sqrt(lnvar))},simplify=FALSE)
+  H0[[chain]]=sapply(seq_along(mixvec),function(mix){lnvar=log(CVvec[mix]^2+1);lnmean=log(catchvec[mix])-lnvar/2;rlnorm(nsamps[chain,mix],lnmean,sqrt(lnvar))},simplify=FALSE)
 
-  WghtAve0[[chain]]=Reduce("+",lapply(mixvec,function(mix){H0[[chain]][[mix]]*output[[chain]][[mix]]}))/Reduce("+",lapply(mixvec,function(mix){H0[[chain]][[mix]]}))
+  WghtAve0[[chain]]=Reduce("+",lapply(seq_along(mixvec),function(mix){H0[[chain]][[mix]]*output[[chain]][[mix]]}))/Reduce("+",lapply(seq_along(mixvec),function(mix){H0[[chain]][[mix]]}))
 
   WghtAve[[chain]]=t(rowsum(t(WghtAve0[[chain]]),group=groupvec))
 
