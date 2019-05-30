@@ -93,7 +93,6 @@ GenotypeReport.GCL <- function(project_name = NULL, sillyvec = NULL, loci = NULL
   # Pull genotypes and concatenate alleles into one column with "/" separator
   dataAll <- RJDBC::dbGetQuery(con, gnoqry) %>% 
     dplyr::as_tibble() %>% 
-    dplyr::filter(LAB_PROJECT_NAME == project_name) %>% 
     dplyr::select(-ALLELE_1, -ALLELE_2) %>%
     dplyr::rename(ALLELE_1 = ALLELE_1_FIXED, ALLELE_2 = ALLELE_2_FIXED) %>% 
     tidyr::unite(GENO, ALLELE_1, ALLELE_2, sep = "/", remove = FALSE) %>% 
@@ -101,6 +100,11 @@ GenotypeReport.GCL <- function(project_name = NULL, sillyvec = NULL, loci = NULL
                                              PLOIDY == "H" ~ ALLELE_1)) %>% 
     dplyr::select(LAB_PROJECT_NAME, FK_COLLECTION_ID, SILLY_CODE, FK_FISH_ID, LOCUS, ALLELES) %>%
     tidyr::spread(key = LOCUS, value = ALLELES)
+  
+  if(!is.null(project_name)) {
+    dataAll <- dataAll %>% 
+      dplyr::filter(LAB_PROJECT_NAME == project_name)
+  }
   
   # Disconnect from LOKI
   discon <- dbDisconnect(con)
