@@ -1,7 +1,8 @@
 run_rubias_mixture <- function(reference, mixture, group_names, gen_start_col, method = "MCMC", 
                                alle_freq_prior = list(const_scaled = 1), pi_prior = NA, 
                                pi_init = NULL, reps = 25000, burn_in = 5000, pb_iter = 100, 
-                               sample_int_Pi = 10, pi_prior_sum = 1, 
+                               prelim_reps = NULL, prelim_burn_in = NULL,
+                               sample_int_Pi = 10, sample_theta = TRUE, pi_prior_sum = 1, 
                                path = "rubias/output", seed = 56) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # This function is a wrapper for `rubias` `infer_mixture` with GCL default settings.
@@ -35,10 +36,24 @@ run_rubias_mixture <- function(reference, mixture, group_names, gen_start_col, m
   
   ### Run infer mixture
   set.seed(seed = seed)
-  rubias_out <- rubias::infer_mixture(reference = reference, mixture = mixture, gen_start_col = gen_start_col, 
-                                      method = method, alle_freq_prior = alle_freq_prior, pi_prior = pi_prior,
-                                      pi_init = pi_init, reps = reps, burn_in = burn_in, pb_iter = pb_iter, 
-                                      sample_int_Pi = sample_int_Pi, pi_prior_sum = pi_prior_sum)
+  rubias_out <-
+    rubias::infer_mixture(
+      reference = reference,
+      mixture = mixture,
+      gen_start_col = gen_start_col,
+      method = method,
+      alle_freq_prior = alle_freq_prior,
+      pi_prior = pi_prior,
+      pi_init = pi_init,
+      reps = reps,
+      burn_in = burn_in,
+      pb_iter = pb_iter,
+      prelim_reps = prelim_reps,
+      prelim_burn_in = prelim_burn_in,
+      sample_int_Pi = sample_int_Pi,
+      sample_theta = sample_theta,
+      pi_prior_sum = pi_prior_sum
+    )
   
   ### Save output
   message("Saving output as .csv files")
