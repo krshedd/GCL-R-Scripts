@@ -39,10 +39,10 @@ Files were initially moved off of the V: drive on 2/29/16.
 # This function sources GCL functions from my C drive (GitHub clone)
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 directory <- "C:/Users/krshedd/Documents/R/GCL-R-Scripts"
-functions <- list.files(path = directory, pattern = ".GCL.", full.names = TRUE, recursive = FALSE)
+functions <- list.files(path = directory, pattern = "\\.R$", full.names = TRUE, recursive = FALSE, ignore.case = TRUE)  # read in all .R scripts
 EMPTY <- sapply(functions, source)
 rm(directory, functions, EMPTY)
-print(objects(pattern = "\\.GCL"))
+print(as.vector(lsf.str()))
 </code></pre>
 * Once you have created the above `Functions.GCL.R`, you will source to it directly to access all `GCL-R-Scripts`  
 `source("C:/Users/krshedd/Documents/R/Functions.GCL.R")`
