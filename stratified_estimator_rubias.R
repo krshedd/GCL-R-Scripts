@@ -1,7 +1,7 @@
 stratified_estimator_rubias <- function(rubias_output = NULL, mixvec = NULL, group_names = NULL, 
                                         catchvec, newname = NULL, group_names_new = NULL, 
                                         groupvec = NULL, groupvec_new = NULL, path = "rubias/output", alpha = 0.1, 
-                                        burn_in = 5000, bias_corr = FALSE, threshold = 5e-7) {
+                                        burn_in = 5000, bias_corr = FALSE, threshold = 5e-7, cv = NULL) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # This function computes summary statistics from a stratified estimate of `rubias` output, similar to `StratifiedEstiamteor`.
   # However, output is a tibble with `stratified_mixture` as a column, instead of a single matrix.
@@ -33,6 +33,7 @@ stratified_estimator_rubias <- function(rubias_output = NULL, mixvec = NULL, gro
   #   bias_corr - logical switch indicating whether you want bias corrected values from `method = "PB"` or not, 
   #               currently can NOT do bias correction if not using the same repunits that were run in the mixture
   #   threshold - numeric constant specifying how low stock comp is before assume 0, used for `P=0` calculation, default is from BAYES
+  #   cv - numeric vector of harvest estiamte coeffients of variation for each stratum, must be the same order as `mixvec` 
   #
   # Outputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #   Returns a tibble with 8 fields for each repunit (reporting group)
@@ -228,10 +229,13 @@ stratified_estimator_rubias <- function(rubias_output = NULL, mixvec = NULL, gro
       dplyr::ungroup()  
   }  
   
-  #~~~~~~~~~~~~~~~~
+   #~~~~~~~~~~~~~~~~
   ## Summary statistics for stratified estimate
+  
   harvest <- dplyr::tibble(mixture_collection = mixvec, harvest = catchvec)
   
+  if(is.null(cv)){
+    
   loCI = alpha / 2
   hiCI = 1 - (alpha / 2)
   
@@ -261,6 +265,54 @@ stratified_estimator_rubias <- function(rubias_output = NULL, mixvec = NULL, gro
                   mean = replace(mean, which(mean > 1), 1)) %>% 
     magrittr::set_colnames(c("stratified_mixture", "repunit", "mean", "sd", "median", 
                              paste0(loCI * 100, "%"), paste0(hiCI * 100, "%"), "P=0"))
+  }else{
+  
+  harvest <- harvest %>% 
+    mutate(cv = cv)
+  
+  if(length(mixvec) != length(cv)) {
+    stop("`mixvec` and `cv` are not the same length, hoser!!!")
+  }
+  
+  loCI = alpha / 2
+  hiCI = 1 - (alpha / 2)
+  
+  out_sum <- repunit_trace %>% 
+    dplyr::filter(sweep >= burn_in) %>%  # remove burn_in
+    dplyr::full_join(harvest, by = "mixture_collection") %>%
+    dplyr::mutate(lnmean = log(harvest/sqrt(cv^2 + 1))) %>%
+    dplyr::mutate(lnvar = log(1 + cv^2)) %>%
+    tidyr::spread(key = repunit, value = rho) %>%
+    dplyr::group_by(mixture_collection) %>%
+    dplyr::mutate(h0 = exp(rnorm(length(unique(sweep)), lnmean, sqrt(lnvar)))) %>%
+    dplyr::ungroup() %>% 
+    dplyr::mutate_at(.var = group_names, .funs = ~.*h0) %>% 
+    dplyr::select(-cv, -lnvar, -lnmean, -h0) %>% 
+    tidyr::gather(key = repunit, value = r_h0, -mixture_collection, -sweep, -harvest) %>% 
+    dplyr::mutate(repunit = factor(x = repunit, levels = group_names)) %>% 
+    dplyr::group_by(sweep, repunit) %>% 
+    dplyr::summarise(rho = sum(r_h0)/sum(catchvec)) %>% 
+    dplyr::mutate(stratified = newname) %>%  # define newname
+    dplyr::group_by(stratified, repunit) %>% # calculate summary statistics
+    dplyr::summarise(mean = mean(rho),
+                     sd = sd(rho),
+                     median = median(rho),
+                     loCI = quantile(rho, probs = loCI),
+                     hiCI = quantile(rho, probs = hiCI),
+                     `P=0` = sum(rho < threshold) / length(rho)) %>%  # summary statistics to return
+    dplyr::ungroup() %>% 
+    dplyr::mutate(loCI = replace(loCI, which(loCI < 0), 0),
+                  hiCI = replace(hiCI, which(hiCI < 0), 0),
+                  median = replace(median, which(median < 0), 0),
+                  mean = replace(mean, which(mean < 0), 0)) %>% 
+    dplyr::mutate(loCI = replace(loCI, which(loCI > 1), 1),
+                  hiCI = replace(hiCI, which(hiCI > 1), 1),
+                  median = replace(median, which(median > 1), 1),
+                  mean = replace(mean, which(mean > 1), 1)) %>% 
+    magrittr::set_colnames(c("stratified_mixture", "repunit", "mean", "sd", "median", 
+                             paste0(loCI * 100, "%"), paste0(hiCI * 100, "%"), "P=0"))
+  
+  }
   
   return(out_sum)
 }  # end function
