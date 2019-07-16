@@ -280,11 +280,10 @@ stratified_estimator_rubias <- function(rubias_output = NULL, mixvec = NULL, gro
   out_sum <- repunit_trace %>% 
     dplyr::filter(sweep >= burn_in) %>%  # remove burn_in
     dplyr::full_join(harvest, by = "mixture_collection") %>%
-    dplyr::mutate(lnmean = log(harvest/sqrt(cv^2 + 1))) %>%
-    dplyr::mutate(lnvar = log(1 + cv^2)) %>%
+    dplyr::mutate(lnvar = log(cv^2 + 1), lnmean = log(harvest)-log(cv^2 + 1)/2) %>%
     tidyr::spread(key = repunit, value = rho) %>%
     dplyr::group_by(mixture_collection) %>%
-    dplyr::mutate(h0 = exp(rnorm(length(unique(sweep)), lnmean, sqrt(lnvar)))) %>%
+    dplyr::mutate(h0 = rlnorm(length(unique(sweep)), lnmean, sqrt(lnvar))) %>%
     dplyr::ungroup() %>% 
     dplyr::mutate_at(.var = group_names, .funs = ~.*h0) %>% 
     dplyr::select(-cv, -lnvar, -lnmean, -h0) %>% 
