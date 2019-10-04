@@ -6,7 +6,10 @@ CustomCombineBAYESOutput.GCL=function(groupvec, groupnames, maindir, mixvec, pri
 # mixvec <- c("year2005dist104stat2829a","year2005dist104stat30a","year2005dist104stat31a","year2005dist104stat32a","year2005dist104stat33a","year2005dist104stat34a") 
 # prior <- "Flat"
 
-  require(coda)
+  if(!require(coda)){
+    install.packages("coda")
+    library(coda)
+  }
 
   G <- max(groupvec)
 
