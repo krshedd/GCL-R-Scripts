@@ -60,6 +60,8 @@ if(FALSE){##
   
   project <- "P014"
 
+  project_type <- "Biomark"  # this can be either "Biomark" for regular SNP projects with Fluidigm, "uSat", or "GT-seq"
+
   username <- "krshedd"
   
   .password <- ""
@@ -100,18 +102,19 @@ if(FALSE){##
   
   QCfiles <- list.files(path = "Genotype Data Files", pattern = ".csv", full.names = TRUE, recursive = FALSE)
   
-  if(max(nalleles) <= 2) {
-    # SNP
+  if (project_type == "Biomark") {
     ReadBiomarkQC.GCL(QCcsvFilepaths = QCfiles)
   } else {
-    if(max(nalleles) <= 4) {
-      # GTseq
-      ReadGTseqQC.GCL(QCcsvFilepaths = QCfiles)
-    } else {
-      # uSat
+    if (project_type == "uSat") {
       ReadUSatQC.GCL(QCcsvFilepaths = QCfiles)
-    } # else for usat
-  } # else for usat or GTseq
+    } else {
+      if (project_type == "GT-seq") {
+        ReadGTseqQC.GCL(QCcsvFilepaths = QCfiles)
+      } else {
+        message("project_type must be either 'Biomark', 'uSat', or' GT-seq' to read in QC genotypes")
+      }  # GT-seq
+    }  # uSat
+  }  # Biomark
 
   QCColSize <- sapply(paste(QCSillys, ".gcl", sep = ''), function(x) get(x)$n)
   
