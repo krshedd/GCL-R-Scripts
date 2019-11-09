@@ -60,7 +60,7 @@ stratified_estimator_rubias <- function(rubias_output = NULL, mixvec = NULL, gro
   if(is.null(rubias_output) & is.null(mixvec)) {
     stop("Need to provide either `rubias_output` tibble to summarize or `mixvec` and `path` so that rubias output can be read, hoser!!!")
   }
-  if(!is.null(mixvec) & !all(sapply(mixvec, function(mixture) {any(grepl(pattern = mixture, x = list.files(path = path, pattern = ".csv")))} ))) {
+  if(!is.null(mixvec) & is.null(rubias_output) & !all(sapply(mixvec, function(mixture) {any(grepl(pattern = mixture, x = list.files(path = path, pattern = ".csv")))} ))) {
     stop("Not all mixtures in `mixvec` have .csv output in `path`, hoser!!!")
   }
   if(!is.null(groupvec) & bias_corr) {
@@ -240,6 +240,7 @@ stratified_estimator_rubias <- function(rubias_output = NULL, mixvec = NULL, gro
   hiCI = 1 - (alpha / 2)
   
   out_sum <- repunit_trace %>% 
+    dplyr::filter(mixture_collection %in% mixvec) %>%  # only stratify over mixvec
     dplyr::filter(sweep >= burn_in) %>%  # remove burn_in
     dplyr::left_join(harvest, by = "mixture_collection") %>%  # join harvest data from `catchvec`
     dplyr::mutate(rho_stratified = rho * harvest / sum(catchvec)) %>%  # multiply each strata by strata harvest and divide by total harvest
@@ -278,6 +279,7 @@ stratified_estimator_rubias <- function(rubias_output = NULL, mixvec = NULL, gro
   hiCI = 1 - (alpha / 2)
   
   out_sum <- repunit_trace %>% 
+    dplyr::filter(mixture_collection %in% mixvec) %>%  # only stratify over mixvec
     dplyr::filter(sweep >= burn_in) %>%  # remove burn_in
     dplyr::full_join(harvest, by = "mixture_collection") %>%
     dplyr::mutate(lnvar = log(cv^2 + 1), lnmean = log(harvest)-log(cv^2 + 1)/2) %>%
