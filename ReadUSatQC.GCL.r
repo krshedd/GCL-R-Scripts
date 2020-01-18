@@ -27,7 +27,7 @@ ReadUSatQC.GCL <- function(QCcsvFilepaths) {
   QC_genotypes <- QC_genotypes %>% 
     dplyr::rename(silly_source = "Sample Name", locus = Marker, allele_1 = "Allele 1", allele_2 = "Allele 2") %>% 
     tidyr::separate(col = silly_source, into = c("silly", "fish_id"), sep = "_", remove = FALSE) %>% 
-    dplyr::mutate(fish_id = as.numeric(fish_id)) %>% 
+    dplyr::mutate(fish_id = as.character(as.numeric(fish_id))) %>% 
     tidyr::unite("silly_source", c(silly, fish_id), sep = "_", remove = FALSE)
   
   # Verify that all QC silly are in the project
