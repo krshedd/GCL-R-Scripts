@@ -109,8 +109,26 @@ nCombinedSamps=apply(nsamps,2,sum)
 
 if(sd(nCombinedSamps)){
 
-  stop("See JJ")
-
+  message("Not all mixtures were run for same number of iterations - subsampling to mininum number of iterations in mixvec:")
+  
+  prob_mix <- colnames(nsamps)[apply(nsamps, 2, function(x) { min( x ) > min( nsamps )})]
+  
+  message(paste(prob_mix))
+  
+  set.seed(12345) # seed for reproducability
+  subsampler <-
+    sample(
+      x = 1:max(nsamps),
+      size = min(nsamps),
+      replace = FALSE
+    ) # subsampler chooses values (x) from largest dataframe, then downsamples to smallest.
+  for (chain in chains) {
+    for (mix in prob_mix) {
+      output[[chain]][[mix]] = output[[chain]][[mix]][subsampler,]
+      nsamps[chain, mix] = nrow(output[[chain]][[mix]])
+    }
+  }
+  nCombinedSamps = apply(X = nsamps, MARGIN =  2, FUN =  sum)
 }
 
 n=unique(nCombinedSamps)

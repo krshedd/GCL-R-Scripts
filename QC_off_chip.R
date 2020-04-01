@@ -48,21 +48,19 @@ if(FALSE){##
   # rm(list=ls(all=TRUE))
   
   # This sources all of the new GCL functions to this workspace
-  # source("C:/Users/krshedd/R/Functions.GCL.R")
+  # source("C:/Users/csjalbert/R/Functions.GCL.R")
   
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #### Arguments ####
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
-  dirQC <- "V:/Lab/Genotyping/SNP Projects/Pink/Project P014 AHRP Parentage GTSeq Part 2/QC/"
+  dirQC <- "V:/Lab/Genotyping/SNP Projects/Sockeye/Project S199 Taku Radio Telemetry 2017_2018/QC"
   
-  species <- "pink"
+  species <- "sockeye"
   
-  project <- "P014"
+  project <- "S199"
 
-  project_type <- "Biomark"  # this can be either "Biomark" for regular SNP projects with Fluidigm, "uSat", or "GT-seq"
-
-  username <- "krshedd"
+  username <- ""
   
   .password <- ""
   
@@ -99,22 +97,67 @@ if(FALSE){##
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #### Read in QC Genotypes ####
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  
-  QCfiles <- list.files(path = "Genotype Data Files", pattern = ".csv", full.names = TRUE, recursive = FALSE)
-  
-  if (project_type == "Biomark") {
+  # Chase Jalbert added this catch to deal with [very rare] off-chip re-runs for QC. 
+  # These files come out as TXT, in an unexpected layout, so must be converted to match normal QC files.
+  if( length( list.files( path = "Genotype Data Files", pattern = ".txt", full.names = TRUE, recursive = FALSE)) >0 ) {
+    txtfiles <- list.files( path = "Genotype Data Files", pattern = ".txt", full.names = TRUE)
+    for (i in seq(txtfiles)) {
+      dat <- read.table(txtfiles[i], skip = 40, sep = "\t", header = TRUE)
+      # Fix Genotype calls
+      dat$Call <- gsub("/", ":", dat$Call)
+      dat$Call <- gsub(".* ", "", dat$Call)
+      dat$Call <- gsub("Undetermined", "No Call", dat$Call)
+      dat$Call <- gsub("\\(NC\\)", "NTC", dat$Call)
+
+      data_to_import <- paste(dat$Well, ",,", dat$SNP.Assay.Name, ",", dat$Allele2.Name, ",", dat$Allele1.Name, ",", dat$Sample.Name, ",,,,,", dat$Call, sep = "")
+
+      header <-
+        c(
+          "Chip Run Info,No BML Location. This is a QuantStudio converted file,Combined Chip Run,96.96 (138x),GT End Point v1,ROX,FAM-MGB : VIC-MGB,MM/DD/YYYY hh::mm AM/PM,00:00:00,BIOMARK013",
+          "Application Version,4.1.2",
+          "Application Build,20140108.1713",
+          "Export Type,Detailed Table Results,Standard",
+          "Number of Combined Chip Runs,2,18432",
+          "Confidence Threshold,65.00",
+          "Normalization Method,NTC Normalization",
+          "Allele Probe Type Mapping,Allele Y,FAM-MGB",
+          "Allele Probe Type Mapping,Allele X,VIC-MGB",
+          "Allele Axis Mapping,Allele Y,Y",
+          "Allele Axis Mapping,Allele X,X",
+          "",
+          "",
+          "Experiment Information,Experiment Information,Experiment Information,Experiment Information,Experiment Information,Experiment Information,Experiment Information,Experiment Information,Results,Results,Results,Results,Results,Results,User",
+          "Chamber,Chamber,Chamber,SNP Assay and Allele Names,SNP Assay and Allele Names,SNP Assay and Allele Names,Sample,Sample,Call Information,Call Information,Call Information,Call Information,Intensity,Intensity,Defined",
+          "ID,Chip Name,Chip Barcode,Assay,Allele Y,Allele X,Name,Type,Auto,Confidence,Final,Converted,Allele Y,Allele X,Comments"
+        )
+
+      my_file <- c(header, data_to_import)
+
+      file_name <- gsub(".txt", " Biomark Style.csv", txtfiles[i])
+
+      fileConn <- file(file_name)
+      writeLines(my_file, fileConn)
+      close(fileConn)
+    }
+    rm(txtfiles)
+    QCfiles <- list.files( path = "Genotype Data Files", pattern = ".csv", full.names = TRUE, recursive = FALSE)
+  } else {
+    QCfiles <- list.files( path = "Genotype Data Files", pattern = ".csv", full.names = TRUE, recursive = FALSE)
+  }
+    
+ 
+  if(max(nalleles) <= 2) {
+    # SNP
     ReadBiomarkQC.GCL(QCcsvFilepaths = QCfiles)
   } else {
-    if (project_type == "uSat") {
-      ReadUSatQC.GCL(QCcsvFilepaths = QCfiles)
+    if(max(nalleles) <= 4) {
+      # GTseq
+      ReadGTseqQC.GCL(QCcsvFilepaths = QCfiles)
     } else {
-      if (project_type == "GT-seq") {
-        ReadGTseqQC.GCL(QCcsvFilepaths = QCfiles)
-      } else {
-        message("project_type must be either 'Biomark', 'uSat', or' GT-seq' to read in QC genotypes")
-      }  # GT-seq
-    }  # uSat
-  }  # Biomark
+      # uSat
+      ReadUSatQC.GCL(QCcsvFilepaths = QCfiles)
+    } # else for usat
+  } # else for usat or GTseq
 
   QCColSize <- sapply(paste(QCSillys, ".gcl", sep = ''), function(x) get(x)$n)
   
