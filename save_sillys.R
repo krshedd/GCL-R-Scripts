@@ -15,7 +15,7 @@ save_sillys <- function(sillyvec, path) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   sillyvec.gcl <- paste0(sillyvec, ".gcl")
   if(!all(sillyvec.gcl %in% ls(, pos = 1))) {
-    stop(paste0("These sillys:\n", paste(setdiff(sillyvec, ls(, pos = 1)), collapse = "\n"), "\nare not in your workspace, hoser!!!"))
+    stop(paste0("These sillys:\n", paste(setdiff(sillyvec.gcl, ls(, pos = 1)), collapse = "\n"), "\nare not in your workspace, hoser!!!"))
   }
   files_to_save <- paste0(path, "/", sillyvec, ".txt")
   sillyvec.mat = cbind(sillyvec.gcl, files_to_save)
