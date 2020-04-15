@@ -24,7 +24,6 @@ treeColor.GCL=function(tree,currentnames,treenames,groupvec,regioncol,regionpch=
 
   regInd=pops3[match(xx$tip.label,pops2)]
   cols=regioncol[regInd]
-  mycol <- colors()[cols]
   edgeind=match(xx$edge[,2],1:C)
   EdgeReg=regInd[edgeind]
 
@@ -48,7 +47,7 @@ treeColor.GCL=function(tree,currentnames,treenames,groupvec,regioncol,regionpch=
 
   EdgeReg=edgereg
 
-  edgecol=colors()[regioncol[EdgeReg]]
+  edgecol=regioncol[EdgeReg]
 
   edgecol[is.na(edgecol)]="black"
 
