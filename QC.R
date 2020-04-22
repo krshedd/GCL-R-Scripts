@@ -74,7 +74,7 @@ if(FALSE){##
   
   while(!require(pacman)){ install.packages("pacman") }
   
-  p_load(tidyverse, lattice, writexl, abind)  # use pacman to load or install + load necessary packages
+  p_load(tidyverse, writexl, abind, plotly)  # use pacman to load or install + load necessary packages
   
   bbind <- function(...) { abind(..., along = 3) }
   
@@ -174,9 +174,23 @@ if(FALSE){##
   
   rerunsQC <- which(apply(OriginalQCPercentbyLocus, 2, min) < 0.8)
   
-  new_colors <- colorRampPalette(c("black", "white"))
-  
-  levelplot(t(OriginalQCPercentbyLocus), col.regions = new_colors, at = seq(0, 1, length.out = 100), main = "% Genotyped", xlab = "SILLY", ylab = "Locus", scales = list(x = list(rot = 90)), aspect = "fill") # aspect = "iso" will make squares
+  # Added by Chase Jalbert on 4/2020. This version of a levelplot has WAY more features and actually works with large datasets.
+  # You can zoom, click things, scroll, save image, etc. so you can actually see whats going on...
+  plotly::ggplotly(
+    ggplot(
+      OriginalQCPercentbyLocus %>%
+        as_tibble(rownames = "locus") %>%
+        gather(silly, percent, -locus),
+      aes(x = silly, y = locus)
+    ) +
+      geom_tile(aes(fill = percent), color = "white") +
+      scale_fill_gradient(low = "black", high = "white", limits = c(0, 1)) +
+      ylab("Locus") +
+      xlab("SILLY") +
+      ggtitle("Percent genotyped by silly/locus") +
+      labs(fill = "Percent\ngenotyped") +
+      theme(axis.text.x = element_text(angle = 90))
+  )
   
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #### QA of Project Genotypes ####
