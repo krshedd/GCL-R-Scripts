@@ -54,24 +54,50 @@ FailureRate.GCL <- function(sillyvec) {
     dplyr::summarise(fail = sum(genotype == "0", na.rm = TRUE) / n())
     
   # Plot failure rate by silly and locus
-  fail_silly_plot <- master.tbl %>% 
-    dplyr::group_by(silly, locus) %>% 
-    dplyr::summarise(p_fail = sum(genotype == "0") / n()) %>% 
-    ggplot(aes(x = silly, y = locus)) +
-    geom_tile (aes(fill = p_fail)) +
-    scale_fill_gradientn(colours = colorRampPalette(colors = c("white", "black"))(101), values = seq(0.00, 1.00, by = 0.01), na.value = "red", limit = c(0, 1)) +
-    theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) +
-    ggtitle("Failure Rate by Silly and Locus")
+  fail_silly_plot <- plotly::ggplotly(
+    ggplot(
+      master.tbl %>%
+        dplyr::group_by(silly, locus) %>%
+        dplyr::summarise(p_fail = sum(genotype == "0") / n()),
+      aes(x = silly, y = locus)
+    ) +
+      geom_tile (aes(fill = p_fail)) +
+      scale_fill_gradientn(
+        colours = colorRampPalette(colors = c("white", "black"))(101),
+        values = seq(0.00, 1.00, by = 0.01),
+        na.value = "red",
+        limit = c(0, 1)
+      ) +
+      theme(axis.text.x = element_text(
+        angle = 45,
+        hjust = 1,
+        vjust = 1
+      )) +
+      ggtitle("Failure Rate by Silly and Locus")
+  )
   
   # Plot failure rate by plate and locus
-  fail_plate_plot <- master.tbl %>% 
-    dplyr::group_by(plate, locus) %>% 
-    dplyr::summarise(p_fail = sum(genotype == "0") / n()) %>% 
-    ggplot(aes(x = plate, y = locus)) +
-    geom_tile (aes(fill = p_fail)) +
-    scale_fill_gradientn(colours = colorRampPalette(colors = c("white", "black"))(101), values = seq(0.00, 1.00, by = 0.01), na.value = "red", limit = c(0, 1)) +
-    theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) +
-    ggtitle("Failure Rate by Plate and Locus")
+  fail_plate_plot <- plotly::ggplotly(
+    ggplot(
+      master.tbl %>%
+        dplyr::group_by(plate, locus) %>%
+        dplyr::summarise(p_fail = sum(genotype == "0") / n()),
+      aes(x = plate, y = locus)
+    ) +
+      geom_tile (aes(fill = p_fail)) +
+      scale_fill_gradientn(
+        colours = colorRampPalette(colors = c("white", "black"))(101),
+        values = seq(0.00, 1.00, by = 0.01),
+        na.value = "red",
+        limit = c(0, 1)
+      ) +
+      theme(axis.text.x = element_text(
+        angle = 45,
+        hjust = 1,
+        vjust = 1
+      )) +
+      ggtitle("Failure Rate by Plate and Locus")
+  )
   
   failure_rate <- list(silly_failure_rate = fail_silly, 
                        locus_failure_rate = fail_locus, 
