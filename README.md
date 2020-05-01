@@ -3,8 +3,8 @@ A repository for all GCL R Scripts. This repository is meant to store and provid
 Files were initially moved off of the V: drive on 2/29/16.
 
 # v1.12.0-static
-This is a static, *dead* branch to preserve version 1 scripts associated with the original structure `.gcl` objects (i.e. nested list with `scores`, `counts`, `n`, and `attributes`). We are moving forward in version 2 to a new `.gcl` object structure based on a single *tibble* to better optimize for the *tidyverse*. This branch remains so folks can go back and run old code, as necessary.
-this branch was created on 4/30/20.
+This is a static, *dead* branch to preserve version 1 scripts associated with the original structure `.gcl` objects (i.e. nested list with `scores`, `counts`, `n`, and `attributes`). We are moving forward in version 2 to a new `.gcl` object structure based on a single *tibble* to better optimize for the *tidyverse*. This branch remains so folks can go back and run old code, as necessary.  
+This branch was created on 4/30/20.
 
 ## Initial cloning of repository
 * Download [RStudio](https://www.rstudio.com/products/RStudio/#Desktop)
