@@ -95,6 +95,12 @@ read_project_genotypes.GCL <- function(project_name = NULL, sillyvec = NULL, loc
   dataAll <- RJDBC::dbGetQuery(con, gnoqry) %>% 
     dplyr::as_tibble()
   
+  # Filter for project_name again, if applicable
+  if(!is.null(project_name)){
+    dataAll <- dataAll %>% 
+      filter(LAB_PROJECT_NAME == project_name)
+  }
+  
   # Get list of unique sillys and assign `ProjectSillys` this is needed for QC script
   sillyvec <- unique(dataAll$SILLY_CODE)
   assign(x = "ProjectSillys", value = sillyvec, pos = 1)

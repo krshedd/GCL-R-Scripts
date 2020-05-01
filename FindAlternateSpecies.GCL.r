@@ -40,7 +40,7 @@ FindAlternateSpecies.GCL=function(sillyvec,species="chum"){
   }
 
 
-  gclobjects=sapply(sillyvec,function(silly){get(paste(silly,".gcl",sep=""),pos=1)$scores[,c(AlternateMarkers,FailedMarkers),]},simplify=FALSE)
+  gclobjects=sapply(sillyvec,function(silly){get(paste(silly,".gcl",sep=""),pos=1)$scores[,c(AlternateMarkers,FailedMarkers),,drop = FALSE]},simplify=FALSE)
 
   mysillyvial=sapply(sillyvec,function(silly){paste(silly,dimnames(gclobjects[[silly]])[[1]],sep="_")},simplify=FALSE)
 
