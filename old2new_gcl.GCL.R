@@ -1,6 +1,6 @@
 old2new_gcl.GCL <- function (sillyvec, save_old = FALSE){
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # This function converts the old style "*.gcl" objects from nested arrays to a tibbles.
+  # This function converts old style "*.gcl" objects from nested arrays to tibbles of scores and attributes. 
   # The old style objects can be saved as *.gcl_old before they are overwritten.
   #
   # Inputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -12,8 +12,9 @@ old2new_gcl.GCL <- function (sillyvec, save_old = FALSE){
   #   This function assigns a converted *.gcl object to the current workspace.
   #
   # Example~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # load("V:/Analysis/2_Central/Chinook/Cook Inlet/2019/2019_UCI_Chinook_baseline_hap_data/2019_UCI_Chinook_baseline_hap_data.RData")
   # 
-  # old2new_gcl.GCL(sillyvec = sillyvec, overwrite = TRUE)
+  # old2new_gcl.GCL(sillyvec = sillyvec157, save_old = TRUE)
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
   if(!require("pacman")) install.packages("pacman"); library(pacman); p_load(tidyverse) #Install packages, if not in library and then load them.

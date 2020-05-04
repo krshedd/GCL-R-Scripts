@@ -12,8 +12,9 @@ old2new_LocCtrl.GCL <- function (LocCtrl = LocusControl, save_old = FALSE){
   #   This function assigns a converted LocusControl object to the current workspace.
   #
   # Example~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # load("V:/Analysis/2_Central/Chinook/Cook Inlet/2019/2019_UCI_Chinook_baseline_hap_data/2019_UCI_Chinook_baseline_hap_data.RData")
   # 
-  # old2new_LocCtrl.GCL(LocCtrl = LocusControl, overwrite = TRUE)
+  # old2new_LocCtrl.GCL(LocCtrl = LocusControl, save_old = TRUE)
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
   if(!require("pacman")) install.packages("pacman"); library(pacman); p_load(tidyverse) #Install packages, if not in library and then load them.
