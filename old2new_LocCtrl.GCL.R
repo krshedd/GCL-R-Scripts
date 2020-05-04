@@ -1,4 +1,4 @@
-old2new_LocCtrl.GCL <- function (LocCtrl = LocusControl, overwrite = FALSE){
+old2new_LocCtrl.GCL <- function (LocCtrl = LocusControl, save_old = FALSE){
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # This function converts the old style LocusControl object from a nested list to a tibble.
   # The old style LocusControl object can be saved as LocusControl_old before it is overwritten.
@@ -24,9 +24,9 @@ old2new_LocCtrl.GCL <- function (LocCtrl = LocusControl, overwrite = FALSE){
     
     }
   
-  if(!overwrite){
+  if(save_old){
     
-    assign(paste0("LocusControl_old"), value = LocCtrl)
+    assign(paste0("LocusControl_old"), value = LocCtrl, pos = -1, envir = .GlobalEnv)
     
     } #Saving old gcl
   
@@ -38,16 +38,14 @@ old2new_LocCtrl.GCL <- function (LocCtrl = LocusControl, overwrite = FALSE){
     
     tibble::tibble(allele = seq(length(a)), call = a)
     
-  }) %>% purr::set_names(LocusControl$locusnames)
+  }) %>% purrr::set_names(LocusControl$locusnames)
   
   ) 
   
   LocCtrl_tidy = dplyr::bind_cols(locus_info, alleles)
   
-  assign("LocusControl", value = LocCtrl_tidy)
+  assign("LocusControl", value = LocCtrl_tidy, pos = -1, envir = .GlobalEnv)
   
   message("LocusControl converted from a list to a tibble")
-  
-  return(NULL)
   
 }

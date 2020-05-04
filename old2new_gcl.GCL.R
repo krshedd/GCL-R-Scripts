@@ -1,4 +1,4 @@
-old2new_gcl.GCL <- function (sillyvec, overwrite = FALSE){
+old2new_gcl.GCL <- function (sillyvec, save_old = FALSE){
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # This function converts the old style "*.gcl" objects from nested arrays to a tibbles.
   # The old style objects can be saved as *.gcl_old before they are overwritten.
@@ -28,13 +28,13 @@ old2new_gcl.GCL <- function (sillyvec, overwrite = FALSE){
     
     my.gcl <- get(paste0(silly, ".gcl"))
     
-    if(!overwrite){assign(paste0(silly, ".gcl_old"), value = my.gcl)} #Saving old gcl
+    if(save_old){assign(paste0(silly, ".gcl_old"), value = my.gcl, pos = -1, envir = .GlobalEnv)} #Saving old gcl
     
     attr <- my.gcl$attributes
     
     scores <- lapply(seq(dim(my.gcl$scores)[[3]]), function(dim){
       
-      s = my.gcl$scores[,,dim] %>% 
+      s = my.gcl$scores[ , , dim, drop = FALSE] %>% 
         tibble::as_tibble()  
       
       if(dim > 1){
@@ -52,10 +52,10 @@ old2new_gcl.GCL <- function (sillyvec, overwrite = FALSE){
       dplyr::bind_cols(attr) %>% 
       dplyr::select(colnames(attr), sort(colnames(scores)))
     
-    assign(paste0(silly, ".gcl"), value = tidy.gcl, pos = 1)
+    assign(paste0(silly, ".gcl"), value = tidy.gcl, pos = -1, envir = .GlobalEnv)
     
   })#End silly
   
-  return(NULL)
+  message(paste0("The following *.gcl objects have been converted to tibbles: ", paste0(sillyvec, collapse = " ,")))
   
 }
