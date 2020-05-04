@@ -17,7 +17,7 @@ old2new_gcl.GCL <- function (sillyvec, save_old = FALSE){
   # old2new_gcl.GCL(sillyvec = sillyvec157, save_old = TRUE)
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
-  if(!require("pacman")) install.packages("pacman"); library(pacman); p_load(tidyverse) #Install packages, if not in library and then load them.
+  if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse) #Install packages, if not in library and then load them.
   
   sillyvec0 <- sillyvec[sapply(sillyvec, function(silly){ #Excluding objects that are already in tidy format.
     

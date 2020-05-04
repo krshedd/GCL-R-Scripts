@@ -17,7 +17,7 @@ old2new_LocCtrl.GCL <- function (LocCtrl = LocusControl, save_old = FALSE){
   # old2new_LocCtrl.GCL(LocCtrl = LocusControl, save_old = TRUE)
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
-  if(!require("pacman")) install.packages("pacman"); library(pacman); p_load(tidyverse) #Install packages, if not in library and then load them.
+  if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse) #Install packages, if not in library and then load them.
   
   if(tibble::is_tibble(LocCtrl)){
     
