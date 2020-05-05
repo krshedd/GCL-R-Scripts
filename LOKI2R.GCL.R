@@ -124,7 +124,8 @@ LOKI2R.GCL <- function(sillyvec, username, password){
   dataAllbool[bothNAbool] <- TRUE  
   
   dataAll <- dataAll0[dataAllbool, ] %>% 
-    tibble::as_tibble()
+    tibble::as_tibble() %>% 
+    select(-PREFERRED_TISSUE, -TEST_TYPE)
 
   discon <- dbDisconnect(con)
     
