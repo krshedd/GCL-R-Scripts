@@ -109,9 +109,9 @@ LOKI2R.GCL <- function(sillyvec, username, password){
     
   nalleles <- LocusControl$nalleles 
 
-  gnoqry <- paste("SELECT * FROM AKFINADM.V_GNOQRY WHERE LOCUS IN (", paste0("'", loci, "'", collapse = ","), ") AND SILLY_CODE IN (", paste0("'", sillyvec, "'", collapse = ","), ")", sep = "")
+  gnoqry <- paste("SELECT * FROM AKFINADM.V_GNOQRY WHERE LOCUS IN (", paste0("'", loci, "'", collapse = ","), ") AND SILLY_CODE IN (", paste0("'", sillyvec, "'", collapse = ","), ")", sep = "") #Gentoype query
 
-  dataAll0 <- RJDBC::dbGetQuery(con, gnoqry)   
+  dataAll0 <- RJDBC::dbGetQuery(con, gnoqry)  #Pulling data from LOKI using the connection and genotype query
 
   dataAllbool <- dataAll0$PK_TISSUE_TYPE == dataAll0$PREFERRED_TISSUE 
 
@@ -122,14 +122,11 @@ LOKI2R.GCL <- function(sillyvec, username, password){
   dataAllbool[bothNAbool] <- TRUE  
   
   dataAll <- dataAll0[dataAllbool, ] %>% 
-    as_tibble()
+    tibble::as_tibble()
 
-  dropCol <- c("TEST_TYPE", "LOCUS", "ALLELE_1", "ALLELE_2", "SUITE_NAME", "PREFERRED_TISSUE") 
-    
-  attnames <- names(dataAll)[!names(dataAll)%in%dropCol]
-    
   discon <- dbDisconnect(con)
     
+  #Create tibble data fame for each silly in sillyvec
   for(silly in sillyvec){ 
 
     message0 <- paste0(silly, ".gcl created ", match(silly, sillyvec)," of ", length(sillyvec)," completed.") 
@@ -161,7 +158,7 @@ LOKI2R.GCL <- function(sillyvec, username, password){
       tidyr::pivot_longer(cols = c("ALLELE_1", "ALLELE_2"), values_to = "Allele") %>% 
       dplyr::mutate(scores_header = case_when(name == "ALLELE_2"~paste0(LOCUS, ".1"), TRUE~LOCUS)) %>% 
       select(-LOCUS, -name) %>% 
-      tidyr::pivot_wider( names_from = scores_header, values_from = Allele, names_sep="" ) %>% 
+      tidyr::pivot_wider(names_from = scores_header, values_from = Allele, names_sep="" ) %>% 
       dplyr::mutate(CAPTURE_DATE = lubridate::as_date(CAPTURE_DATE), END_CAPTURE_DATE = lubridate::as_date(END_CAPTURE_DATE), SillySource = paste(SILLY_CODE, FISH_ID, sep = "_")) %>% 
       dplyr::select(FK_FISH_ID = FISH_ID, COLLECTION_ID, SILLY_CODE, PLATE_ID, PK_TISSUE_TYPE, CAPTURE_LOCATION, CAPTURE_DATE, END_CAPTURE_DATE, MESH_SIZE, MESH_SIZE_COMMENT,
                     LATITUDE, LONGITUDE, AGENCY, VIAL_BARCODE, DNA_TRAY_CODE, DNA_TRAY_WELL_CODE, DNA_TRAY_WELL_POS, CONTAINER_ARRAY_TYPE_ID, SillySource, everything()) %>% 
@@ -169,7 +166,7 @@ LOKI2R.GCL <- function(sillyvec, username, password){
       
     message(message0)
       
-    assign(paste(silly,".gcl",sep=""), silly_df, pos=-1, .GlobalEnv)
+    assign(paste(silly,".gcl",sep=""), silly_df, pos = 1, .GlobalEnv)
 
   }#silly 
 
@@ -180,6 +177,7 @@ LOKI2R.GCL <- function(sillyvec, username, password){
   print(fulltime) 
       
   return(fulltime)
+  
 }  
    
 
