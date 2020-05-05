@@ -1,20 +1,33 @@
 PoolCollections.GCL=function(collections,loci,IDs=NULL,newname=paste(collections,collapse=".")){
-######################################################################################################################################################################################
-#
-#  This function combines "*.gcl" objects into a new one called "newname.gcl".
-#
-#  "collections" is a vector of sillys (without ".gcl" extension) you wish to combine.
-#
-#  "loci" is the set of markers used for pooling.
-#
-#  "IDs" is a named list of fish ID character vectors, each vector is associated with and named after a member of "collections" 
-#
-#  "newname" is the name of the new "*.gcl" created. Do not provide ".gcl" extention. 
-#
-#  ReWritten by JJ 12/17/2015 
-#  Edited by Kyle Shedd on 4/12/2016
-#
-######################################################################################################################################################################################
+  
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #   This function combines "*.gcl" objects into a new one called "newname.gcl".
+  #
+  # Inputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #   
+  #   collections - a character vector of silly codes without the ".gcl" extention (e.g. collections <- c("KQUART06","KQUART08","KQUART09")). 
+  #                 Collections can be a single silly if you want create a new ".gcl" with only fish supplied in IDs.
+  #
+  #   loci - a character vector of locus names
+  # 
+  #   IDs - a named list of fish ID character vectors, each vector is associated with and named after a member of "collections".
+  #         These will be used to subset each collection before pooling. If no IDs are supplied all individuals from each collection are used.
+  #
+  #   newname - is the name of the new "*.gcl" created. Do not provide ".gcl" extention. If no name supplied then the newname defaults to
+  #             the collection names collapsed with a period between each name (e.g. "KQUART06.KQUART08.KQUART09")
+  # 
+  # Outputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #    Assigns a new "pooled collection" to your workspace
+  #
+  # Example~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #   load("V:/Analysis/2_Central/Chinook/Cook Inlet/2019/2019_UCI_Chinook_baseline_hap_data/2019_UCI_Chinook_baseline_hap_data.RData")
+  # 
+  #   removedInd <- (collections = c("KQUART06","KQUART08","KQUART09"), loci = loci, IDs=NULL, newname=paste(collections,collapse="."))
+  #
+  # Note~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #   This function is also useful for producing "pooled mixture" objects for mixed stock analysis. 
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
 
   while(!require(abind)){install.packages("abind")}
 
