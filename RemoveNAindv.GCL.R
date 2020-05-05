@@ -10,7 +10,7 @@ RemoveNAindv.GCL <- function(sillyvec) {
   # 
   # Outputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #    1) this function will modify silly.gcls in your environment to remove NA fish
-  #    2) output is a list of FK_FISH_ID of fish removed for each SILLY
+  #    2) output is tibble of the fish IDs removed by silly
   #
   # Example~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #   load("V:/Analysis/2_Central/Chinook/Cook Inlet/2019/2019_UCI_Chinook_baseline_hap_data/2019_UCI_Chinook_baseline_hap_data.RData")
@@ -49,6 +49,6 @@ RemoveNAindv.GCL <- function(sillyvec) {
   }) %>% 
     dplyr::bind_rows()
   
-  return(na.individuals.to.remove)
+  return(na.individuals.removed)
   
 }
