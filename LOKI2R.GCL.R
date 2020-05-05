@@ -1,5 +1,54 @@
-LOKI2R.GCL=function(sillyvec,username,password){
+LOKI2R.GCL <- function(sillyvec, username, password){
 
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #  This function connects to LOKI and creates a "*.gcl" object for each silly in sillyvec.  
+  #
+  # Inputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #
+  #   sillyvec - a character vector of silly codes (e.g. sillyvec <- c("KQUART06","KQUART08","KQUART09"))
+  #
+  #   username - your state user name
+  #
+  #   password - your password used to access LOKI - see Eric Lardizabal if you don't have a passord for LOKI
+  #
+  # Outputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #   This function assigns a tibble with the following columns for each silly.
+  #
+  #               Columns 1-19
+  #                     FK_FISH_ID <character>: fish ID numbers for each individual  
+  #                     COLLECTION_ID <double>: the unique collection ID nubmer for each individual
+  #                     SILLY_CODE <character>: the silly code for each individual
+  #                     PLATE_ID <character>: the extraction plate ID for each individual
+  #                     PK_TISSUE_TYPE <character>: the tissue type extracted for DNA for each individual
+  #                     CAPTURE_LOCATION <character>: the location were each individual was captured for sampling
+  #                     CAPTURE_DATE <dttm>: the date each individual was captured in POSIXct, format (e.g. May 5, 2020 = "2020-05-05") 
+  #                     END_CAPTURE_DATE <dttm>: the last collection date for a silly in POSIXct, format (e.g. May 5, 2020 = "2020-05-05") 
+  #                     MESH_SIZE <character>: the mesh size of the net used to capture (harvest) each individual 
+  #                     MESH_SIZE_COMMENT <character>: comments about mesh size
+  #                     LATITUDE <double>: the latitude where each individual was captured in decimal degrees
+  #                     LONGITUDE <double>: the longitude where each individual was captured in decimal degrees
+  #                     AGENCY <character>: the name of the agency or organization that collected each individual
+  #                     VIAL_BARCODE <character>: the barcode on the collection vial
+  #                     DNA_TRAY_CODE <character>: the barcode on the collection tray/card
+  #                     DNA_TRAY_WELL_CODE <double>: the unique number assigned to each postion in the collection tray/card for each individual(e.g postions A1-A10 = codes 1-10, )
+  #                     DNA_TRAY_WELL_POS <double>: the postion in the collection tray/card (e.g. A1, A2, B1, B2, etc.)
+  #                     CONTAINER_ARRAY_TYPE_ID <doupble>: the number code for the collection container (e.g. tray or card)    
+  #                     SILLY_SOURCE <doupble>: the original silly code and fish ID for each individual (e.g. KQUART06_1). When pulled from loki this will be the SILLY_CODE and FK_FISH_ID
+  #                               
+  #               Columns 20+
+  #                     The remaining columns in the object will be the scores for all loci in the LocusControl object. 
+  #                     Each locus will have a column for each dose. The columns will be named after the locus with a number added to the locus name after dose 1 (e.g. dose 1 = GTH2B-550; dose 2 = GTH2B-550.1) 
+  #
+  #
+  #   The tibbles will be named after the silly code with a .gcl extention (e.g. KQUART06.gcl)
+  # Example~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #
+  #   password = "************"
+  # 
+  #   LOKI2R.GCL(sillyvec = sillyvec, username = "awbarclay", password = password)
+  #
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
+  
 ######################################################################################################################################################################################
 #
 #  This function connects to LOKI and creates a "*.gcl" object for each silly in sillyvec.  
