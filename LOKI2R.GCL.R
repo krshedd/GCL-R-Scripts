@@ -43,9 +43,11 @@ LOKI2R.GCL <- function(sillyvec, username, password){
   #   The tibbles will be named after the silly code with a .gcl extention (e.g. KQUART06.gcl)
   # Example~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #
+  #   load("V:/Analysis/2_Central/Chinook/Cook Inlet/2019/2019_UCI_Chinook_baseline_hap_data/2019_UCI_Chinook_baseline_hap_data.RData")
+  #
   #   password = "************"
   # 
-  #   LOKI2R.GCL(sillyvec = sillyvec, username = "awbarclay", password = password)
+  #   LOKI2R.GCL(sillyvec = sillyvec157, username = "awbarclay", password = password)
   #
   # Note~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #
