@@ -1,11 +1,11 @@
-PoolCollections.GCL=function(collections,loci,IDs=NULL,newname=paste(collections,collapse=".")){
+PoolCollections.GCL <- function(collections, loci, IDs = NULL, newname = paste(collections,collapse=".")){
   
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #   This function combines "*.gcl" objects into a new one called "newname.gcl".
   #
   # Inputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #   
-  #   collections - a character vector of silly codes without the ".gcl" extention (e.g. collections <- c("KQUART06","KQUART08","KQUART09")). 
+  #   collections - a character vector of silly codes without the ".gcl" extention (e.g. collections <- c("KQUART06","KQUART08","KQUART10")). 
   #                 Collections can be a single silly if you want create a new ".gcl" with only fish supplied in IDs.
   #
   #   loci - a character vector of locus names
@@ -22,44 +22,71 @@ PoolCollections.GCL=function(collections,loci,IDs=NULL,newname=paste(collections
   # Example~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #   load("V:/Analysis/2_Central/Chinook/Cook Inlet/2019/2019_UCI_Chinook_baseline_hap_data/2019_UCI_Chinook_baseline_hap_data.RData")
   # 
-  #   removedInd <- (collections = c("KQUART06","KQUART08","KQUART09"), loci = loci, IDs=NULL, newname=paste(collections,collapse="."))
+  #   removedInd <- (collections = c("KQUART06","KQUART08","KQUART10"), loci = loci, IDs = list(KQUART06 = 3:12, KQUART08 = 1:10, KQUART10 = 1:4), newname = "QuartzCr")
   #
   # Note~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #   This function is also useful for producing "pooled mixture" objects for mixed stock analysis. 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
+  if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse) #Install packages, if not in library and then load them.
 
-  while(!require(abind)){install.packages("abind")}
+  if(nchar(newname)>200){
+    
+    newname <- substr(newname, start = 1, stop = 200)
+    
+    }
 
-  bbind=function(...){abind(...,along=1)}
+  if(sum(is.na(match(loci,LocusControl$locusnames)))){
+    
+    stop(paste("'", loci[is.na(match(loci,LocusControl$locusnames))], "' from argument 'loci' not found in 'LocusControl' object!!!", sep = ""))
+    
+    }
 
-  if(nchar(newname)>200){newname=substr(newname, start=1, stop=200)}
+  ncollections <- length(collections)
 
-  if(sum(is.na(match(loci,LocusControl$locusnames)))){stop(paste("'",loci[is.na(match(loci,LocusControl$locusnames))],"' from argument 'loci' not found in 'LocusControl' object!!!",sep=""))}
+  if(is.null(IDs)){
+    
+    IDs <- lapply(collections, function(collection){
+      
+      get(paste0(collection, ".gcl"), pos = 1)$FK_FISH_ID
+      
+      }) 
+    
+    }
 
-  ncollections=length(collections)
+  if(!is.list(IDs)){
+    
+    stop("'IDs' must be a list")
+    
+    }
 
-  if(is.null(IDs)){IDs=lapply(collections,function(collection){rownames(get(paste0(collection,".gcl"),pos=1)$scores)})}
+  if(ncollections!=length(IDs)){
+    
+    stop("'IDs' must be same length as 'collections'")
+    
+    }
 
-  if(!is.list(IDs)){stop("'IDs' must be a list")}
+  if(!is.character(unlist(IDs))) {
+    
+    stop("'IDs' must be a character vector, not a numeric vector")
+    
+    }
 
-  if(ncollections!=length(IDs)){stop("'IDs' must be same length as 'collections'")}
-
-  if(!is.character(unlist(IDs))) {stop("'IDs' must be a character vector, not a numeric vector")}
-
-  names(IDs)=collections
-
-  scores=Reduce(bbind,lapply(collections,function(collection){get(paste0(collection,".gcl"),pos=1)$scores[IDs[[collection]],loci,,drop=FALSE]}))
-
-  n=nrow(scores)
-
-  counts=Reduce(bbind,lapply(collections,function(collection){get(paste0(collection,".gcl"),pos=1)$counts[IDs[[collection]],loci,,drop=FALSE]}))
-
-  attributes=Reduce(rbind,lapply(collections,function(collection){get(paste0(collection,".gcl"),pos=1)$attributes[which(get(paste0(collection,".gcl"),pos=1)$attributes$FK_FISH_ID %in% IDs[[collection]]),,drop=FALSE]}))
-
-  rownames(scores)=rownames(counts)=rownames(attributes)=attributes$FK_FISH_ID=as.character(seq(n))
-
-  assign(paste(newname,".gcl",sep=""),list(counts=counts,scores=scores,n=n,attributes=attributes),pos=1)  
+  IDs <- purrr::set_names(IDs, collections) #Making sure IDs has names
+  
+  output <- lapply(collections, function(collection){
+    
+    my.gcl <- get(paste0(collection, ".gcl"), pos = 1)
+    
+    my.gcl %>% 
+      dplyr::filter(FK_FISH_ID%in%IDs[[collection]])
+    
+  }) %>% 
+    dplyr::bind_rows() %>% 
+    dplyr::mutate(FK_FISH_ID = seq(length(unlist(IDs))))
+    
+  assign(paste(newname,".gcl",sep=""), output, pos=1, envir = .GlobalEnv)  
 
   return(NULL)
+  
 }
