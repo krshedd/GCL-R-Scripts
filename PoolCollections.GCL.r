@@ -1,4 +1,4 @@
-PoolCollections.GCL <- function(collections, loci, IDs = NULL, newname = paste(collections,collapse=".")){
+PoolCollections.GCL <- function(collections, loci = LocusControl$locusnames, IDs = NULL, newname = paste(collections,collapse=".")){
   
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #   This function combines "*.gcl" objects into a new one called "newname.gcl".
@@ -27,6 +27,12 @@ PoolCollections.GCL <- function(collections, loci, IDs = NULL, newname = paste(c
   # Note~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #   This function is also useful for producing "pooled mixture" objects for mixed stock analysis. 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
+  if(!exists("LocusControl")){
+    
+    stop("'LocusControl' not yet built.")
+    
+  }
   
   if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse) #Install packages, if not in library and then load them.
 
@@ -74,12 +80,18 @@ PoolCollections.GCL <- function(collections, loci, IDs = NULL, newname = paste(c
 
   IDs <- purrr::set_names(IDs, collections) #Making sure IDs has names
   
+  SubsetLoci <- c(loci, paste0(loci, ".1")) %>% sort()#These are the locus score headers for subsetting by loci.
+  
   output <- lapply(collections, function(collection){
     
     my.gcl <- get(paste0(collection, ".gcl"), pos = 1)
     
+    attr <- my.gcl[ , 1:19] %>% 
+      names() #The attribute names
+    
     my.gcl %>% 
-      dplyr::filter(FK_FISH_ID%in%IDs[[collection]])
+      dplyr::filter(FK_FISH_ID%in%IDs[[collection]]) %>% 
+      select(attr, SubsetLoci)
     
   }) %>% 
     dplyr::bind_rows() %>% 
