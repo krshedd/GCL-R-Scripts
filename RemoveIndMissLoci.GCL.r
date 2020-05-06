@@ -1,65 +1,58 @@
-RemoveIndMissLoci.GCL=function(sillyvec,proportion=0.8){
-
-######################################################################################################################################################################################
-#
-#  This function removes individuals from "*.gcl" objects that have fewer non-missing loci than that specified by "proportion".  
-#  
-#  A list is returned, the same length as "sillyvec", each element is a vector containing the ID (not position) of each fish removed. 
-#
-#  "sillyvec" is a vector of silly names (without the ".gcl") you wish to remove individuals from.
-# 
-#  "proportion" is the cut-off proportion of the number of non-missing loci.  
-#
-#  ReWritten by JJ 12/17/2015
-#  Update by Kyle Shedd 1/18/2019
-#
-######################################################################################################################################################################################
-
-
-  results=setNames(vector("list",length(sillyvec)),sillyvec)
-
-  for(silly in sillyvec){
-
-    my.gcl=get(paste0(silly,".gcl"),pos=1)
-
-    counts=my.gcl$counts
-
-    ID=as.character(rownames(counts))
-
-    nloci=sum(apply(counts, 2, function(locus) {!all(is.na(locus))} ))  # exclude SNPs not run for a given silly
-
-    if(my.gcl$n > 1) {
-      myproportion=apply(!is.na(counts[,,1]),1,sum)/nloci
-    } 
+RemoveIndMissLoci.GCL <- function(sillyvec, proportion = 0.8){
+  
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #   This function removes individuals from "*.gcl" objects that have fewer non-missing loci than that specified by "proportion".
+  #
+  # Inputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #   
+  #   sillyvec - a vector of silly codes without the ".gcl" extention (e.g. sillyvec <- c("KQUART06","KQUART08","KQUART10")). 
+  #
+  #   proportion - the cut-off proportion of the number of non-missing loci.
+  # 
+  # Outputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #    Returns a tibble of indiduals removed by silly.
+  #    Assigns the ".gcl" objects back to workspace after removing individuals with missing loci.
+  #
+  # Example~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #   load("V:/Analysis/2_Central/Chinook/Cook Inlet/2019/2019_UCI_Chinook_baseline_hap_data/2019_UCI_Chinook_baseline_hap_data.RData")
+  # 
+  #   missloci_ind <- RemoveIndMissLoci.GCL(sillyvec = sillyvec157, proportion = 0.8)
+  #
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
+  if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse) #Install packages, if not in library and then load them.
+  
+  output <- lapply(sillyvec, function(silly){
     
-    if(my.gcl$n == 1){
-      myproportion=setNames(object = sum(!is.na(counts[,,1]))/nloci, nm = dimnames(counts)[[1]])
-    }
+    my.gcl <- get(paste0(silly, ".gcl"), pos = 1)
     
-    myind=myproportion>=proportion
- 
-    counts=counts[myind,,,drop=FALSE]      
+    tmp <- my.gcl %>% 
+      select(LocusControl$locusnames) 
+    
+    IDsToRemove <- my.gcl %>% 
+      mutate(nloci = rowSums(!is.na(tmp)), nmissing = rowSums(tmp == "0")) %>% 
+      mutate(prop_loci = 1-(nmissing/nloci)) %>% 
+      select(prop_loci, everything()) %>% 
+      filter(prop_loci <= proportion) %>% 
+      pull(FK_FISH_ID)
+    
+    assign(x = paste0(silly, ".gcl"), value = my.gcl %>% filter(!FK_FISH_ID%in%IDsToRemove), pos = 1, envir = .GlobalEnv )
+    
+    tibble(SILLY_CODE = silly, IDs_Removed = IDsToRemove)
+    
+  }) %>% 
+    bind_rows()
+  
+ if(dim(output)[1]==0){
+   
+  message("No individuals were removed")
+   
+ } else{
+   
+   message(paste0("A total of ", dim(output)[1]), " individuals were removed from sillys in sillyvec.")
+   
+ }
 
-    scores=my.gcl$scores[myind,,,drop=FALSE]
-
-    n=nrow(scores)
-
-    attributes=my.gcl$attributes[myind,,drop=FALSE]
-
-    assign(paste0(silly,".gcl"),list(counts=counts,scores=scores,n=n,attributes=attributes),pos=1)
-
-    if(sum(!myind)==0){
-
-      results[[silly]]="None"
-
-    } else{
-
-      results[[silly]]=ID[!myind]
-
-    }
-                                                                                                                                                            
-  }#silly
-
-  return(results)
+  return(output)
 
 }
