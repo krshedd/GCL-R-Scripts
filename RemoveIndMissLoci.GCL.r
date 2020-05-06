@@ -53,12 +53,12 @@ RemoveIndMissLoci.GCL <- function(sillyvec, loci = NULL, proportion = 0.8){
     my.gcl <- get(paste0(silly, ".gcl"), pos = 1)
     
     tmp <- my.gcl %>% 
-      dplyr::select(loci) 
+      dplyr::select(tidyselect::all_of(loci)) 
     
     IDsToRemove <- my.gcl %>% 
       dplyr::mutate(nloci = rowSums(!is.na(tmp)), nmissing = rowSums(tmp == "0")) %>% 
       dplyr::mutate(prop_loci = 1-(nmissing/nloci)) %>% 
-      dplyr::select(prop_loci, everything()) %>% 
+      dplyr::select(prop_loci, tidyselect::everything()) %>% 
       dplyr::filter(prop_loci <= proportion) %>% 
       dplyr::pull(FK_FISH_ID)
     
