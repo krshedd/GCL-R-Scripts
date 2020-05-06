@@ -10,7 +10,7 @@ PoolCollections.GCL <- function(collections, loci = LocusControl$locusnames, IDs
   #
   #   loci - a character vector of locus names
   # 
-  #   IDs - a named list of fish ID character vectors, each vector is associated with and named after a member of "collections".
+  #   IDs - a named list of fish ID vectors (either character or numeric), each vector is associated with and named after a member of "collections".
   #         These will be used to subset each collection before pooling. If no IDs are supplied all individuals from each collection are used.
   #
   #   newname - is the name of the new "*.gcl" created. Do not provide ".gcl" extention. If no name supplied then the newname defaults to
@@ -72,12 +72,6 @@ PoolCollections.GCL <- function(collections, loci = LocusControl$locusnames, IDs
     
     }
 
-  if(!is.character(unlist(IDs))) {
-    
-    stop("'IDs' must be a character vector, not a numeric vector")
-    
-    }
-
   IDs <- purrr::set_names(IDs, collections) #Making sure IDs has names
   
   SubsetLoci <- c(loci, paste0(loci, ".1")) %>% sort()#These are the locus score headers for subsetting by loci.
@@ -91,7 +85,7 @@ PoolCollections.GCL <- function(collections, loci = LocusControl$locusnames, IDs
     
     my.gcl %>% 
       dplyr::filter(FK_FISH_ID%in%IDs[[collection]]) %>% 
-      select(attr, SubsetLoci)
+      dplyr::select(attr, SubsetLoci)
     
   }) %>% 
     dplyr::bind_rows() %>% 
