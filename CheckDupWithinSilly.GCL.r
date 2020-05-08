@@ -1,74 +1,128 @@
-CheckDupWithinSilly.GCL=function(sillyvec,loci,quantile=0.99,minproportion=0.95){
+CheckDupWithinSilly.GCL <- function(sillyvec, loci, quantile = 0.99, minproportion = 0.95){
+  
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #   This function checks for duplicate individuals within each silly in "sillyvec".
+  #
+  # Inputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #   
+  #   sillyvec - a vector of silly codes without the ".gcl" extention (e.g. sillyvec <- c("KQUART06","KQUART08","KQUART10")). 
+  #
+  #   loci - vector of locus names; if set to NULL all loci in the ".gcl" obejects will be used.
+  #
+  #   quantile and minproportion - these arguments are used together to determine the cutt-off proportion at which a pair of duplicates 
+  #                                is defined: i.e. proportion = max(quantile(duplication, quantile), minproportion. 
+  #Setting "quantile" equal to NULL will skip the calculation of the duplication distribution and will run much faster--REQUIRES the package "reshape" ##### Need to use something other than reshape
+  # 
+  # Outputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #    Returns a tibble of duplicate pairs of individuals by silly.
+  #
+  # Example~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #   load("V:/Analysis/2_Central/Chinook/Cook Inlet/2019/2019_UCI_Chinook_baseline_hap_data/2019_UCI_Chinook_baseline_hap_data.RData")
+  # 
+  #   dupcheck <- CheckDupWithinSilly.GCL(sillyvec = sillyvec157, loci = loci557, quantile = 0.99, minproportion = 0.95)
+  #
+  # Note~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
+  if(sum(is.na(match(loci, LocusControl$locusnames)))){
+    
+    stop(paste("'", loci[is.na(match(loci, LocusControl$locusnames))], "' from argument 'loci' not found in 'LocusControl' object!!!", sep=""))
+    
+  }
+  
+  if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse, reshape) #Install packages, if not in library and then load them.
 
-######################################################################################################################################################################################
-#
-#  This function checks for duplicate individuals within each silly in "sillyvec".
-# 
-#  A list is reurned, the same length as sillyvec, each element is a report and distribution of duplication within each silly.
-#
-#  "sillyvec" is a vector of silly names (without the ".gcl") you wish to check for duplicates.
-# 
-#  "loci" is a vecor of locus names.
-#
-#  "quantile" and "minproportion" are used together to determine the cutt-off proportion at which a pair of duplicates is defined: i.e. proportion=max(quantile(duplication,quantile),minproportion)  
-#
-#  Setting "quantile" equal to NULL will skip the calculation of the duplication distribution and will run much faster--REQUIRES the package "reshape" 
-#  
-#  Written by JJ 4/24/2011
-#  Updated to skip the calculation of the duplication distribution.  JJ 12/19/2011
-######################################################################################################################################################################################
- 
-  if(sum(is.na(match(loci,LocusControl$locusnames)))){stop(paste("'",loci[is.na(match(loci,LocusControl$locusnames))],"' from argument 'loci' not found in 'LocusControl' object!!!",sep=""))}
+  nsilly <- length(sillyvec)
 
-  nsilly=length(sillyvec)
+  nloci <- length(loci)
 
-  nloci=length(loci)
+  #ploidy <- LocusControl %>% 
+  #filter(locusnames%in%loci)
 
-  ploidy=LocusControl$ploidy[loci]
-
-  resultlist=vector(mode="list",length=nsilly)
-  names(resultlist)=sillyvec
+  #resultlist=vector(mode="list",length=nsilly)
+  #names(resultlist)=sillyvec
 
   if(is.null(quantile)){
-    require("reshape")
-    library("dplyr")
-    for(silly in sillyvec){
-      my.gcl=get(paste(silly,".gcl",sep=""),pos=1)
-      scores=my.gcl$scores[,loci,,drop=FALSE]
-      ID=as.character(dimnames(scores)[[1]])
-      n=length(ID)
-      if(n<2){
-        resultlist[[silly]]=list(report="No Duplicates",DupDist=NULL) 
-        next()
-      }
-      scores.df=data.frame(t(sapply(ID,function(id){sapply(loci,function(locus){ifelse(is.na(scores[id,locus,1]),NA,paste(scores[id,locus,1:ploidy[locus]],collapse="."))})})))  
-      sort.scores.df=sort_df(scores.df)
-      sortIDs=dimnames(sort.scores.df)[[1]]
-      duplication=t(sapply(1:(n-1),function(id){ 
-                    vec=sapply(1:nloci,function(locus){ 
-                          sort.scores.df[id,locus]==sort.scores.df[id+1,locus]
-                        });
-                    ifelse(sum(!is.na(vec)),sum(vec[!is.na(vec)])/sum(!is.na(vec)),0 )
-                    }))
+    
+    lapply(sillyvec, function(silly){
+      
+      my.gcl <- get(paste(silly, ".gcl", sep = ""), pos = 1)
+      
+      #scores_cols <- c(loci, paste0(loci, ".1")) %>% 
+      #  sort()
+      
+      IDs <- my.gcl$FK_FISH_ID
+      
+      n <- silly_n.GCL("my")$n
+      
+      nloci <- length(loci)
+      
+      #Combine dose 1 and 2 into single columns for each locus separated by a period.
+      scores0 <- my.gcl[ ,c("FK_FISH_ID", scores_cols)] 
+    
+      if(n < 2){
+        
+        results <- tibble::tibble(silly = NA, ID1 = NA, ID2 = NA, Missing1 = NA, Missing2 = NA, proportion = NA) 
+        
+      } else{
+        
+        scores1 <- sapply(IDs, function(id){
+          
+          ind <- scores0 %>% 
+            filter(FK_FISH_ID==id)
+          
+          sapply(loci,function(locus){
+            
+            ifelse(is.na(ind[ ,locus]), NA, paste(ind[ , locus], ind[ , paste0(locus,".1")], sep = "."))
+            
+            })
+          
+          }) %>% t() %>% 
+          data.frame () 
+        
+        
+        dimnames(scores1)[[1]] <- IDs
+        
+        
+        
+     #Calculate the porpotion of duplicated loci for each silly
+      duplication <- t(sapply(1:(n-1), function(id){ 
+        
+        vec <- sapply(1:nloci, function(locus){ 
+          
+          scores1[id, locus]==scores1[id+1,locus]
+          
+        });
+        
+        ifelse(sum(!is.na(vec)),sum(vec[!is.na(vec)])/sum(!is.na(vec)),0 )
+        
+      }))
+      
       dupIND=as.vector(duplication>minproportion)
       if(sum(dupIND)){
         dups=t(sapply((1:(n-1))[dupIND],function(id){c(ID1=sortIDs[id],ID2=sortIDs[id+1])}))
         missing=t(sapply(1:nrow(dups),function(dup){
-                  vec=match(dups[dup,],sortIDs);
-                  c("Missing1"=sum(is.na(sort.scores.df[vec[1],])),"Missing2"=sum(is.na(sort.scores.df[vec[2],])))
-                }, simplify = TRUE))
+          vec=match(dups[dup,],sortIDs);
+          c("Missing1"=sum(is.na(sort.scores.df[vec[1],])),"Missing2"=sum(is.na(sort.scores.df[vec[2],])))
+        }, simplify = TRUE))
         report = dplyr::bind_cols(dplyr::as_tibble(dups), 
                                   dplyr::as_tibble(missing), 
                                   proportion = duplication[dupIND]
-                                  )
+        )
       }
       if(!sum(dupIND)){
-          report="No Duplicates"
+        report="No Duplicates"
       }
-        resultlist[[silly]]=list(report=report,DupDist=NULL)  
-    }
+      esultlist[[silly]]=list(report=report,DupDist=NULL)  
+      
+      }
+      
+    })#end silly
+    
     return(resultlist)
   }
+  
 
   if(!is.null(quantile)){
     for(silly in sillyvec){
