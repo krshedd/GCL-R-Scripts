@@ -37,21 +37,15 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci, quantile = 0.99, minproporti
 
   nloci <- length(loci)
 
-  #ploidy <- LocusControl %>% 
-  #filter(locusnames%in%loci)
-
-  #resultlist=vector(mode="list",length=nsilly)
-  #names(resultlist)=sillyvec
-
+  scores_cols <- c(loci, paste0(loci, ".1")) %>% 
+    sort()
+  
   if(is.null(quantile)){
     
-    lapply(sillyvec, function(silly){
+    output <- lapply(sillyvec, function(silly){
       
       my.gcl <- get(paste(silly, ".gcl", sep = ""), pos = 1)
-      
-      #scores_cols <- c(loci, paste0(loci, ".1")) %>% 
-      #  sort()
-      
+        
       IDs <- my.gcl$FK_FISH_ID
       
       n <- silly_n.GCL("my")$n
@@ -63,7 +57,7 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci, quantile = 0.99, minproporti
     
       if(n < 2){
         
-        results <- tibble::tibble(silly = NA, ID1 = NA, ID2 = NA, Missing1 = NA, Missing2 = NA, proportion = NA) 
+        report <- tibble::tibble(silly = silly, ID1 = NA, ID2 = NA, Missing1 = NA, Missing2 = NA, proportion = NA) #If only one individual the results will be a tibble of NAs. Can't do next() using applys
         
       } else{
         
@@ -79,19 +73,20 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci, quantile = 0.99, minproporti
             })
           
           }) %>% t() %>% 
-          data.frame () 
-        
+          data.frame ()
         
         dimnames(scores1)[[1]] <- IDs
         
+        sort.scores.df <- sort_df(scores1)
         
+        sortIDs <- dimnames(sort.scores.df)[[1]]
         
      #Calculate the porpotion of duplicated loci for each silly
       duplication <- t(sapply(1:(n-1), function(id){ 
-        
+            
         vec <- sapply(1:nloci, function(locus){ 
           
-          scores1[id, locus]==scores1[id+1,locus]
+          sort.scores.df[id, locus]==sort.scores.df[id+1,locus]
           
         });
         
@@ -99,29 +94,46 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci, quantile = 0.99, minproporti
         
       }))
       
-      dupIND=as.vector(duplication>minproportion)
+      dupIND <- as.vector(duplication>minproportion)
+      
       if(sum(dupIND)){
-        dups=t(sapply((1:(n-1))[dupIND],function(id){c(ID1=sortIDs[id],ID2=sortIDs[id+1])}))
-        missing=t(sapply(1:nrow(dups),function(dup){
-          vec=match(dups[dup,],sortIDs);
-          c("Missing1"=sum(is.na(sort.scores.df[vec[1],])),"Missing2"=sum(is.na(sort.scores.df[vec[2],])))
+        
+        dups <- t(sapply((1:(n-1))[dupIND], function(id){c(ID1 = sortIDs[id], ID2 = sortIDs[id+1])}))
+        
+        missing <- t(sapply(1:nrow(dups),function(dup){
+          
+          vec <- match(dups[dup,], sortIDs);
+          
+          c("Missing1" = sum(is.na(sort.scores.df[vec[1],])), "Missing2" = sum(is.na(sort.scores.df[vec[2], ])))
+          
         }, simplify = TRUE))
-        report = dplyr::bind_cols(dplyr::as_tibble(dups), 
+        
+        report <- dplyr::bind_cols(dplyr::as_tibble(dups), 
                                   dplyr::as_tibble(missing), 
                                   proportion = duplication[dupIND]
-        )
+        ) %>% mutate(silly = silly) %>% 
+          select(silly, tidyr::everything())
+        
       }
+      
       if(!sum(dupIND)){
-        report="No Duplicates"
+        
+       report <- tibble::tibble(silly = silly, ID1 = NA, ID2 = NA, Missing1 = NA, Missing2 = NA, proportion = NA) 
+        
       }
-      esultlist[[silly]]=list(report=report,DupDist=NULL)  
       
       }
       
-    })#end silly
+      report
+      
+    }) %>% bind_rows()#end silly
     
-    return(resultlist)
-  }
+    output %>% 
+      filter(!is.na(silly))
+    
+    return(output)
+    
+  }#End NULL quantile
   
 
   if(!is.null(quantile)){
