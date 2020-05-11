@@ -1,4 +1,4 @@
-CheckDupWithinSilly.GCL <- function(sillyvec, loci, quantile = 0.99, minproportion = 0.95){
+CheckDupWithinSilly.GCL <- function(sillyvec, loci, quantile = 0.99, minproportion = 0.95, ncores = 4){
   
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #   This function checks for duplicate individuals within each silly in "sillyvec".
@@ -31,7 +31,7 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci, quantile = 0.99, minproporti
     
   }
   
-  if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse, reshape) #Install packages, if not in library and then load them.
+  if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse, reshape, doParallel, foreach) #Install packages, if not in library and then load them.
 
   nsilly <- length(sillyvec)
 
@@ -40,20 +40,30 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci, quantile = 0.99, minproporti
   scores_cols <- c(loci, paste0(loci, ".1")) %>% 
     sort()
   
+  if (.Platform$OS.type == "windows") flush.console()
+  
+  my.gcl <- lapply(sillyvec,function(silly){get(paste(silly,".gcl",sep=""),pos=1)})
+  names(my.gcl)=sillyvec
+  
   if(is.null(quantile)){
     
-    output <- lapply(sillyvec, function(silly){
+    cl <- parallel::makePSOCKcluster(ncores)
+    
+    registerDoParallel(cl, cores=ncores)  
+    
+    # multicore loop
+    dupcheck <-  foreach(silly = sillyvec) %dopar% {
       
-      my.gcl <- get(paste(silly, ".gcl", sep = ""), pos = 1)
+      new.gcl <- my.gcl[[silly]]
         
-      IDs <- my.gcl$FK_FISH_ID
+      IDs <- new.gcl$FK_FISH_ID
       
-      n <- silly_n.GCL("my")$n
+      n <- silly_n.GCL("new")$n
       
       nloci <- length(loci)
       
       #Combine dose 1 and 2 into single columns for each locus separated by a period.
-      scores0 <- my.gcl[ ,c("FK_FISH_ID", scores_cols)] 
+      scores0 <- new.gcl[ ,c("FK_FISH_ID", scores_cols)] 
     
       if(n < 2){
         
@@ -77,7 +87,7 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci, quantile = 0.99, minproporti
         
         dimnames(scores1)[[1]] <- IDs
         
-        sort.scores.df <- sort_df(scores1)
+        sort.scores.df <- reshape::sort_df(scores1)
         
         sortIDs <- dimnames(sort.scores.df)[[1]]
         
@@ -126,7 +136,9 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci, quantile = 0.99, minproporti
       
       report
       
-    }) %>% bind_rows()#end silly
+    } #End multicore loop
+    
+    parallel::stopCluster(cl)
     
     output %>% 
       filter(!is.na(silly))
@@ -135,6 +147,7 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci, quantile = 0.99, minproporti
     
   }#End NULL quantile
   
+  # Start quantile 
 
   if(!is.null(quantile)){
     for(silly in sillyvec){
@@ -154,8 +167,8 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci, quantile = 0.99, minproporti
         n=0
       }
      
-      if(n<2){resultlist[[silly]]=list(report="No Duplicates",DupDist=NULL) ; next()}
-
+      if(n<2){resultlist[[silly]]=list(report="No Duplicates", DupDist=NULL) ; next()}
+ 
 
       ncombs=choose(n,2)        
 
