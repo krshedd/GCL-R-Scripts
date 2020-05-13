@@ -67,9 +67,9 @@ GTSeq_Metadata_Report.GCL <- function(project_name, dir, file_name, username, pa
   # Connect to LOKI
   con <- RJDBC::dbConnect(drv, url = url, user = username, password = password)
 
-  # Creating java query (need to change the view once Eric creates a new one for this function)
-  gnoqry <- paste0("SELECT LAB_PROJECT_NAME, SILLY_CODE, FK_FISH_ID, LOCUS, POSITIONS, HAPLO_ALLELES, HAPLO_COUNTS, GENOTYPE, SNP_ALLELES, PROBES, FWD_PRIMER_SEQ, DNA_PLATE_ID, DNA_PLATE_WELL_POS FROM AKFINADM.V_GEN_TEST_RESULTS_BOTHGENO GENO WHERE EXISTS (SELECT * FROM AKFINADM.V_LAB_PROJECT_WELL LPW WHERE LPW.LAB_PROJECT_NAME IN (", paste0("'", project_name, "'", collapse = ","), ") AND LPW.SILLY_CODE = GENO.SILLY_CODE AND LPW.FISH_NO = GENO.FK_FISH_ID)")
-
+  # Creating java query
+  gnoqry <- paste0("SELECT LAB_PROJECT_ID, LAB_PROJECT_NAME, SILLY_CODE, FK_FISH_ID, LOCUS, POSITIONS, HAPLO_ALLELES, HAPLO_COUNTS, GENOTYPE, SNP_ALLELES, PROBES, FWD_PRIMER_SEQ, DNA_PLATE_ID, DNA_PLATE_WELL_POS FROM AKFINADM.R_GTSEQ_GENO_METADATA GENO WHERE LAB_PROJECT_NAME IN (", paste0("'", project_name, "'", collapse = ","), ")") #The view for this query (AKFINADM.R_GTSEQ_GENO_METADATA) was created for this function on 5/12/20.
+  
   # Pull genotypes and concatenate alleles into one column with "/" separator
   dataAll0 <- RJDBC::dbGetQuery(con, gnoqry) %>% 
     dplyr::as_tibble() %>% 
@@ -80,7 +80,7 @@ GTSeq_Metadata_Report.GCL <- function(project_name, dir, file_name, username, pa
   
   # Put in crosstab format
   dataAll <- dataAll0 %>% 
-    dplyr::arrange(LOCUS)
+    dplyr::arrange(LOCUS, SILLY_CODE, FK_FISH_ID)
 
   # Checking to see if no data was pulled for a given project. If true, the function will stop and print an error message in the console.
   if(nrow(dataAll)==0 & exists("project_name")){
