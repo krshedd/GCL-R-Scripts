@@ -33,7 +33,7 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci, quantile = 0.99, minproporti
     
   }
   
-  if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse, reshape, doParallel, foreach) #Install packages, if not in library and then load them.
+  if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse, reshape, doParallel, parallel, foreach) #Install packages, if not in library and then load them.
   
   
   if(ncores > detectCores()) {
@@ -56,19 +56,19 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci, quantile = 0.99, minproporti
   #Start if NULL quantile
   if(is.null(quantile)){
     
-    cl <- doParallel::makePSOCKcluster(ncores)
+    cl <- parallel::makePSOCKcluster(ncores)
     
     doParallel::registerDoParallel(cl, cores=ncores)  
     
     # multicore loop
     
-    dupcheck <- foreach::foreach(silly = sillyvec) %dopar% {
+    dupcheck <- foreach::foreach(silly = sillyvec, .packages = "tidyverse") %dopar% {
       
       new.gcl <- my.gcl[[silly]]
         
       IDs <- new.gcl$FK_FISH_ID
       
-      n <- silly_n.GCL("new")$n
+      n <- dim(new.gcl)[1]
       
       nloci <- length(loci)
       
@@ -149,12 +149,12 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci, quantile = 0.99, minproporti
       
     } #End multicore loop
     
-    doParallel::stopCluster(cl)
+    parallel::stopCluster(cl)
     
     output <- dupcheck %>% 
       dplyr::bind_rows()
     
-    Sys.time()-start.time
+    print(Sys.time()-start.time)
     
     return(output)
     
@@ -163,18 +163,18 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci, quantile = 0.99, minproporti
   # Start if quantile 
   if(!is.null(quantile)){
     
-    cl <- doParallel::makePSOCKcluster(ncores)
+    cl <- parallel::makePSOCKcluster(ncores)
     
     doParallel::registerDoParallel(cl, cores = ncores)  
     
     # multicore loop
-    dupcheck <- foreach::foreach(silly = sillyvec) %dopar% {
+    dupcheck <- foreach::foreach(silly = sillyvec, .packages = "tidyverse") %dopar% {
       
       new.gcl <- my.gcl[[silly]]
       
       IDs <- new.gcl$FK_FISH_ID
       
-      n <- silly_n.GCL("new")$n
+      n <- dim(new.gcl)[1]
       
       nloci <- length(loci)
       
@@ -272,7 +272,7 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci, quantile = 0.99, minproporti
     
     output <- list(report = report, DupDist = DupDist)
     
-    Sys.time()-start.time
+    print(Sys.time()-start.time)
     
     return(output)
 
