@@ -35,8 +35,10 @@ old2new_gcl.GCL <- function (sillyvec, save_old = FALSE){
     
     scores <- lapply(seq(dim(my.gcl$scores)[[3]]), function(dim){
       
-      s = my.gcl$scores[ , , dim, drop = FALSE][ , ,-3, drop = FALSE] %>%
-        tibble::as_tibble()  
+      s = my.gcl$scores[ , , dim, drop = FALSE] %>%
+        tibble::as_tibble()
+      
+      colnames(s) <- dimnames(my.gcl$scores)[[2]] 
       
       if(dim > 1){
         
