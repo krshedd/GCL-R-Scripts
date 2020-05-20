@@ -23,13 +23,13 @@ old2new_LocCtrl.GCL <- function (LocCtrl = LocusControl, save_old = FALSE){
     
     stop("The LocusControl object is already a tibble.")
     
-    }
+  }
   
   if(save_old){
     
     assign(paste0("LocusControl_old"), value = LocCtrl, pos = -1, envir = .GlobalEnv)
     
-    } #Saving old gcl
+  } #Saving old gcl
   
   locus_info <- with(LocCtrl, tibble::tibble(MarkerSuite, locusnames, Publishedlocusnames, nalleles, ploidy))
   
