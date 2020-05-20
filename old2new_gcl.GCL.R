@@ -31,7 +31,8 @@ old2new_gcl.GCL <- function (sillyvec, save_old = FALSE){
     
     if(save_old){assign(paste0(silly, ".gcl_old"), value = my.gcl, pos = -1, envir = .GlobalEnv)} #Saving old gcl
     
-    attr <- my.gcl$attributes
+    attr <- my.gcl$attributes %>% 
+      mutate(SILLY_CODE = silly) #Some older attributes did not include SILLY_CODE
     
     scores <- lapply(seq(dim(my.gcl$scores)[[3]]), function(dim){
       
