@@ -31,15 +31,15 @@ old2new_LocCtrl.GCL <- function (LocCtrl = LocusControl, save_old = FALSE){
     
     } #Saving old gcl
   
-  locus_info <- with(LocCtrl, tibble(MarkerSuite, locusnames, Publishedlocusnames, nalleles, ploidy))
+  locus_info <- with(LocCtrl, tibble::tibble(MarkerSuite, locusnames, Publishedlocusnames, nalleles, ploidy))
   
-  alleles <- tibble::tibble(alleles = lapply(LocusControl$locusnames, function(locus){
+  alleles <- tibble::tibble(alleles = sapply(LocCtrl$locusnames, function(locus){
     
-    a <- LocusControl$alleles[[locus]]
+    a <- LocCtrl$alleles[[locus]]
     
     tibble::tibble(allele = seq(length(a)), call = a)
     
-  }) %>% purrr::set_names(LocusControl$locusnames)
+  }, simplify = FALSE)
   
   ) 
   
