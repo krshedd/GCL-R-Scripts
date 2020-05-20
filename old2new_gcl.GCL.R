@@ -19,6 +19,14 @@ old2new_gcl.GCL <- function (sillyvec, save_old = FALSE){
   
   if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse) #Install packages, if not in library and then load them.
   
+  if(!all(sillyvec %in% stringr::str_remove(string = objects(pattern = "\\.gcl", pos = -1, envir = .GlobalEnv), pattern = "\\.gcl"))) {  # Do all sillys exist in the environment?
+    
+    missing_sillys <- setdiff(sillyvec, stringr::str_remove(string = objects(pattern = "\\.gcl", pos = -1, envir = .GlobalEnv), pattern = "\\.gcl"))
+    
+    stop(paste0("The following sillys are not in your environment:\n", paste0(missing_sillys, collapse = ", ")))
+    
+  }
+  
   sillyvec0 <- sillyvec[sapply(sillyvec, function(silly){ #Excluding objects that are already in tidy format.
     
     !tibble::is_tibble(get(paste0(silly, ".gcl")))
@@ -32,7 +40,7 @@ old2new_gcl.GCL <- function (sillyvec, save_old = FALSE){
     if(save_old){assign(paste0(silly, ".gcl_old"), value = my.gcl, pos = -1, envir = .GlobalEnv)} #Saving old gcl
     
     attr <- my.gcl$attributes %>% 
-      mutate(SILLY_CODE = silly) #Some older attributes did not include SILLY_CODE
+      dplyr::mutate(SILLY_CODE = silly) #Some older attributes did not include SILLY_CODE
     
     scores <- lapply(seq(dim(my.gcl$scores)[[3]]), function(dim){
       
@@ -60,6 +68,6 @@ old2new_gcl.GCL <- function (sillyvec, save_old = FALSE){
     
   })#End silly
   
-  message(paste0("The following *.gcl objects have been converted to tibbles: ", paste0(sillyvec, collapse = " ,")))
+  message(paste0("The following *.gcl objects have been converted to tibbles:\n", paste0(sillyvec, collapse = ", ")))
   
 }
