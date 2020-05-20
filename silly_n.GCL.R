@@ -11,7 +11,7 @@ silly_n.GCL <- function(sillyvec){
   # Example~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # load("V:/Analysis/2_Central/Chinook/Cook Inlet/2019/2019_UCI_Chinook_baseline_hap_data/2019_UCI_Chinook_baseline_hap_data.RData")
   #
-  # SampleSize.GCL(sillyvec = sillyvec157)
+  # silly_n.GCL(sillyvec = sillyvec157)
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
   if(!require("pacman")) install.packages("pacman"); library(pacman); p_load(tidyverse) #Install packages, if not in library and then load them.
@@ -29,6 +29,6 @@ silly_n.GCL <- function(sillyvec){
     tibble::tibble(silly = silly, n = dim(my.gcl)[[1]])
     
   }) %>% 
-    bind_rows()
+    dplyr::bind_rows()
   
 }
