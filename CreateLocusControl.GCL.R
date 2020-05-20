@@ -137,7 +137,7 @@ CreateLocusControl.GCL <- function(markersuite = NULL, locusnames = NULL, userna
     
     tibble::tibble(allele = seq(nalleles), call = my.loc$VALUE %>% sort())
     
-  }, simplify = TRUE)
+  }, simplify = FALSE)
   
   nalleles <- sapply(alleles, dim)[1,] 
   
