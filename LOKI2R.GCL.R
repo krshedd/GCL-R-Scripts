@@ -1,5 +1,5 @@
 LOKI2R.GCL <- function(sillyvec, username, password){
-
+  
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #  This function connects to LOKI and creates a "*.gcl" object for each silly in sillyvec.  
   #
@@ -56,13 +56,13 @@ LOKI2R.GCL <- function(sillyvec, username, password){
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
   
   if(!exists("LocusControl")){
-
+    
     stop("'LocusControl' not yet built.")
-
+    
   }
-
+  
   if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(RJDBC, tidyverse, lubridate) #Install packages, if not in library and then load them.
-
+  
   # This copies the "odbc8.jar" file to the R folder on your computer if it doesn't exist there. This file contains the java odbc drivers needed for RJDBC
   
   if(!file.exists(path.expand("~/R"))){
@@ -84,7 +84,7 @@ LOKI2R.GCL <- function(sillyvec, username, password){
   }
   
   start.time <- Sys.time() 
-
+  
   options(java.parameters = "-Xmx10g")
   
   if(file.exists("C:/Program Files/R/RequiredLibraries/ojdbc8.jar")) {
@@ -102,85 +102,108 @@ LOKI2R.GCL <- function(sillyvec, username, password){
   con <- RJDBC::dbConnect(drv, url = url, user = username, password = password) #The database connection
   
   loci <- LocusControl$locusnames
-
+  
   nloci <- length(loci)
-
+  
   ploidy <- LocusControl$ploidy
-
+  
   alleles <- LocusControl$alleles
-    
+  
   nalleles <- LocusControl$nalleles 
-
+  
   gnoqry <- paste("SELECT * FROM AKFINADM.V_GNOQRY WHERE LOCUS IN (", paste0("'", loci, "'", collapse = ","), ") AND SILLY_CODE IN (", paste0("'", sillyvec, "'", collapse = ","), ")", sep = "") #Gentoype query
-
+  
   dataAll0 <- RJDBC::dbGetQuery(con, gnoqry)  #Pulling data from LOKI using the connection and genotype query
-
+  
   dataAllbool <- dataAll0$PK_TISSUE_TYPE == dataAll0$PREFERRED_TISSUE 
-
+  
   bothNAbool <- is.na(dataAll0$PREFERRED_TISSUE) &  is.na(dataAll0$PK_TISSUE_TYPE)
   
   dataAllbool[is.na(dataAllbool)] <- FALSE 
-
+  
   dataAllbool[bothNAbool] <- TRUE  
   
   dataAll <- dataAll0[dataAllbool, ] %>% 
     tibble::as_tibble() %>% 
-    select(-PREFERRED_TISSUE, -TEST_TYPE)
-
-  discon <- dbDisconnect(con)
-    
+    dplyr::select(-PREFERRED_TISSUE, -TEST_TYPE)
+  
+  discon <- RJDBC::dbDisconnect(con)
+  
   #Create tibble data fame for each silly in sillyvec
   for(silly in sillyvec){ 
-
+    
     message0 <- paste0(silly, ".gcl created ", match(silly, sillyvec)," of ", length(sillyvec)," completed.") 
-  
+    
     sillydata <- dataAll %>% 
-      filter(SILLY_CODE==silly)
+      dplyr::filter(SILLY_CODE==silly)
     
     ids <- sillydata$FISH_ID %>% 
       unique() %>% 
       sort() %>% 
       as.character()
-   
-    sillyvials <- paste(silly, ids, sep="_")
-      
+    
+    sillyvials <- paste(silly, ids, sep = "_")
+    
     nind <- length(sillyvials)
-
+    
     if(length(ids) == 0){
-
+      
       message0 <- paste0(silly," is empty.")
-
+      
       message(message0)
-
+      
       next
-
+      
     }
     
     silly_df <- sillydata %>%
-      dplyr::arrange(LOCUS, ) %>%
+      dplyr::arrange(LOCUS) %>%
       tidyr::pivot_longer(cols = c("ALLELE_1", "ALLELE_2"), values_to = "Allele") %>% 
-      dplyr::mutate(scores_header = case_when(name == "ALLELE_2"~paste0(LOCUS, ".1"), TRUE~LOCUS)) %>% 
-      select(-LOCUS, -name) %>% 
+      dplyr::mutate(scores_header = case_when(name == "ALLELE_2" ~ paste0(LOCUS, ".1"), 
+                                              TRUE ~ LOCUS)) %>% 
+      dplyr::select(-LOCUS, -name) %>% 
       tidyr::pivot_wider(names_from = scores_header, values_from = Allele, names_sep="" ) %>% 
-      dplyr::mutate(CAPTURE_DATE = lubridate::as_date(CAPTURE_DATE), END_CAPTURE_DATE = lubridate::as_date(END_CAPTURE_DATE), SillySource = paste(SILLY_CODE, FISH_ID, sep = "_")) %>% 
-      dplyr::select(FK_FISH_ID = FISH_ID, COLLECTION_ID, SILLY_CODE, PLATE_ID, PK_TISSUE_TYPE, CAPTURE_LOCATION, CAPTURE_DATE, END_CAPTURE_DATE, MESH_SIZE, MESH_SIZE_COMMENT,
-                    LATITUDE, LONGITUDE, AGENCY, VIAL_BARCODE, DNA_TRAY_CODE, DNA_TRAY_WELL_CODE, DNA_TRAY_WELL_POS, CONTAINER_ARRAY_TYPE_ID, SillySource, everything()) %>% 
+      dplyr::mutate(
+        CAPTURE_DATE = lubridate::as_date(CAPTURE_DATE),
+        END_CAPTURE_DATE = lubridate::as_date(END_CAPTURE_DATE),
+        SillySource = paste(SILLY_CODE, FISH_ID, sep = "_")
+      ) %>%
+      dplyr::select(
+        FK_FISH_ID = FISH_ID,
+        COLLECTION_ID,
+        SILLY_CODE,
+        PLATE_ID,
+        PK_TISSUE_TYPE,
+        CAPTURE_LOCATION,
+        CAPTURE_DATE,
+        END_CAPTURE_DATE,
+        MESH_SIZE,
+        MESH_SIZE_COMMENT,
+        LATITUDE,
+        LONGITUDE,
+        AGENCY,
+        VIAL_BARCODE,
+        DNA_TRAY_CODE,
+        DNA_TRAY_WELL_CODE,
+        DNA_TRAY_WELL_POS,
+        CONTAINER_ARRAY_TYPE_ID,
+        SillySource,
+        everything()
+      ) %>%
       dplyr::arrange(FK_FISH_ID)
-      
+    
     message(message0)
-      
-    assign(paste(silly,".gcl",sep=""), silly_df, pos = 1, .GlobalEnv)
-
-  }#silly 
-
+    
+    assign(paste0(silly, ".gcl"), silly_df, pos = 1, .GlobalEnv)
+    
+  }  # silly 
+  
   stop.time <- Sys.time()
-
+  
   fulltime <- stop.time - start.time
-
+  
   print(fulltime) 
-      
+  
   return(fulltime)
   
-}  
-   
-
+}
