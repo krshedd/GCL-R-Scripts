@@ -42,12 +42,12 @@ LOKI2R.GCL <- function(sillyvec, username, password){
   #
   #   The tibbles will be named after the silly code with a .gcl extention (e.g. KQUART06.gcl)
   # Example~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  #
-  #   load("V:/Analysis/2_Central/Chinook/Cook Inlet/2019/2019_UCI_Chinook_baseline_hap_data/2019_UCI_Chinook_baseline_hap_data.RData")
-  #
+  #  
   #   password = "************"
+  #
+  #   CreateLocusControl.GCL(markersuite = "UCI_Chinook_GTSeq_557SNPs", username = "awbarclay", password = password)
   # 
-  #   LOKI2R.GCL(sillyvec = sillyvec157, username = "awbarclay", password = password)
+  #   LOKI2R.GCL(sillyvec = c("KCURRY13", "KDEEP10", "CHDEC912","KCHICK10"), username = "awbarclay", password = password)
   #
   # Note~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #
@@ -156,7 +156,9 @@ LOKI2R.GCL <- function(sillyvec, username, password){
       
     }
     
-    silly_df <- sillydata %>%
+    silly_df_cols <- rep(NA_real_, nloci*2) %>% purrr::set_names(c(loci, paste0(loci, ".1"))%>% sort()) 
+    
+    silly_df0 <- sillydata %>%
       dplyr::arrange(LOCUS) %>%
       tidyr::pivot_longer(cols = c("ALLELE_1", "ALLELE_2"), values_to = "Allele") %>% 
       dplyr::mutate(scores_header = case_when(name == "ALLELE_2" ~ paste0(LOCUS, ".1"), 
@@ -167,7 +169,10 @@ LOKI2R.GCL <- function(sillyvec, username, password){
         CAPTURE_DATE = lubridate::as_date(CAPTURE_DATE),
         END_CAPTURE_DATE = lubridate::as_date(END_CAPTURE_DATE),
         SillySource = paste(SILLY_CODE, FISH_ID, sep = "_")
-      ) %>%
+      )
+    
+    
+    silly_df <- add_column(silly_df0, !!!silly_df_cols[setdiff(names(silly_df_cols), names(silly_df0))]) %>%
       dplyr::select(
         FK_FISH_ID = FISH_ID,
         COLLECTION_ID,
@@ -188,7 +193,7 @@ LOKI2R.GCL <- function(sillyvec, username, password){
         DNA_TRAY_WELL_POS,
         CONTAINER_ARRAY_TYPE_ID,
         SillySource,
-        everything()
+        all_of(names(silly_df_cols))
       ) %>%
       dplyr::arrange(FK_FISH_ID)
     
