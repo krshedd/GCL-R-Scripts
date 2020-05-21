@@ -12,6 +12,7 @@ LOKI2R.GCL <- function(sillyvec, username, password){
   #   password - your password used to access LOKI - see Eric Lardizabal if you don't have a passord for LOKI
   #
   # Outputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #
   #   This function assigns a tibble with the following columns for each silly.
   #
   #               Columns 1-19
@@ -41,13 +42,15 @@ LOKI2R.GCL <- function(sillyvec, username, password){
   #
   #
   #   The tibbles will be named after the silly code with a .gcl extention (e.g. KQUART06.gcl)
+  #
+  #   If one or more *.gcl objects have no data for one or more loci, the function returns a tibble of loci with missing data for each *.gcl object.
   # Example~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #  
   #   password = "************"
   #
   #   CreateLocusControl.GCL(markersuite = "UCI_Chinook_GTSeq_557SNPs", username = "awbarclay", password = password)
   # 
-  #   LOKI2R.GCL(sillyvec = c("KCURRY13", "KDEEP10", "CHDEC912","KCHICK10"), username = "awbarclay", password = password)
+  #   missing_data <- LOKI2R.GCL(sillyvec = c("KCURRY13", "KDEEP10", "CHDEC912", "KCHICK10", "KALEX16")[1], username = "awbarclay", password = password)
   #
   # Note~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #
@@ -129,10 +132,16 @@ LOKI2R.GCL <- function(sillyvec, username, password){
   
   discon <- RJDBC::dbDisconnect(con)
   
-  #Create tibble data fame for each silly in sillyvec
-  for(silly in sillyvec){ 
+  missing_sillys <- setdiff(sillyvec, dataAll$SILLY_CODE %>% unique()) #Find which sillys had no data for any loci in LocusControl
+  
+  #Create tibble data fame for each silly in dataAll
+  dataAll_sillys <- dataAll$SILLY_CODE %>% 
+    unique() %>% 
+    sort()
+  
+  missing_loci <- lapply(dataAll_sillys, function(silly){ 
     
-    message0 <- paste0(silly, ".gcl created ", match(silly, sillyvec)," of ", length(sillyvec)," completed.") 
+    message0 <- paste0(silly, ".gcl created ", match(silly, dataAll_sillys)," of ", length(dataAll_sillys)," completed.") 
     
     sillydata <- dataAll %>% 
       dplyr::filter(SILLY_CODE==silly)
@@ -146,17 +155,8 @@ LOKI2R.GCL <- function(sillyvec, username, password){
     
     nind <- length(sillyvials)
     
-    if(length(ids) == 0){
-      
-      message0 <- paste0(silly," is empty.")
-      
-      message(message0)
-      
-      next
-      
-    }
-    
-    silly_df_cols <- rep(NA_real_, nloci*2) %>% purrr::set_names(c(loci, paste0(loci, ".1"))%>% sort()) 
+    silly_df_cols <- rep(NA_real_, nloci*2) %>% 
+      purrr::set_names(c(loci, paste0(loci, ".1")) %>% sort()) 
     
     silly_df0 <- sillydata %>%
       dplyr::arrange(LOCUS) %>%
@@ -171,8 +171,7 @@ LOKI2R.GCL <- function(sillyvec, username, password){
         SillySource = paste(SILLY_CODE, FISH_ID, sep = "_")
       )
     
-    
-    silly_df <- add_column(silly_df0, !!!silly_df_cols[setdiff(names(silly_df_cols), names(silly_df0))]) %>%
+    silly_df <- tibble::add_column(silly_df0, !!!silly_df_cols[setdiff(names(silly_df_cols), names(silly_df0))]) %>%
       dplyr::select(
         FK_FISH_ID = FISH_ID,
         COLLECTION_ID,
@@ -201,14 +200,44 @@ LOKI2R.GCL <- function(sillyvec, username, password){
     
     assign(paste0(silly, ".gcl"), silly_df, pos = 1, .GlobalEnv)
     
-  }  # silly 
+    tibble::tibble(silly = silly, missing_loci = setdiff(loci, sillydata$LOCUS %>% unique()))
+    
+  }) %>% 
+    dplyr::bind_rows()# silly
   
+  if(length(missing_sillys)>=1){
+    
+    message(paste0("The following sillys had no data in LOKI for the loci in LocusControl: ", paste0(missing_sillys, collapse = ", ")))
+    
+    }
+  
+  if(nrow(missing_loci)>=1){
+    
+    n_missing <- missing_loci %>% 
+      dplyr::group_by(silly) %>% 
+      dplyr::summarize(n_miss = length(missing_loci) %>% as.character()) %>% 
+      tidyr::unite(col = silly_n_miss, silly, n_miss, sep = "(missing=") %>% 
+      dplyr::mutate(silly_n_miss = paste0(silly_n_miss, ")")) %>% 
+      dplyr::pull()
+    
+    message(paste0("The following sillys were missing data for one or more loci: ", paste0(n_missing, collapse = ", ")))
+    
+    message(paste0("A table of loci missing data for each *.gcl object can be found here: ", paste0(getwd(), "/LOKI2R_missing_loci.csv")))
+    
+    readr::write_csv(missing_loci, path = "LOKI2R_missing_loci.csv")
+    
+    return(missing_loci)
+    
+  } else{ 
+    
+    return("The *.gcl objects created have data for all loci in LocusControl")
+    
+    }
+   
   stop.time <- Sys.time()
   
   fulltime <- stop.time - start.time
   
   print(fulltime) 
-  
-  return(fulltime)
   
 }
