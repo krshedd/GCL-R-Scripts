@@ -29,8 +29,9 @@ RemoveNAindv.GCL <- function(sillyvec) {
   
   if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse) #Install packages, if not in library and then load them.
   
-  scores_cols <- with(LocusControl, c(locusnames, paste0(LocusControl$locusnames, ".1"))) %>% sort()
-
+  scores_cols <- with(LocusControl, c(locusnames, paste0(LocusControl$locusnames, ".1"))) %>% 
+    sort()
+  
   na.individuals.removed <- lapply(sillyvec, function(silly) {
     
     my.gcl <- get(paste(silly, ".gcl", sep = ""))
@@ -41,12 +42,17 @@ RemoveNAindv.GCL <- function(sillyvec) {
       
     })]
     
-    assign(x = paste0(silly, ".gcl"), value = my.gcl %>% 
-      filter(!FK_FISH_ID%in%drop), pos = -1, envir = .GlobalEnv) 
+    assign(
+      x = paste0(silly, ".gcl"),
+      value = my.gcl %>%
+        filter(!FK_FISH_ID %in% drop),
+      pos = -1,
+      envir = .GlobalEnv
+    )
     
     tibble::tibble(SILLY_CODE = silly, IDs_Removed = drop)
     
-  }) %>% 
+  }) %>%
     dplyr::bind_rows()
   
   return(na.individuals.removed)
