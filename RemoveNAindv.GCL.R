@@ -29,8 +29,7 @@ RemoveNAindv.GCL <- function(sillyvec) {
   
   if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse) #Install packages, if not in library and then load them.
   
-  scores_cols <- with(LocusControl, c(locusnames, paste0(LocusControl$locusnames, ".1"))) %>% 
-    sort()
+  scores_cols <- LocusControl$locusnames
   
   na.individuals.removed <- lapply(sillyvec, function(silly) {
     
