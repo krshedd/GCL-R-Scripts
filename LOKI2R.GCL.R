@@ -50,7 +50,7 @@ LOKI2R.GCL <- function(sillyvec, username, password){
   #
   #   CreateLocusControl.GCL(markersuite = "UCI_Chinook_GTSeq_557SNPs", username = "awbarclay", password = password)
   # 
-  #   missing_data <- LOKI2R.GCL(sillyvec = c("KCURRY13", "KDEEP10", "CHDEC912", "KCHICK10", "KALEX16")[1], username = "awbarclay", password = password)
+  #   LOKI2R.GCL(sillyvec = c("KCURRY13", "KDEEP10", "CHDEC912", "KCHICK10", "KALEX16"), username = "awbarclay", password = password)
   #
   # Note~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #
@@ -74,13 +74,13 @@ LOKI2R.GCL <- function(sillyvec, username, password){
     
     dir.create(dir)
     
-    bool <- file.copy(from="V:/Analysis/R files/OJDBC_Jar/ojdbc8.jar",to=path.expand("~/R/ojdbc8.jar"))
+    bool <- file.copy(from = "V:/Analysis/R files/OJDBC_Jar/ojdbc8.jar", to = path.expand("~/R/ojdbc8.jar"))
     
   } else {
     
     if(!file.exists(path.expand("~/R/ojdbc8.jar"))){
       
-      bool <- file.copy(from="V:/Analysis/R files/OJDBC_Jar/ojdbc8.jar",to=path.expand("~/R/ojdbc8.jar"))
+      bool <- file.copy(from = "V:/Analysis/R files/OJDBC_Jar/ojdbc8.jar", to = path.expand("~/R/ojdbc8.jar"))
       
     }
     
@@ -96,7 +96,7 @@ LOKI2R.GCL <- function(sillyvec, username, password){
     
   } else {
     
-    drv <- RJDBC::JDBC("oracle.jdbc.OracleDriver", classPath=path.expand("~/R/ojdbc8.jar"), " ")
+    drv <- RJDBC::JDBC("oracle.jdbc.OracleDriver", classPath = path.expand("~/R/ojdbc8.jar"), " ")
     
   }
   
@@ -132,14 +132,40 @@ LOKI2R.GCL <- function(sillyvec, username, password){
   
   discon <- RJDBC::dbDisconnect(con)
   
+  # what sillys have no data for any of these loci?
   missing_sillys <- setdiff(sillyvec, dataAll$SILLY_CODE %>% unique()) #Find which sillys had no data for any loci in LocusControl
   
-  #Create tibble data fame for each silly in dataAll
+  # what indvs are missing loci from LocusControl (i.e. no genotyping attempted)?
+  missing_indvs <- dataAll %>% 
+    dplyr::count(SILLY_CODE, FISH_ID) %>% 
+    dplyr::filter(n < nloci)
+  
+  # what loci are these indvs missing?
+  missing_indvs_loci <- dataAll %>% 
+    dplyr::distinct(SILLY_CODE, FISH_ID) %>% 
+    tibble::add_column(!!!purrr::set_names(x = rep(NA_real_, nloci), nm = loci)) %>% 
+    tidyr::gather(LOCUS, na, -SILLY_CODE, -FISH_ID) %>% 
+    dplyr::select(-na) %>% 
+    dplyr::anti_join(dplyr::select(.data = dataAll, SILLY_CODE, FISH_ID, LOCUS), by = c("SILLY_CODE", "FISH_ID", "LOCUS")) %>% 
+    tidyr::nest(missing_loci = LOCUS) %>% 
+    dplyr::right_join(missing_indvs, by = c("SILLY_CODE", "FISH_ID")) %>% 
+    dplyr::rename(n_loci_genotyped = n)
+  
+  # filter out individuals missing loci, replace no calls (0's) with NA
+  dataAll <- dataAll %>% 
+    dplyr::anti_join(dplyr::select(.data = missing_indvs, SILLY_CODE, FISH_ID), by = c("SILLY_CODE", "FISH_ID")) %>% 
+    dplyr::mutate(ALLELE_1 = dplyr::na_if(ALLELE_1, "0"),
+                  ALLELE_2 = dplyr::na_if(ALLELE_2, "0"))
+  
+  # what sillys have complete data?
   dataAll_sillys <- dataAll$SILLY_CODE %>% 
     unique() %>% 
     sort()
   
-  missing_loci <- lapply(dataAll_sillys, function(silly){ 
+  # did all indvs from a silly get dropped?
+  missing_sillys_indv <- setdiff(setdiff(sillyvec, missing_sillys), dataAll_sillys)
+  
+  lapply(dataAll_sillys, function(silly){ 
     
     message0 <- paste0(silly, ".gcl created ", match(silly, dataAll_sillys)," of ", length(dataAll_sillys)," completed.") 
     
@@ -200,29 +226,34 @@ LOKI2R.GCL <- function(sillyvec, username, password){
     
     assign(paste0(silly, ".gcl"), silly_df, pos = 1, .GlobalEnv)
     
-    tibble::tibble(silly = silly, missing_loci = setdiff(loci, sillydata$LOCUS %>% unique()))
-    
-  }) %>% 
-    dplyr::bind_rows()  # silly
+  })
   
   if(length(missing_sillys) >= 1){
     
-    warning(paste0("The following sillys had no data in LOKI for the loci in LocusControl: ", paste0(missing_sillys, collapse = ", ")), call. = FALSE)
+    warning(paste0("The following sillys had no data in LOKI for any of the loci in LocusControl:\n", paste0(missing_sillys, collapse = "\n")), call. = FALSE)
     
   }
   
-  if(nrow(missing_loci) >= 1){
+  if(length(missing_sillys_indv) >= 1){
     
-    n_missing <- missing_loci %>% 
-      dplyr::count(silly) %>% 
-      dplyr::mutate(silly_n_miss = paste0(silly, " (missing = ", n, ")")) %>% 
+    warning(paste0("The following sillys had no individuals with complete data in LOKI for the loci in LocusControl:\n", paste0(missing_sillys_indv, collapse = "\n")), call. = FALSE)
+    
+  }
+  
+  if(nrow(missing_indvs_loci) >= 1){
+    
+    n_missing <- missing_indvs_loci %>% 
+      dplyr::mutate(n_loci_missing = nloci - n_loci_genotyped) %>% 
+      dplyr::count(SILLY_CODE, n_loci_missing) %>%
+      dplyr::rename(n_indv = n) %>% 
+      dplyr::mutate(silly_n_miss = paste0(SILLY_CODE, " (", n_indv, " individuals missing ", n_loci_missing, " loci)")) %>% 
       dplyr::pull(silly_n_miss)
     
-    warning(paste0("The following sillys were missing data for one or more loci:\n", paste(n_missing, collapse = "\n")), call. = FALSE)
+    warning(paste0("The following sillys had individuals that were missing data for one or more loci:\n", paste(n_missing, collapse = "\n")), call. = FALSE)
     
-    warning(paste0("A table of loci missing data for each *.gcl object has been assigned to the object 'sillys_missing_loci'"), call. = FALSE)
+    warning(paste0("A table of loci missing data for each individual has been assigned to the object 'missing_indvs_loci'"), call. = FALSE)
     
-    assign(x = "sillys_missing_loci", value = missing_loci, pos = 1, .GlobalEnv)
+    assign(x = "missing_indvs_loci", value = missing_indvs_loci, pos = 1, .GlobalEnv)
     
   } else { 
     
