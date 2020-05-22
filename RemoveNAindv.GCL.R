@@ -34,7 +34,7 @@ RemoveNAindv.GCL <- function(sillyvec) {
   
   na.individuals.removed <- lapply(sillyvec, function(silly) {
     
-    my.gcl <- get(paste(silly, ".gcl", sep = ""))
+    my.gcl <- get(paste0(silly, ".gcl"))
     
     drop <- my.gcl$FK_FISH_ID[apply(my.gcl[ , scores_cols], 1, function(ind) {
       
