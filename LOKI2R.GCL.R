@@ -192,7 +192,7 @@ LOKI2R.GCL <- function(sillyvec, username, password){
         DNA_TRAY_WELL_POS,
         CONTAINER_ARRAY_TYPE_ID,
         SillySource,
-        all_of(names(silly_df_cols))
+        tidyselect::all_of(names(silly_df_cols))
       ) %>%
       dplyr::arrange(FK_FISH_ID)
     
@@ -203,41 +203,37 @@ LOKI2R.GCL <- function(sillyvec, username, password){
     tibble::tibble(silly = silly, missing_loci = setdiff(loci, sillydata$LOCUS %>% unique()))
     
   }) %>% 
-    dplyr::bind_rows()# silly
+    dplyr::bind_rows()  # silly
   
-  if(length(missing_sillys)>=1){
+  if(length(missing_sillys) >= 1){
     
-    message(paste0("The following sillys had no data in LOKI for the loci in LocusControl: ", paste0(missing_sillys, collapse = ", ")))
+    warning(paste0("The following sillys had no data in LOKI for the loci in LocusControl: ", paste0(missing_sillys, collapse = ", ")), call. = FALSE)
     
-    }
+  }
   
-  if(nrow(missing_loci)>=1){
+  if(nrow(missing_loci) >= 1){
     
     n_missing <- missing_loci %>% 
-      dplyr::group_by(silly) %>% 
-      dplyr::summarize(n_miss = length(missing_loci) %>% as.character()) %>% 
-      tidyr::unite(col = silly_n_miss, silly, n_miss, sep = "(missing=") %>% 
-      dplyr::mutate(silly_n_miss = paste0(silly_n_miss, ")")) %>% 
-      dplyr::pull()
+      dplyr::count(silly) %>% 
+      dplyr::mutate(silly_n_miss = paste0(silly, " (missing = ", n, ")")) %>% 
+      dplyr::pull(silly_n_miss)
     
-    message(paste0("The following sillys were missing data for one or more loci: ", paste0(n_missing, collapse = ", ")))
+    warning(paste0("The following sillys were missing data for one or more loci:\n", paste(n_missing, collapse = "\n")), call. = FALSE)
     
-    message(paste0("A table of loci missing data for each *.gcl object can be found here: ", paste0(getwd(), "/LOKI2R_missing_loci.csv")))
+    warning(paste0("A table of loci missing data for each *.gcl object has been assigned to the object 'sillys_missing_loci'"), call. = FALSE)
     
-    readr::write_csv(missing_loci, path = "LOKI2R_missing_loci.csv")
+    assign(x = "sillys_missing_loci", value = missing_loci, pos = 1, .GlobalEnv)
     
-    return(missing_loci)
+  } else { 
     
-  } else{ 
+    print("The *.gcl objects created have data for all loci in LocusControl")
     
-    return("The *.gcl objects created have data for all loci in LocusControl")
-    
-    }
-   
+  }
+  
   stop.time <- Sys.time()
   
   fulltime <- stop.time - start.time
   
-  print(fulltime) 
+  print(fulltime)
   
 }
