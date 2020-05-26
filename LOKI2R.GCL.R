@@ -143,13 +143,16 @@ LOKI2R.GCL <- function(sillyvec, username, password){
   # what loci are these indvs missing?
   missing_indvs_loci <- dataAll %>% 
     dplyr::distinct(SILLY_CODE, FISH_ID) %>% 
+    tidyr::unite(col = "SillySource", c("SILLY_CODE", "FISH_ID"), sep = "_", remove = FALSE) %>% 
     tibble::add_column(!!!purrr::set_names(x = rep(NA_real_, nloci), nm = loci)) %>% 
-    tidyr::gather(LOCUS, na, -SILLY_CODE, -FISH_ID) %>% 
+    tidyr::gather(LOCUS, na, -SILLY_CODE, -FISH_ID, -SillySource) %>% 
     dplyr::select(-na) %>% 
     dplyr::anti_join(dplyr::select(.data = dataAll, SILLY_CODE, FISH_ID, LOCUS), by = c("SILLY_CODE", "FISH_ID", "LOCUS")) %>% 
     tidyr::nest(missing_loci = LOCUS) %>% 
     dplyr::right_join(missing_indvs, by = c("SILLY_CODE", "FISH_ID")) %>% 
     dplyr::rename(n_loci_genotyped = n)
+  
+  names(missing_indvs_loci$missing_loci) <- missing_indvs_loci$SillySource
   
   # filter out individuals missing loci, replace no calls (0's) with NA
   dataAll <- dataAll %>% 
