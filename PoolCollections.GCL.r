@@ -34,65 +34,63 @@ PoolCollections.GCL <- function(collections, loci = LocusControl$locusnames, IDs
     
   }
   
-  if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse) #Install packages, if not in library and then load them.
-
+  if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse)  # Install packages, if not in library and then load them.
+  
   if(nchar(newname)>200){
     
     newname <- substr(newname, start = 1, stop = 200)
     
-    }
-
-  if(sum(is.na(match(loci,LocusControl$locusnames)))){
+  }
+  
+  if(!all(loci %in% LocusControl$locusnames)){
     
-    stop(paste("'", loci[is.na(match(loci,LocusControl$locusnames))], "' from argument 'loci' not found in 'LocusControl' object!!!", sep = ""))
+    stop(paste0("The following `loci` were not found in `LocusControl`:\n", paste(setdiff(loci,LocusControl$locusnames), collapse = "\n")))
     
-    }
-
+  }
+  
   ncollections <- length(collections)
-
+  
   if(is.null(IDs)){
     
-    IDs <- lapply(collections, function(collection){
+    IDs <- sapply(collections, function(collection){
       
       get(paste0(collection, ".gcl"), pos = 1)$FK_FISH_ID
       
-      }) 
+    }, simplify = FALSE) 
     
-    }
-
+  }
+  
   if(!is.list(IDs)){
     
     stop("'IDs' must be a list")
     
-    }
-
-  if(ncollections!=length(IDs)){
+  }
+  
+  if(ncollections != length(IDs)){
     
     stop("'IDs' must be same length as 'collections'")
     
-    }
-
-  IDs <- purrr::set_names(IDs, collections) #Making sure IDs has names
+  }
   
-  SubsetLoci <- c(loci, paste0(loci, ".1")) %>% sort()#These are the locus score headers for subsetting by loci.
+  IDs <- purrr::set_names(IDs, collections)  # Making sure IDs has names
+  
+  SubsetLoci <- c(loci, paste0(loci, ".1")) %>% sort()  # These are the locus score headers for subsetting by loci.
   
   output <- lapply(collections, function(collection){
     
     my.gcl <- get(paste0(collection, ".gcl"), pos = 1)
     
     attr <- my.gcl[ , 1:19] %>% 
-      names() #The attribute names
+      names()  # The attribute names
     
     my.gcl %>% 
-      dplyr::filter(FK_FISH_ID%in%IDs[[collection]]) %>% 
+      dplyr::filter(FK_FISH_ID %in% IDs[[collection]]) %>% 
       dplyr::select(attr, SubsetLoci)
     
   }) %>% 
     dplyr::bind_rows() %>% 
     dplyr::mutate(FK_FISH_ID = seq(length(unlist(IDs))))
-    
-  assign(paste(newname,".gcl",sep=""), output, pos=1, envir = .GlobalEnv)  
-
-  return(NULL)
+  
+  assign(paste0(newname, ".gcl"), output, pos = 1, envir = .GlobalEnv)  
   
 }
