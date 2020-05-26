@@ -1,4 +1,4 @@
-RemoveIndMissLoci.GCL <- function(sillyvec, loci = NULL, proportion = 0.8){
+RemoveIndMissLoci.GCL <- function(sillyvec, loci = LocusControl$locusnames, proportion = 0.8){
   
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #   This function removes individuals from "*.gcl" objects that have fewer non-missing loci than that specified by "proportion".
@@ -21,11 +21,6 @@ RemoveIndMissLoci.GCL <- function(sillyvec, loci = NULL, proportion = 0.8){
   # 
   #   missloci_ind <- RemoveIndMissLoci.GCL(sillyvec = sillyvec157, proportion = 0.8)
   #
-  # Note~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  #
-  # This function only removes individuals for failed scores (zero scores), not unanalyzed loci (NAs).
-  # Therefore, individuals with a lot of NAs will not be removed. Use RemoveNAindv.GCL to remove individuals with NAs for all loci.
-  #
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
   if(!exists("LocusControl")){
@@ -36,29 +31,24 @@ RemoveIndMissLoci.GCL <- function(sillyvec, loci = NULL, proportion = 0.8){
   
   if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse) #Install packages, if not in library and then load them.
   
-  if(is.null(loci)){
+  if(!all(loci %in% LocusControl$locusnames)){
     
-    loci <- LocusControl$locusnames #Use all loci if loci argument set to NULL.
+    stop(paste0("The following `loci` were not found in `LocusControl`:\n", paste(setdiff(loci,LocusControl$locusnames), collapse = "\n")))
     
   }
   
-  if(!length(loci)==sum(loci%in%LocusControl$locusnames)){
-    
-   stop("The following loci are not in LocusControl-", paste0(loci[- na.omit(match(LocusControl$locusnames, loci))], collapse = " ,")) #Making sure loci are spelled correctly.
-    
-  }
+  nloci = length(loci)
   
   output <- lapply(sillyvec, function(silly){
     
     my.gcl <- get(paste0(silly, ".gcl"), pos = 1)
     
     tmp <- my.gcl %>% 
-      dplyr::select(tidyselect::all_of(loci)) 
+      dplyr::select(tidyselect::all_of(loci))  # subset for allele 1 of loci, because allele 2 defaults to NA for haploid
     
     IDsToRemove <- my.gcl %>% 
-      dplyr::mutate(nloci = rowSums(!is.na(tmp)), nmissing = rowSums(tmp == "0")) %>% 
-      dplyr::mutate(prop_loci = 1-(nmissing/nloci)) %>% 
-      dplyr::select(prop_loci, tidyselect::everything()) %>% 
+      dplyr::mutate(n_missing = rowSums(is.na(tmp))) %>% 
+      dplyr::mutate(prop_loci = 1 - (n_missing/nloci)) %>% 
       dplyr::filter(prop_loci <= proportion) %>% 
       dplyr::pull(FK_FISH_ID)
     
@@ -69,16 +59,16 @@ RemoveIndMissLoci.GCL <- function(sillyvec, loci = NULL, proportion = 0.8){
   }) %>% 
     dplyr::bind_rows()
   
- if(dim(output)[1]==0){
-   
-  message("No individuals were removed")
-   
- } else{
-   
-   message(paste0("A total of ", dim(output)[1]), " individuals were removed from sillys in sillyvec.")
-   
- }
-
+  if(dim(output)[1] == 0){
+    
+    message("No individuals were removed")
+    
+  } else {
+    
+    message(paste0("A total of ", dim(output)[1]), " individuals were removed from sillys in sillyvec.")
+    
+  }
+  
   return(output)
-
+  
 }
