@@ -9,7 +9,7 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci = LocusControl$locusnames, qu
   #
   #   loci - vector of locus names; if set to NULL all loci in the ".gcl" obejects will be used.
   #
-  #   quantile and minproportion - these arguments are used together to determine the cut-off proportion at which a pair of duplicates 
+  #   quantile - this argument along with minproportion are used together to determine the cut-off proportion at which a pair of duplicates 
   #                                is defined: i.e. proportion = max(quantile(duplication, quantile), minproportion. 
   #                                Setting "quantile" equal to NULL will skip the calculation of the duplication distribution and will run much faster
   #
