@@ -23,10 +23,16 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci = LocusControl$locusnames, qu
   #    When quantile is set to NULL, returns a tibble of duplicate pairs of individuals by silly.
   #    When quantile is a number, a list containing a tibble of duplicate pairs of individuals by silly and tibble the porportion of duplication for each pair of individuals.
   #
-  # Example~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  #   load("V:/Analysis/2_Central/Chinook/Cook Inlet/2019/2019_UCI_Chinook_baseline_hap_data/2019_UCI_Chinook_baseline_hap_data.RData")
-  # 
-  #   dupcheck <- CheckDupWithinSilly.GCL(sillyvec = sillyvec157, loci = loci557, quantile = 0.99, proportion = 0.95, ncores = 4)
+  # Examples~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #  CreateLocusControl.GCL(markersuite = "Sockeye2011_96SNPs", username = "awbarclay", password = password)
+  #  sillyvec = c("SMCDO03", "SNEVA13")
+  #  password = "************"
+  #  LOKI2R.GCL(sillyvec = sillyvec, username = "awbarclay", password = password)
+  #  RemoveIndMissLoci.GCL(sillyvec = sillyvec)
+  #
+  #  dupcheck <- CheckDupWithinSilly.GCL(sillyvec = sillyvec, loci = LocusControl$locusnames, quantile = 0.99, minproportion = 0.95, ncores = 8)
+  #  dupcheckNULLQantile <- CheckDupWithinSilly.GCL(sillyvec = sillyvec, loci = LocusControl$locusnames, quantile = NULL, minproportion = 0.95, ncores = 8)
+  #
   #
   # Note~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #   When quantile is set to NULL this function utilizes rubias::close_matching_samples() to perform the duplicate check and it much faster than when you set a quantile.
