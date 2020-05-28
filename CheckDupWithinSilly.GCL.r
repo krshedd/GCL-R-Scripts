@@ -1,4 +1,4 @@
-CheckDupWithinSilly.GCL <- function(sillyvec, loci = LocusControl$locusnames, quantile = 0.99, minproportion = 0.95, ncores = 8){
+CheckDupWithinSilly.GCL <- function(sillyvec, loci = LocusControl$locusnames, quantile = 0.99, minnonmissing = 0.6, proportion = 0.99, ncores = 8){
   
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #   This function checks for duplicate individuals within each silly in "sillyvec".
@@ -20,7 +20,7 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci = LocusControl$locusnames, qu
   # Example~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #   load("V:/Analysis/2_Central/Chinook/Cook Inlet/2019/2019_UCI_Chinook_baseline_hap_data/2019_UCI_Chinook_baseline_hap_data.RData")
   # 
-  #   dupcheck <- CheckDupWithinSilly.GCL(sillyvec = sillyvec157, loci = loci557, quantile = 0.99, minproportion = 0.95, ncores = 4)
+  #   dupcheck <- CheckDupWithinSilly.GCL(sillyvec = sillyvec157, loci = loci557, quantile = 0.99, proportion = 0.95, ncores = 4)
   #
   # Note~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #   Sillys without duplicates will be included in the output report but will have NAs for IDs1, IDs2, Missing1, Missing2, and proportion
@@ -34,7 +34,7 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci = LocusControl$locusnames, qu
     
   }
   
-  if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse, doParallel, parallel, foreach)  # Install packages, if not in library and then load them.
+  if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse, doParallel, parallel, foreach, rubias)  # Install packages, if not in library and then load them.
   
   
   if(ncores > detectCores()) {
@@ -48,120 +48,81 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci = LocusControl$locusnames, qu
   scores_cols <- c(loci, paste0(loci, ".1")) %>% 
     sort()
   
-  my.gcl <- sapply(sillyvec, function(silly){
+  sillyvec_new <- silly_n.GCL(sillyvec) %>% 
+    filter(n > 1) %>% 
+    pull(silly)#Removing single individual collections from sillyvec.
+  
+  my.gcl <- sapply(sillyvec_new, function(silly){
     
     get(paste(silly, ".gcl", sep=""), pos = 1)
     
-  }, simplify = FALSE)
+  }, simplify = FALSE) 
   
   # Start if NULL quantile
   if(is.null(quantile)){
     
+    ##Loop through sillys
     cl <- parallel::makePSOCKcluster(ncores)
     
     doParallel::registerDoParallel(cl, cores = ncores)  
     
-    # multicore loop
-    
-    dupcheck <- foreach::foreach(silly = sillyvec, .packages = "tidyverse") %dopar% {
+    dupcheck0 <- foreach::foreach(silly = sillyvec_new, .packages = c("tidyverse","rubias")) %dopar% {
       
-      new.gcl <- my.gcl[[silly]]
+      new.gcl <- my.gcl[[silly]] %>% 
+        dplyr::mutate(sample_type = "reference", repunit = NA_character_, collection = SILLY_CODE, indiv = SillySource) %>% 
+        dplyr::select(sample_type, repunit, collection, indiv, tidyselect::all_of(scores_cols))
       
-      IDs <- new.gcl$FK_FISH_ID
-      
-      n <- dim(new.gcl)[1]
-      
-      nloci <- length(loci)
-      
-      # Combine allele 1 and 2 into single columns for each locus separated by a period.
-      scores0 <- new.gcl[ , c("FK_FISH_ID", scores_cols)] 
-      
-      if(n < 2){
-        
-        report <- tibble::tibble(silly = silly, ID1 = NA, ID2 = NA, Missing1 = NA, Missing2 = NA, proportion = NA) #If only one individual the results will be a tibble of NAs. Can't do next() using applys
-        
-      } else {
-        
-        scores0_allele_1 <- scores0 %>% 
-          dplyr::select(FK_FISH_ID, !!!loci) %>% 
-          tidyr::gather(locus, allele_1, -FK_FISH_ID)
-        
-        scores0_allele_2 <- scores0 %>% 
-          dplyr::select(FK_FISH_ID, !!!paste0(loci, ".1")) %>% 
-          tidyr::gather(locus, allele_2, -FK_FISH_ID) %>% 
-          dplyr::mutate(locus = stringr::str_remove(string = locus, pattern = "\\.1"))
-        
-        scores1 <- dplyr::left_join(x = scores0_allele_1, y = scores0_allele_2, by = c("FK_FISH_ID", "locus")) %>% 
-          tidyr::unite(col = "genotype", c("allele_1", "allele_2"), sep = ".") %>% 
-          dplyr::mutate(genotype = dplyr::na_if(genotype, "NA.NA")) %>% 
-          tidyr::spread(locus, genotype)
-        
-        sort.scores.df <- scores1 %>% 
-          dplyr::arrange_if(purrr::is_character) %>% 
-          tibble::column_to_rownames("FK_FISH_ID")
-        
-        sortIDs <- dimnames(sort.scores.df)[[1]]
-        
-        # Calculate the porpotion of duplicated loci for each silly
-        duplication <- t(sapply(1:(n-1), function(id){ 
-          
-          vec <- unlist(sort.scores.df[id, loci]) == unlist(sort.scores.df[id+1, loci])
-          
-          ifelse(sum(!is.na(vec)), sum(vec[!is.na(vec)]) / sum(!is.na(vec)), 0)
-          
-        }))
-        
-        dupIND <- as.vector(duplication > minproportion)
-        
-        if(sum(dupIND)){
-          
-          dups <- sapply(which(dupIND), function(id) {
-            sortIDs_numeric <- as.numeric(sortIDs)
-            c("ID1" = as.character(pmin(sortIDs_numeric[id], sortIDs_numeric[id + 1])), 
-              "ID2" = as.character(pmax(sortIDs_numeric[id], sortIDs_numeric[id + 1])))
-          }) %>% 
-            t()
-          
-          missing <- t(sapply(1:nrow(dups), function(dup){
-            
-            vec <- match(dups[dup, ], sortIDs)
-            
-            c("Missing1" = sum(is.na(sort.scores.df[vec[1], ])), 
-              "Missing2" = sum(is.na(sort.scores.df[vec[2], ])))
-            
-          }, simplify = TRUE))
-          
-          report <- dplyr::bind_cols(dplyr::as_tibble(dups), 
-                                     dplyr::as_tibble(missing), 
-                                     proportion = duplication[dupIND]) %>% 
-            dplyr::mutate(silly = silly) %>% 
-            dplyr::select(silly, tidyr::everything()) %>% 
-            dplyr::mutate(ID1_numeric = as.numeric(ID1)) %>% 
-            dplyr::arrange(ID1_numeric) %>% 
-            dplyr::select(-ID1_numeric)
-          
-        }
-        
-        if(!sum(dupIND)){
-          
-          report <- tibble::tibble(silly = silly, ID1 = NA, ID2 = NA, Missing1 = NA, Missing2 = NA, proportion = NA) 
-          
-        }
-        
-      }
-      
-      report
-      
-    }  # End multicore loop
+       rubias::close_matching_samples(D = new.gcl, gen_start_col = 5, min_frac_non_miss = minnonmissing, min_frac_matching = proportion)
+       
+       } %>% bind_rows()# End multicore loop
     
     parallel::stopCluster(cl)
     
-    output <- dupcheck %>% 
-      dplyr::bind_rows()
+    dupcheck <- dupcheck0 %>% 
+      tidyr::separate(indiv_1, into = c(NA, "ID1")) %>% 
+      tidyr::separate(indiv_2, into = c(NA, "ID2")) %>% 
+      dplyr::mutate(silly = collection_1, proportion = num_match/num_non_miss) %>% 
+      dplyr::select(silly, ID1, ID2, proportion)
+    
+    #Calculate the proportion of missing scores for ID1 and ID2 and create the output report.
+    
+    report <- lapply(report$silly %>% unique(), function(silly){
+      
+     new.gcl <- my.gcl[[silly]]
+     
+     dups <- report %>% 
+       dplyr::filter(silly==!!silly) %>% 
+       dplyr::mutate(order = seq(length(silly)))
+      
+     ID1 <- new.gcl %>% 
+       dplyr::mutate(ID1 = as.character(FK_FISH_ID)) %>% 
+       dplyr::filter(ID1%in%dups$ID1) %>% 
+       dplyr::select(ID1, tidyselect::all_of(loci)) %>% 
+       tidyr::gather(-ID1, key = "Locus", value = "allele") %>% 
+       dplyr::group_by(ID1) %>% 
+       dplyr::summarize(Missing1 = sum(is.na(allele))/nloci) %>% 
+       dplyr::left_join(dups, by = "ID1")%>% 
+       dplyr::arrange(order)
+     
+     ID2 <- new.gcl %>% 
+       dplyr::mutate(ID2 = as.character(FK_FISH_ID)) %>% 
+       dplyr::filter(ID2%in%dups$ID2) %>% 
+       dplyr::select(ID2, tidyselect::all_of(loci)) %>% 
+       tidyr::gather(-ID2, key = "Locus", value = "allele") %>% 
+       dplyr::group_by(ID2) %>% 
+       dplyr::summarize(Missing2 = sum(is.na(allele))/nloci) %>% 
+       dplyr::left_join(dups, by = "ID2") %>% 
+       dplyr::arrange(order)
+     
+     bind_cols(ID1, ID2) %>% 
+       dplyr::mutate(silly = !!silly) %>% 
+       dplyr::select(silly, ID1, ID2, Missing1, Missing2, proportion)
+
+    }) %>%  bind_rows()  
     
     print(Sys.time()-start.time)
     
-    return(output)
+    return(report)
     
   }  # End if NULL quantile
   
