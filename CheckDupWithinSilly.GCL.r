@@ -1,4 +1,4 @@
-CheckDupWithinSilly.GCL <- function(sillyvec, loci = LocusControl$locusnames, quantile = 0.99, minnonmissing = 0.6, proportion = 0.99, ncores = 8){
+CheckDupWithinSilly.GCL <- function(sillyvec, loci = LocusControl$locusnames, quantile = 0.99, minnonmissing = 0.6, minproportion = 0.99, ncores = 4){
   
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #   This function checks for duplicate individuals within each silly in "sillyvec".
@@ -12,6 +12,12 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci = LocusControl$locusnames, qu
   #   quantile and minproportion - these arguments are used together to determine the cut-off proportion at which a pair of duplicates 
   #                                is defined: i.e. proportion = max(quantile(duplication, quantile), minproportion. 
   #                                Setting "quantile" equal to NULL will skip the calculation of the duplication distribution and will run much faster
+  #
+  #   minnonmissing - the proportion of loci that a pair must share non missing in order to be reported
+  #
+  #   minproportion - the proportion of shared non-missing loci that must be shared between the indivdiuals to be reported as a matching pair. 
+  #
+  #   ncores - the number of cores to use in a foreach %dopar% loop. If the nubmer of core exceeds the number on your device, then ncores defaults to detectCores()
   # 
   # Outputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #    When quantile is set to NULL, returns a tibble of duplicate pairs of individuals by silly.
@@ -23,7 +29,7 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci = LocusControl$locusnames, qu
   #   dupcheck <- CheckDupWithinSilly.GCL(sillyvec = sillyvec157, loci = loci557, quantile = 0.99, proportion = 0.95, ncores = 4)
   #
   # Note~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  #   Sillys without duplicates will be included in the output report but will have NAs for IDs1, IDs2, Missing1, Missing2, and proportion
+  #   When quantile is set to NULL this function utilizes rubias::close_matching_samples() to perform the duplicate check and it much faster than when you set a quantile.
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
   start.time <- Sys.time() 
@@ -66,13 +72,13 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci = LocusControl$locusnames, qu
     
     doParallel::registerDoParallel(cl, cores = ncores)  
     
-    dupcheck0 <- foreach::foreach(silly = sillyvec_new, .packages = c("tidyverse","rubias")) %dopar% {
+    dupcheck0 <- foreach::foreach(silly = sillyvec_new, .export = c("loci"),.packages = c("tidyverse","rubias")) %dopar% {
       
       new.gcl <- my.gcl[[silly]] %>% 
         dplyr::mutate(sample_type = "reference", repunit = NA_character_, collection = SILLY_CODE, indiv = SillySource) %>% 
         dplyr::select(sample_type, repunit, collection, indiv, tidyselect::all_of(scores_cols))
       
-       rubias::close_matching_samples(D = new.gcl, gen_start_col = 5, min_frac_non_miss = minnonmissing, min_frac_matching = proportion)
+       rubias::close_matching_samples(D = new.gcl, gen_start_col = 5, min_frac_non_miss = minnonmissing, min_frac_matching = minproportion)
        
        } %>% bind_rows()# End multicore loop
     
@@ -86,11 +92,11 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci = LocusControl$locusnames, qu
     
     #Calculate the proportion of missing scores for ID1 and ID2 and create the output report.
     
-    report <- lapply(report$silly %>% unique(), function(silly){
+    report <- lapply(dupcheck$silly %>% unique(), function(silly){
       
      new.gcl <- my.gcl[[silly]]
      
-     dups <- report %>% 
+     dups <- dupcheck %>% 
        dplyr::filter(silly==!!silly) %>% 
        dplyr::mutate(order = seq(length(silly)))
       
@@ -100,7 +106,7 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci = LocusControl$locusnames, qu
        dplyr::select(ID1, tidyselect::all_of(loci)) %>% 
        tidyr::gather(-ID1, key = "Locus", value = "allele") %>% 
        dplyr::group_by(ID1) %>% 
-       dplyr::summarize(Missing1 = sum(is.na(allele))/nloci) %>% 
+       dplyr::summarize(Missing1 = sum(is.na(allele))) %>% 
        dplyr::left_join(dups, by = "ID1")%>% 
        dplyr::arrange(order)
      
@@ -110,7 +116,7 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci = LocusControl$locusnames, qu
        dplyr::select(ID2, tidyselect::all_of(loci)) %>% 
        tidyr::gather(-ID2, key = "Locus", value = "allele") %>% 
        dplyr::group_by(ID2) %>% 
-       dplyr::summarize(Missing2 = sum(is.na(allele))/nloci) %>% 
+       dplyr::summarize(Missing2 = sum(is.na(allele))) %>% 
        dplyr::left_join(dups, by = "ID2") %>% 
        dplyr::arrange(order)
      
