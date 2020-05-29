@@ -66,7 +66,18 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci = LocusControl$locusnames, qu
   
   my.gcl <- sapply(sillyvec_new, function(silly){
     
-    get(paste(silly, ".gcl", sep=""), pos = 1)
+    gcl = get(paste(silly, ".gcl", sep=""), pos = 1)
+    
+    maxna <- apply(is.na(gcl %>% select(scores_cols)), 1, sum) %>% 
+      max()
+    
+    if(maxna==2*nloci){
+      
+      stop(paste0("Some of the individuals in sillyvec have no data for all loci. Run RemoveIndMissLoci.GCL(sillyvec, loci) prior to checking for duplicate individuals."))
+      
+    }
+    
+    gcl
     
   }, simplify = FALSE) 
   
