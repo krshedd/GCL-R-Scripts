@@ -1,4 +1,4 @@
-CheckDupWithinSilly.GCL <- function(sillyvec, loci = LocusControl$locusnames, quantile = 0.99, minnonmissing = 0.6, minproportion = 0.99, ncores = 4){
+CheckDupWithinSilly.GCL <- function(sillyvec, loci = LocusControl$locusnames, quantile = 0.99, minnonmissing = 0.6, minproportion = 0.95, ncores = 4){
   
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #   This function checks for duplicate individuals within each silly in "sillyvec".
@@ -57,6 +57,8 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci = LocusControl$locusnames, qu
   
   nloci <- length(loci)
   
+  ploidy <- LocusControl$ploidy[loci]
+  
   scores_cols <- c(loci, paste0(loci, ".1")) %>% 
     sort()
   
@@ -77,7 +79,22 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci = LocusControl$locusnames, qu
       
     }
     
-    gcl
+    #Added this if statement code for haploid markers, rubias::close_matching_samples() was counting them as missing loci because of the NAs in the allele2 column. 
+    #This can be removed Eric Anderson fixes the function. 
+    if(sum(ploidy) < nloci*2) {
+      
+      haploci <- names(ploidy[ploidy==1])
+     
+      for(locus in haploci){
+        
+        gcl[[paste0(locus, ".1")]] <- gcl[[locus]]
+        
+      }
+       
+      gcl 
+      
+    }
+    
     
   }, simplify = FALSE) 
   
@@ -89,7 +106,7 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci = LocusControl$locusnames, qu
     
     doParallel::registerDoParallel(cl, cores = ncores)  
     
-    dupcheck0 <- foreach::foreach(silly = sillyvec_new, .export = c("loci"),.packages = c("tidyverse","rubias")) %dopar% {
+    dupcheck0 <- foreach::foreach(silly = sillyvec_new, .export = c("loci"), .packages = c("tidyverse","rubias")) %dopar% {
       
       new.gcl <- my.gcl[[silly]] %>% 
         dplyr::mutate(sample_type = "reference", repunit = NA_character_, collection = SILLY_CODE, indiv = SillySource) %>% 
@@ -115,10 +132,10 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci = LocusControl$locusnames, qu
      
      dups <- dupcheck %>% 
        dplyr::filter(silly==!!silly) %>% 
-       dplyr::mutate(order = seq(length(silly)))
+       dplyr::mutate(order = seq(length(silly)), ID1 = as.numeric(ID1), ID2 = as.numeric(ID2))
       
      ID1 <- new.gcl %>% 
-       dplyr::mutate(ID1 = as.character(FK_FISH_ID)) %>% 
+       dplyr::mutate(ID1 = as.numeric(FK_FISH_ID)) %>% 
        dplyr::filter(ID1%in%dups$ID1) %>% 
        dplyr::select(ID1, tidyselect::all_of(loci)) %>% 
        tidyr::gather(-ID1, key = "Locus", value = "allele") %>% 
@@ -128,7 +145,7 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci = LocusControl$locusnames, qu
        dplyr::arrange(order)
      
      ID2 <- new.gcl %>% 
-       dplyr::mutate(ID2 = as.character(FK_FISH_ID)) %>% 
+       dplyr::mutate(ID2 = as.numeric(FK_FISH_ID)) %>% 
        dplyr::filter(ID2%in%dups$ID2) %>% 
        dplyr::select(ID2, tidyselect::all_of(loci)) %>% 
        tidyr::gather(-ID2, key = "Locus", value = "allele") %>% 
@@ -209,7 +226,7 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci = LocusControl$locusnames, qu
         
         proportion <- max(quantile(duplication, quantile), minproportion)
         
-        dupIND <- duplication > proportion
+        dupIND <- duplication >= proportion #Made this greater than or equal to so it matches the output from rubias::close_matching_samples()
         
         if(sum(dupIND)){
           
