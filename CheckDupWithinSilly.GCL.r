@@ -95,6 +95,7 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci = LocusControl$locusnames, qu
       
     }
     
+    gcl
     
   }, simplify = FALSE) 
   
