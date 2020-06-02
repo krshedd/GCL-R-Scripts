@@ -153,7 +153,7 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci = LocusControl$locusnames, qu
         dplyr::select(ID1, tidyselect::all_of(loci)) %>% 
         tidyr::gather(-ID1, key = "Locus", value = "allele") %>% 
         dplyr::group_by(ID1) %>% 
-        dplyr::summarize(Missing1 = sum(is.na(allele))) %>% 
+        dplyr::summarize(Missing1 = sum(is.na(allele)), .groups = "drop_last") %>% 
         dplyr::left_join(dups, by = "ID1")%>% 
         dplyr::arrange(order)
       
@@ -163,12 +163,11 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci = LocusControl$locusnames, qu
         dplyr::select(ID2, tidyselect::all_of(loci)) %>% 
         tidyr::gather(-ID2, key = "Locus", value = "allele") %>% 
         dplyr::group_by(ID2) %>% 
-        dplyr::summarize(Missing2 = sum(is.na(allele))) %>% 
+        dplyr::summarize(Missing2 = sum(is.na(allele)), .groups = "drop_last") %>% 
         dplyr::left_join(dups, by = "ID2") %>% 
         dplyr::arrange(order)
       
-      bind_cols(ID1, ID2) %>% 
-        dplyr::mutate(silly = !!silly) %>% 
+      full_join(ID1, ID2) %>% 
         dplyr::select(silly, ID1, ID2, Missing1, Missing2, proportion)
       
     }) %>%  dplyr::bind_rows()  
