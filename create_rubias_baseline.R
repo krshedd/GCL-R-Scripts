@@ -1,7 +1,6 @@
 create_rubias_baseline <- function(sillyvec, loci, group_names, groupvec, path = "rubias/baseline", baseline_name) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # This function creates the baseline dataframe needed for `rubias`.
-  # It reformats the "scores" from each individual in the baseline into a two column format used by `rubias`.
   #
   # Inputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #   sillyvec - character vector of populations in the baseline
@@ -18,30 +17,37 @@ create_rubias_baseline <- function(sillyvec, loci, group_names, groupvec, path =
   #     to make sure all columns are character vectors (if homozygous for T, it will become a logical vector).
   #
   # Example~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # load("V:/Analysis/4_Westward/Sockeye/Chignik Inseason 2012-2018/Baseline/2012/Chignik2012SockeyeBaseline.RData")
-  # chignik_7pops_22loci.rubias_base <- create_rubias_baseline(sillyvec = Chignik7Populations, loci = loci24, group_names = Groups, groupvec = Groupvec7, path = "rubias/baseline", baseline_name = "chignik_7pops_22loci")
+  # CreateLocusControl.GCL(markersuite = "Coho_Baseline2016_95SNPs", username = "awbarclay", password = password)
+  # dat <- readr::read_csv("V:/Analysis/2_Central/Coho/Cook Inlet/2019/2019_Cook_Inlet_coho_baseline/output/Final_Pops.csv")
+  # load("V:/Analysis/2_Central/Coho/Cook Inlet/2019/2019_Cook_Inlet_coho_baseline/2019_Cook_Inlet_coho_baseline.Rdata")
+  # sillyvec <- dat$collection
+  # old2new_gcl.GCL(sillyvec)
+  # group_names <- dat$groups_10 %>% unique()
+  # groupvec <- dat$groups_10 %>% factor(levels = group_names) %>% as.numeric()
+  # UCIcoho104pops_96loci.rubias_base <- create_rubias_baseline(sillyvec = sillyvec, loci = loci, group_names = group_names, groupvec = groupvec, path = "rubias/baseline", baseline_name = "UCIcoho104pops_96loci")
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  while(!require(tidyverse)){install.packages("tidyverse")}
   
-  if(!dir.exists(path)) {stop("`path` to save baseline does not exist, hoser!!!")}
+  if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse)  # Install packages, if not in library and then load them.
   
-  silly_base.lst <- lapply(sillyvec, function(silly) {
-    my.gcl <- get(paste0(silly, ".gcl"))
-    scores.mat <- t(apply(my.gcl$scores[, loci, ,drop=FALSE], 1, function(ind) {c(t(ind))} ))
-    colnames(scores.mat) <- as.vector(sapply(loci, function(locus) {c(locus, paste(locus, 1, sep = "."))} ))
-    scores.df <- data.frame(scores.mat, stringsAsFactors = FALSE)
-    scores.df$sample_type <- "reference"
-    scores.df$repunit <- group_names[groupvec[sillyvec == silly]]
-    scores.df$collection <- silly
-    scores.df$indiv <- as.character(my.gcl$attributes$SillySource)
-    silly_base.df <- scores.df[, c("sample_type", "repunit", "collection", "indiv", gsub(pattern = "-", replacement = ".", x = colnames(scores.mat)))] } #silly
-  )
+  if(!dir.exists(path)) {stop("`path` to save baseline does not exist!!!")}
   
-  baseline <- dplyr::bind_rows(silly_base.lst) %>% 
-    dplyr::as_tibble() %>% 
-    dplyr::na_if(0)
+  scores_cols <- c(loci, paste0(loci, ".1")) %>% 
+    sort()
+  
+  baseline <- lapply(sillyvec, function(silly){
+    
+    s <- match(silly, sillyvec)
+    
+    get(paste0(silly, ".gcl")) %>% 
+      dplyr::mutate(sample_type = "reference", repunit = group_names[groupvec[s]], collection = silly,  indiv = SillySource) %>% 
+      dplyr::select(sample_type, repunit, collection, indiv, tidyselect::all_of(scores_cols))
+    
+    }) %>% 
+    dplyr::bind_rows() %>% 
+    dplyr::na_if(0)#I think this can be removed now that we convert all zeros to NAs when using LOKI2R.GCL
   
   readr::write_csv(x = baseline, path = paste0(path, "/", baseline_name, "_base.csv"))
   
   return(baseline)
+  
 }
