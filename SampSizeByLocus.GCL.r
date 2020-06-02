@@ -1,36 +1,58 @@
-SampSizeByLocus.GCL=function(sillyvec,loci){
-##############################################################################################################################################################################
-#
-#  This function creates a data.frame of sample size by locus with nrow=length(sillyvec) and ncol=length(loci). 
-#
-#  "sillyvec" is a vector of silly names (without the ".gcl") you wish to know sample size by locus.
-# 
-#  "loci" is a vecor of locus names you want sample sizes for.
-#  
-#  Written by JJ 4/24/2011
-##############################################################################################################################################################################
-
-  if(sum(is.na(match(loci,LocusControl$locusnames)))){stop(paste("'",loci[is.na(match(loci,LocusControl$locusnames))],"' from argument 'loci' not found in 'LocusControl' object!!!",sep=""))}
-
-  nsilly=length(sillyvec)
-
-  nloci=length(loci)
-
-  nalleles=LocusControl$nalleles[loci]
-
-  ploidy=LocusControl$ploidy[loci]
-
-  results=array(NA,c(nsilly,nloci),dimnames=list(sillyvec,loci) )
-
-  for(silly in sillyvec){
-    counts=get(paste(silly,".gcl",sep=""),pos=1)$counts[, loci,, drop = FALSE]
-    n=nrow(counts)
-    if(nloci>1){   
-      results[silly,loci]=sapply(loci,function(locus){sum(counts[!is.na(counts[1:n,locus,1]),locus,1:nalleles[locus]])/ploidy[locus]})
+SampSizeByLocus.GCL <- function(sillyvec, loci){
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #   This function creates a tibble of sample sizes by locus.
+  #
+  # Inputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #   
+  #   sillyvec - a vector of silly codes without the ".gcl" extention (e.g. sillyvec <- c("KQUART06","KQUART08","KQUART10")). 
+  #
+  #   loci - vector of locus names.
+  #
+  #   plot - logical; if set to TRUE a plotly heatmap the proportion of fish with scores for each locus and silly.
+  #
+  # Outputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #  
+  #   A tibble of sample sizes by locus for each silly.
+  #
+  # Examples~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #  CreateLocusControl.GCL(markersuite = "Sockeye2011_96SNPs", username = "awbarclay", password = password)
+  #  sillyvec = c("SMCDO03", "SNEVA13")
+  #  password = "************"
+  #  LOKI2R.GCL(sillyvec = sillyvec, username = "awbarclay", password = password)
+  #  RemoveIndMissLoci.GCL(sillyvec = sillyvec)
+  #si
+  #  SampSizeByLocus.GCL(sillyvec = sillyvec, loci = LocusControl$locusnames)
+  # 
+  #  Note~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #  The output tibble from this function can be fed to Plot_SampleSizeByLocus.GCL to produce an interactive heatmap 
+  #  of the proportion of fish with scores for each locus and silly
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
+  if(sum(is.na(match(loci, LocusControl$locusnames)))){
+    
+    stop(paste("'", loci[is.na(match(loci, LocusControl$locusnames))], "' from argument 'loci' not found in 'LocusControl' object!!!", sep = ""))
+    
     }
-    if(nloci==1){   
-      results[silly,loci]=sum(counts[!is.na(counts[1:n,1]),1:nalleles[loci]])/ploidy[loci]
-    }    
-  }
-  return(data.frame(results))
+
+  if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse)  # Install packages, if not in library and then load them.
+  
+  nsilly <- length(sillyvec)
+  
+  output <- lapply(sillyvec, function(silly){
+    
+    my.gcl <- get(paste0(silly, ".gcl"))
+    
+    my.gcl %>%
+      dplyr::select(all_of(loci)) %>% 
+      dplyr::summarize_all(function(x){sum(!is.na(x))}) %>% 
+      dplyr::mutate(silly = silly) %>% 
+      dplyr::select(silly, everything())
+    
+  }) %>% 
+    dplyr::bind_rows()
+  
+  return(output)
+    
 }
+  
+
