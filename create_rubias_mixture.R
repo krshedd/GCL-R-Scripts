@@ -1,7 +1,6 @@
 create_rubias_mixture <- function(sillyvec, loci, path = "rubias/mixture") {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # This function creates the mixture dataframe needed for `rubias`.
-  # It reformats the "scores" from each individual in the mixture(s) into a two column format used by `rubias`.
   # Each silly is treated as its own mixture.
   #
   # Inputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -16,32 +15,35 @@ create_rubias_mixture <- function(sillyvec, loci, path = "rubias/mixture") {
   #     to make sure all columns are character vectors (if homozygous for T, it will become a logical vector).
   #
   # Example~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # load("V:/Analysis/4_Westward/Sockeye/Chignik Inseason 2012-2018/Mixtures/2017/2017ChignikInseason_rubias.RData")
-  # chignik_2017.rubias_mix <- create_rubias_mixture(sillyvec = paste0("SCHIG17_Strata", 1:6), loci = loci22, path = "rubias/mixture")
+  # attach("V:/Analysis/2_Central/Sockeye/Cook Inlet/2012 Baseline/Mixture/UCI_sockeye_2019_postseason/UCI_2019_sockeye_postseason_analysis.Rdata")
+  # old2new_LocCtrl.GCL()
+  # sapply(mixvec, function(mix){assign(paste0(mix, ".gcl"), get(paste0(mix, ".gcl")), pos = -1, envir = .GlobalEnv)})
+  # mixvec <- mixvec
+  # loci <- loci
+  # detach()
+  # old2new_gcl.GCL(mixvec)
+  # UCI_sockeye_2019.rubias_mix <- create_rubias_mixture(sillyvec = mixvec, loci = loci, path = "rubias/mixture")
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  while(!require(tidyverse)){install.packages("tidyverse")}
+  if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse)  # Install packages, if not in library and then load them.
   
-  if(!dir.exists(path)) {stop("`path` to save mixtures does not exist, hoser!!!")}
+  if(!dir.exists(path)) {stop("`path` to save mixtures does not exist!!!")}
   
-  silly_mix.lst <- lapply(sillyvec, function(silly) {
-    my.gcl <- get(paste0(silly, ".gcl"))
-    scores.mat <- t(apply(my.gcl$scores[, loci, ], 1, function(ind) {c(t(ind))} ))
-    colnames(scores.mat) <- as.vector(sapply(loci, function(locus) {c(locus, paste(locus, 1, sep = "."))} ))
-    scores.df <- data.frame(scores.mat, stringsAsFactors = FALSE)
-    scores.df$sample_type <- "mixture"
-    scores.df$repunit <- NA
-    mode(scores.df$repunit) <- "character"
-    scores.df$collection <- silly
-    scores.df$indiv <- as.character(my.gcl$attributes$SillySource)
-    silly_mix.df <- scores.df[, c("sample_type", "repunit", "collection", "indiv", gsub(pattern = "-", replacement = ".", x = colnames(scores.mat)))] 
-    silly_mix <- silly_mix.df %>% 
-      dplyr::as_tibble() %>% 
-      dplyr::na_if(0)
+  scores_cols <- c(loci, paste0(loci, ".1")) %>% 
+    sort()
+  
+  mixture <- lapply(sillyvec, function(silly){
+    
+    s <- match(silly, sillyvec)
+    
+   silly_mix <- get(paste0(silly, ".gcl")) %>% 
+      dplyr::mutate(sample_type = "mixture", repunit = NA , collection = silly,  indiv = SillySource) %>% 
+      dplyr::select(sample_type, repunit, collection, indiv, tidyselect::all_of(scores_cols)) %>% 
+      dplyr::na_if(0)#I think this can be removed now that we convert all zeros to NAs when using LOKI2R.GCL
+    
     readr::write_csv(x = silly_mix, path = paste0(path, "/", silly, "_mix.csv"))
-    } #  silly
-  )
-  
-  mixture <- dplyr::bind_rows(silly_mix.lst)
+  }) %>% 
+    dplyr::bind_rows() 
   
   return(mixture)
+  
 }
