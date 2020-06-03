@@ -58,7 +58,8 @@ old2new_gcl.GCL <- function (sillyvec, save_old = FALSE){
       s
       
     }) %>% 
-      dplyr::bind_cols() 
+      dplyr::bind_cols() %>% 
+      na_if("0")
     
     tidy.gcl <- scores %>%
       dplyr::bind_cols(attr) %>% 
