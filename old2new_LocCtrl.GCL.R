@@ -31,6 +31,16 @@ old2new_LocCtrl.GCL <- function (LocCtrl = LocusControl, save_old = FALSE){
     
   } #Saving old gcl
   
+  #There was a bug with the old CombineLoci
+  if(with(LocCtrl,length(locusnames)>length(Publishedlocusnames))){
+    
+    LocCtrl$Publishedlocusnames <- rep(NA, length(LocCtrl$locusnames))
+    
+    warning("Due to a bug with the old CombineLoci.GCL() function, the length of Publishedlocusnames in the old LocusControl object is shorter than locusnames.
+             To keep these variables the same length in the converted LocusControl tibble, Publishedlocusnames have been converted to NAs."
+            )
+  }
+  
   locus_info <- with(LocCtrl, tibble::tibble(MarkerSuite, locusnames, Publishedlocusnames, nalleles, ploidy))
   
   alleles <- tibble::tibble(alleles = sapply(LocCtrl$locusnames, function(locus){
