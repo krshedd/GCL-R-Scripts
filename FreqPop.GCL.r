@@ -18,10 +18,9 @@ FreqPop.GCL <- function(sillyvec, loci, ncores = 4 ){
   #  load("V:/Analysis/2_Central/Chinook/Cook Inlet/2019/2019_UCI_Chinook_baseline_hap_data/2019_UCI_Chinook_baseline_hap_data.RData")
   #  old2new_LocCtrl.GCL()  
   #  old2new_gcl.GCL(sillyvec67)
+  #
   #  Freq <- FreqPop.GCL(sillyvec = sillyvec67, loci = loci413)
   #
-  # Note~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  #   When quantile is set to NULL this function utilizes rubias::close_matching_samples() to perform the duplicate check and it much faster than when you set a quantile.
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   start.time <- Sys.time() 
@@ -61,7 +60,7 @@ FreqPop.GCL <- function(sillyvec, loci, ncores = 4 ){
     
     my.gcl %>% 
       dplyr::select(all_of(scores_cols)) %>% 
-      dplyr::gather(key = "locus", value = "allele") %>% 
+      tidyr::gather(key = "locus", value = "allele") %>% 
       dplyr::filter(locus%in%loci) %>%
       dplyr::full_join(alleles, by = c("locus"="locus", "allele"="call"), keep = TRUE) %>% 
       dplyr::mutate(locus = gsub("\\.1$", "", locus.y)) %>% 
