@@ -85,7 +85,7 @@ PoolCollections.GCL <- function(collections, loci = LocusControl$locusnames, IDs
     
     my.gcl %>% 
       dplyr::filter(FK_FISH_ID %in% IDs[[collection]]) %>% 
-      dplyr::select(attr, SubsetLoci)
+      dplyr::select(dplyr::all_of(attr), dplyr::all_of(SubsetLoci))
     
   }) %>% 
     dplyr::bind_rows() %>% 
