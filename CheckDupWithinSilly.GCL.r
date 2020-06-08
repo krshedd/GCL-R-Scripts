@@ -59,8 +59,11 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci = LocusControl$locusnames, qu
   
   ploidy <- LocusControl$ploidy[loci]
   
-  scores_cols <- c(loci, paste0(loci, ".1")) %>% 
-    sort()
+  scores_cols <- sapply(loci, function(locus) {c(locus, paste0(locus, ".1"))}) %>% 
+    as.vector() #This keeps the scores columns in the correct order when there are loci with similar names.
+  
+  attr <- c("FK_FISH_ID","COLLECTION_ID","SILLY_CODE","PLATE_ID","PK_TISSUE_TYPE","CAPTURE_LOCATION","CAPTURE_DATE","END_CAPTURE_DATE","MESH_SIZE","MESH_SIZE_COMMENT","LATITUDE","LONGITUDE","AGENCY","VIAL_BARCODE",
+  "DNA_TRAY_CODE","DNA_TRAY_WELL_CODE","DNA_TRAY_WELL_POS","CONTAINER_ARRAY_TYPE_ID", "SillySource")
   
   sillyvec_new <- silly_n.GCL(sillyvec) %>% 
     dplyr::filter(n > 1) %>% 
@@ -68,7 +71,8 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci = LocusControl$locusnames, qu
   
   my.gcl <- sapply(sillyvec_new, function(silly){
     
-    gcl = get(paste(silly, ".gcl", sep=""), pos = 1)
+    gcl <- get(paste(silly, ".gcl", sep=""), pos = 1) %>% 
+      select(all_of(attr), all_of(scores_cols))
     
     maxna <- max(rowSums(is.na(gcl[, scores_cols])))  # What is max number of missing loci?
     
