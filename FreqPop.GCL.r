@@ -61,22 +61,21 @@ FreqPop.GCL <- function(sillyvec, loci, ncores = 4 ){
     my.gcl %>% 
       dplyr::select(all_of(scores_cols)) %>% 
       tidyr::gather(key = "locus", value = "allele") %>% 
-      dplyr::filter(locus%in%loci) %>%
-      dplyr::full_join(alleles, by = c("locus"="locus", "allele"="call"), keep = TRUE) %>% 
-      dplyr::mutate(locus = gsub("\\.1$", "", locus.y)) %>% 
-      dplyr::group_by(locus, allele_no, call) %>% 
-      dplyr::summarize(freq = sum(!is.na(allele)), .groups = "drop_last") %>% 
+      dplyr::mutate(locus = gsub("\\.1$", "", locus)) %>% 
+      dplyr::group_by(locus, allele) %>% 
+      dplyr::summarise(freq = length(allele), .groups = "drop_last") %>% 
+      dplyr::right_join(alleles, by = c("locus"="locus", "allele"="call"), keep = TRUE) %>%
+      replace_na(list(freq = 0)) %>% 
       dplyr::mutate(silly = !!silly) %>% 
-      dplyr::filter(!is.na(allele_no))
+      dplyr::select(silly, locus = locus.y, allele_no, allele = call, freq) %>% 
+      dplyr::arrange(locus, allele)
    
   } %>% 
-    dplyr::bind_rows() %>% 
-    dplyr::relocate(silly, before = locus)
+    dplyr::bind_rows() 
   
   parallel::stopCluster(cl) #End parallel loop
   
   output <- freqs %>% 
-    dplyr::rename(allele = call) %>% 
     dplyr::group_by(silly, locus) %>% 
     dplyr::mutate(total = sum(freq)) %>% 
     dplyr::ungroup() %>% 
