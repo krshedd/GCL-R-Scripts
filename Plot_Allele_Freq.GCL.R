@@ -58,7 +58,7 @@ Plot_Allele_Freq.GCL <- function(freq, file, sillyvec = NULL, groupvec = NULL, l
   
   lapply(loci, function(locus){
     
-    freq_df %>%
+    plot <- freq_df %>%
       filter(locus == !!locus) %>% 
       mutate(silly = factor(silly, levels = sillyvec), allele = factor(allele, unique(allele))) %>% 
       ggplot(aes(x = silly, y = allele, color = groupvec, size = proportion*100)) +
@@ -66,6 +66,8 @@ Plot_Allele_Freq.GCL <- function(freq, file, sillyvec = NULL, groupvec = NULL, l
       scale_color_manual(values = group_col, guide = FALSE) +
       theme(legend.position = "none", axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))+
       ggtitle(label = locus)
+    
+    print(plot)
     
     })
   
