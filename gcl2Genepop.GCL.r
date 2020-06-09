@@ -109,8 +109,8 @@ gcl2Genepop.GCL <- function(sillyvec, loci, path, VialNums = TRUE, usat = FALSE,
       
     } else{vials <- IDs}
     
-    scores_names <- c(loci, paste(loci, "1", sep =".")) %>% 
-      sort()
+    scores_names <- sapply(loci, function(locus) {c(locus, paste0(locus, ".1"))}) %>% 
+      as.vector() 
     
     scores <- new.gcl %>% 
       dplyr::select(tidyselect::all_of(scores_names)) %>% 

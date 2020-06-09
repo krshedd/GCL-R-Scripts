@@ -28,8 +28,8 @@ create_rubias_mixture <- function(sillyvec, loci, path = "rubias/mixture") {
   
   if(!dir.exists(path)) {stop("`path` to save mixtures does not exist!!!")}
   
-  scores_cols <- c(loci, paste0(loci, ".1")) %>% 
-    sort()
+  scores_cols <- sapply(loci, function(locus) {c(locus, paste0(locus, ".1"))}) %>% 
+    as.vector() 
   
   mixture <- lapply(sillyvec, function(silly){
     
