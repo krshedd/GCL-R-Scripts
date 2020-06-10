@@ -53,7 +53,7 @@ FisherCompute.GCL <- function(freq, loci, prec = 4){
   
   test <- paste0(unique(freq$silly), collapse = ".")
   
-  output <- tibble::tibble(test_sillys = test,  overall = !!overall, bylocus = !!bylocus %>% tidyr::nest({{test}} := dplyr::everything()))
+  output <- tibble::tibble(test_sillys = test,  overall = !!overall, bylocus = list(!!bylocus))
 
   return(output)
   
