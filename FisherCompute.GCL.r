@@ -43,7 +43,7 @@ FisherCompute.GCL <- function(freq, loci, prec = 4){
     
   })
   
-  pval[pval==0] = min(pval[pval!=0])#I think this is something Jim added so you can calculate overall p-value. I'm not sure why he decided to use the minimum pvalue to replace zeros.
+  pval[pval==0] <- .Machine$double.xmin #Replacing all hard zeros with the smallest nonnegative number possible in R.
   
   #Using Fisher's method to get overall pvalue
   overall <- pchisq(q =- 2*sum(log(pval)), df = 2*length(loci), lower.tail = FALSE) %>% 
