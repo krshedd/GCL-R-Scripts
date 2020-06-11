@@ -1,7 +1,7 @@
 gcl2Genepop.GCL <- function(sillyvec, loci, path, VialNums = TRUE, usat = FALSE, ncores = 4){
   
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  #   This function create a GENEPOP input file from "*.gcl" objects.
+  #   This function creates a GENEPOP input file from "*.gcl" objects.
   #
   # Inputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #   
@@ -67,9 +67,9 @@ gcl2Genepop.GCL <- function(sillyvec, loci, path, VialNums = TRUE, usat = FALSE,
     bind_rows(.id = "locus")
   
   ploidy <- LocusControl %>% 
-    filter(locusnames%in%loci) %>% 
-    pull(ploidy) %>% 
-    set_names(loci)
+    dplyr::filter(locusnames%in%loci) %>% 
+    dplyr::pull(ploidy) %>% 
+    purrr::set_names(loci)
   
   if(sum(ploidy == 1)){
     
@@ -78,9 +78,9 @@ gcl2Genepop.GCL <- function(sillyvec, loci, path, VialNums = TRUE, usat = FALSE,
   }
   
   nalleles <- LocusControl %>% 
-    filter(locusnames%in%loci) %>% 
-    pull(nalleles) %>% 
-    set_names(loci)
+    dplyr::filter(locusnames%in%loci) %>% 
+    dplyr::pull(nalleles) %>% 
+    purrr::set_names(loci)
   
   my.gcl <- lapply(sillyvec, function(silly){
     
@@ -146,6 +146,8 @@ gcl2Genepop.GCL <- function(sillyvec, loci, path, VialNums = TRUE, usat = FALSE,
       
     } else {
       
+      maxchar <- max(nchar(alleles$allele))+1
+      
       pop_scores <- lapply(loci, function(loc){
         
         variables <- c(loc, paste(loc, 1, sep = "."))
@@ -160,7 +162,7 @@ gcl2Genepop.GCL <- function(sillyvec, loci, path, VialNums = TRUE, usat = FALSE,
           dplyr::mutate_all(.funs = as.character) %>%
           tidyr::replace_na(replace = list(0, 0) %>% 
                               set_names(variables)) %>%
-          dplyr::mutate_all(.funs = stringr::str_pad, width = 2, pad = "0", side = "left") %>% 
+          dplyr::mutate_all(.funs = stringr::str_pad, width = maxchar, pad = "0", side = "left") %>% 
           tidyr::unite(col = loc, c(loc, paste(loc, 1, sep = ".")), sep = "")
         
       }) %>% 
