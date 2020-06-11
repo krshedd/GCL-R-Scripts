@@ -1,76 +1,74 @@
-PairwiseFstTree.GCL = function(sillyvec, loci, dir, nboots=1000, ncores = 4, returnbootstrapFst = FALSE){
-  #############################################################################
+PairwiseFstTree.GCL <- function(sillyvec, loci, dir, nboots = 1000, ncores = 4, returnbootstrapFst = FALSE){
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #
-  # This function generates a matrix of pairwise Fst values, a neighbor joining
-  # tree, bootstrap values for tree nodes, and variance components. This
-  # function is able to multicore in order to speed up the calculation of 
-  # variance components, with the idea that this function can be run on the
-  # servers to take advantage of 16 cores. As this function requires hierfstat
-  # it generates a .dat file.
+  #   This function generates a matrix of pairwise Fst values, a neighbor joining
+  #   tree, bootstrap values for tree nodes, and variance components. This
+  #   function is able to multicore in order to speed up the calculation of 
+  #   variance components, with the idea that this function can be run on the
+  #   servers to take advantage of 16 cores. As this function requires hierfstat
+  #   it generates a .dat file.
+  #
+  # Inputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #   
+  #   sillyvec - a vector of silly codes without the ".gcl" extention (e.g. sillyvec <- c("KQUART06","KQUART08","KQUART10")). 
+  #
+  #   loci - a character vector of locus names
+  #   
+  #   dir - directory where the fstat .dat file is dumped.
+  #
+  #   nboots -  a numeric vector of length one indicating the number of bootstraps
+  #
+  #   ncores - a numeric vector of length one indicating the number of cores to use
   # 
-  # Input parameters~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #   returnbootstrapFst - a logical vector of length one indicating whether an Fst matrix should be
+  #     saved for each bootstrap iteration
+  #
+  # Outputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #   PairwiseFstTree: List of 4
+  #    tree: List of 4
+  #    edge: Numeric matrix
+  #    edge.length: Numeric vector
+  #    tip.label: Character vector of pop names
+  #    Nnode: Integer
+  #   bootstrap: Numeric vector of node bootstrap values
+  #   PairwiseFst: Numeric matrix (length(sillyvec) x length(sillyvec)) of 
+  #                pairwise Fst values
+  #   vc: List of choose(n = length(sillyvec), k = 2) with variance components
+  #       for each pair of sillys
+  #
+  #  "fstatfile.dat" is put into "dir"
+  #
+  #  PairwiseFstTree is 'dput' into "dir", named 
+  #  "paste(dir,"\\", length(sillyvec), "Pops", length(loci), "Loci_","PairwiseFstTree.txt",sep="")"
+  #
+  # Example~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #   load("V:/Analysis/2_Central/Chinook/Susitna River/Susitna_Chinook_baseline_2020/Susitna_Chinook_baseline_2020.Rdata")
+  #
+  #   PairwiseFstTree.GCL(sillyvec = sillyvec31, loci = loci82, dir = "FSTAT", nboots = 1000, ncores = 8, returnbootstrapFst = FALSE)
   # 
-  # sillyvec = KMA211Pops
-  #   ~ A character vector of sillys.
-  # loci = loci42
-  #   ~ A character vector of loci. Can include haploid markers and/or combined loci.
-  # dir = "Trees"
-  #   ~ Directory where the fstat .dat file is dumped.
-  # nboots = 1000
-  #   ~ A numeric vector of length one indicating the number of bootstraps.
-  # ncores = 4
-  #   ~ A numeric vector of length one indicating the number of cores to use.
-  # returnbootstrapFst = FALSE
-  #   ~ A logical vector of length one indicating whether an Fst matrix should be
-  #     saved for each bootstrap iteration.
-  # 
-  # Output~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # PairwiseFstTree: List of 4
-  #  tree: List of 4
-  #   edge: Numeric matrix
-  #   edge.length: Numeric vector
-  #   tip.label: Character vector of pop names
-  #   Nnode: Integer
-  #  bootstrap: Numeric vector of node bootstrap values
-  #  PairwiseFst: Numeric matrix (length(sillyvec) x length(sillyvec)) of 
-  #               pairwise Fst values
-  #  vc: List of choose(n = length(sillyvec), k = 2) with variance components
-  #      for each pair of sillys
-  #
-  # "fstatfile.dat" is put into "dir"
-  #
-  # PairwiseFstTree is 'dput' into "dir", named 
-  # "paste(dir,"\\", length(sillyvec), "Pops", length(loci), "Loci_","PairwiseFstTree.txt",sep="")"
-  #
-  # Created by Jim Jasper on unknown???
-  # Modified by Kyle Shedd to multicore
-  #
-  #############################################################################
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
   if(!exists("LocusControl")) {
+    
     stop("'LocusControl' is required and not found, please create.")
+    
   }
   
-  while(!require("hierfstat")){install.packages("hierfstat")}
-  
-  while(!require("ape")){install.packages("ape")}
-
-  while(!require("foreach")){install.packages("foreach")}
-  
-  while(!require("doParallel")){install.packages("doParallel")}
-  
-  while(!require("parallel")){install.packages("parallel")}
+  if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse, ape, foreach, doParallel, parallel) #Install packages, if not in library and then load them.
   
   if(ncores > detectCores()) {
+    
     stop("'ncores' is greater than the number of cores available on machine\nUse 'detectCores()' to determine the number of cores on your machine")
-  }
+  
+    }
   
   message("\n4 Main function tasks: \n1) Create fstat .dat file\n2) Calculate variance componenets for each pair of sillys\n3) Calculate bootstrap Fst values\n4) Bootstrap tree nodes\n")
-  if (.Platform$OS.type == "windows") flush.console()
+  
+  if (.Platform$OS.type == "windows"){flush.console()}
   
   start.time <- Sys.time() 
   
-  fstatdir=paste(dir,"\\fstatfile.dat",sep="")  
+  fstatdir <- paste(dir,"\\fstatfile.dat",sep="")  
   
   cl=makePSOCKcluster(ncores)
   
