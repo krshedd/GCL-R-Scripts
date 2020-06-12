@@ -98,6 +98,10 @@ PairwiseFstTree.GCL <- function(sillyvec, loci, dir, nboots = 1000, ncores = 4, 
   
   # Calculate variance components for each pair of sillys
   message("\nCalculate variance components for each pair of sillys\n", sep = '')
+  
+  cl <- parallel::makePSOCKcluster(ncores)
+  
+  doParallel::registerDoParallel(cl, cores = ncores)  
 
   vc <- foreach::foreach(pair = pairnames, .packages = "hierfstat") %dopar% {
     
