@@ -71,11 +71,11 @@ gcl2FSTAT.GCL <- function(sillyvec, loci, path, ncores = 4){
     purrr::set_names(sillyvec)
   
   # Multicore loop
-  cl <- makePSOCKcluster(ncores)
+  cl <- parallel::makePSOCKcluster(ncores)
   
-  registerDoParallel(cl, cores = ncores)  
+  doParallel::registerDoParallel(cl, cores = ncores)  
   
-  scores_all <- foreach(silly = sillyvec, .packages = c("tidyverse")) %dopar% {
+  scores_all <- foreach::foreach(silly = sillyvec, .packages = c("tidyverse")) %dopar% {
     
     new.gcl <- my.gcl[[silly]]
     
