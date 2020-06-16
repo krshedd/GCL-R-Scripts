@@ -1,29 +1,53 @@
-CreateRubiasBaselineEval.GCL <- function(sillyvec, groupnames,  loci, groupvec, sample_sizes, test_groups = groupnames, prprtnl = FALSE, base.path = "rubias/baseline", mix.path = "rubias/mixture", ncores = 4){
+CreateRubiasBaselineEval.GCL <- function(sillyvec, group_names, loci, groupvec, sample_sizes, test_groups = group_names, prprtnl = FALSE, base.path = "rubias/baseline", mix.path = "rubias/mixture", ncores = 4){
   
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # This function creates rubias mixture and baseline files for different proof test scenarios.  
   # 
-  # Input parameters~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  #
-  # sillyvec=
+  # Input parameters~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
+  #   sillyvec - a vector of silly codes without the ".gcl" extention (e.g. sillyvec <- c("KQUART06","KQUART08","KQUART10")). 
   #
-  # groupnames=
+  #   group_names - character vector of group names the length of max(groupvec)
   #
-  # groupvec<=
-  # 
-  # loci=
+  #   groupvec - numeric vector indicating the group affiliation of each pop in sillyvec
   #
-  # samplesizemat=
+  #   loci - character vector of locus names as they are spelled in LOKI - example: c("GTH2B-550", "NOD1", "Ots_100884-287")
   #
-  # prprtnl<-FALSE
+  #   test_groups - a character vector of groups to test
+  #
+  #   sample_sizes - a tibble containing 4 variables test_group, scenario, repunit, and samps
+  #    
+  #    Here's an example tibble for one mixture with 1% of samples going to the Upper_Susitna repunit (test_group) and the remaining  
+  #    samples spread among the 5 other repunits.
+  #     test_group    scenario repunit         samps
+  #     <chr>            <dbl> <chr>           <dbl>
+  #     Upper_Susitna     0.01 Upper_Susitna       2  #Notice Upper_Susitna has 2 samples selected for a 200 sample mixuture (2/200 = 0.01)
+  #     Upper_Susitna     0.01 Chulitna           39  #The remaining 198 samples are spread across the other reporting groups (repunits) 
+  #     Upper_Susitna     0.01 Talkeetna          47
+  #     Upper_Susitna     0.01 Eastern_Susitna    40
+  #     Upper_Susitna     0.01 Deshka             35
+  #     Upper_Susitna     0.01 Yentna             37
+  #
+  #    prprtnl - logical, if set to TRUE the samples for each repunit will be selected in proportion to the number of samples in each population. 
+  #              Setting prprtnl = TRUE helps avoid oversampling populations when a reporting group contains only a few populations with small sample sizes.
+  #
+  #    base.path - the file path where the baseline .csv files will be written
+  #
+  #    mix.path - the file path where the mixture .csv files will be written
+  #
+  #    ncores - a numeric vector of length one indicating the number of cores to use
   #
   # Output~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # N
+  #
+  #   This function writes out rubias mixtures and baseline .csv files for each test_group and scenario in sample_sizes. 
+  #   For a given test_group and scenario, the mixture file will contain randomly selected samples for each reporting group as defined in the sample_sizes tibble. 
+  #   The corresponding baseline file will contain all baseline samples except for those selected for the mixture.
+  #
   # Example~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #  attach("V:/Analysis/2_Central/Chinook/Susitna River/Susitna_Chinook_baseline_2020/Susitna_Chinook_baseline_2020.Rdata")
   #  Final_Pops <- Final_Pops %>% mutate(group = factor(group, levels = unique(group)))
-  #  sample_sizes <- BaselineEvalSampleSizes.GCL(sillyvec = Final_Pops$silly, groupnames = Final_Pops$group %>% levels(), groupvec = Final_Pops$group %>% as.numeric(), scenarios = round(seq(.01, 1, .01), 2), mixsize = 200, maxprop = 0.5)
+  #  BaselineEvalSampleSizes.GCL(sillyvec = Final_Pops$silly, group_names = Final_Pops$group %>% levels(), groupvec = Final_Pops$group %>% as.numeric(), scenarios = round(seq(.01, 1, .01), 2), mixsize = 200, maxprop = 0.5)
   # 
-  #  CreateRubiasBaselineEval.GCL(sillyvec = Final_Pops$silly, groupnames = Final_Pops$group %>% levels(), test_groups = Final_Pops$group %>% levels(), loci = loci80, groupvec = Final_Pops$group %>% as.numeric(), sample_sizes = sample_sizes, prprtnl = TRUE, ncores = 8)
+  #  CreateRubiasBaselineEval.GCL(sillyvec = Final_Pops$silly, group_names = Final_Pops$group %>% levels(), test_groups = Final_Pops$group %>% levels(), loci = loci80, groupvec = Final_Pops$group %>% as.numeric(), sample_sizes = sample_sizes, prprtnl = TRUE, ncores = 8)
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
   if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse, parallel, doParallel, foreach) #Install packages, if not in library and then load them.
@@ -52,19 +76,19 @@ CreateRubiasBaselineEval.GCL <- function(sillyvec, groupnames,  loci, groupvec, 
     
   }
   
-  repunit_check <- match(groupnames, sample_sizes$repunit %>% unique()) %>% 
+  repunit_check <- match(group_names, sample_sizes$repunit %>% unique()) %>% 
     is.na() %>% 
     sum()
   
   if(repunit_check > 0){
     
-    stop(paste("sample_sizes does not contain sample sizes for all groupnames supplied", sep = ""))
+    stop(paste("sample_sizes does not contain sample sizes for all group_names supplied", sep = ""))
     
   }
  
   #Write out baseline and mixture files for each test_group scenario in sample_sizes
   
-  full_base <- create_rubias_baseline(sillyvec = sillyvec, loci = loci, group_names = groupnames, groupvec = groupvec, path = base.path, baseline_name = "full_base")
+  full_base <- create_rubias_baseline(sillyvec = sillyvec, loci = loci, group_names = group_names, groupvec = groupvec, path = base.path, baseline_name = "full_base")
     
   # Multicore loop
   cl <- parallel::makePSOCKcluster(ncores)
