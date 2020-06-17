@@ -97,12 +97,14 @@ CreateRubiasBaselineEval.GCL <- function(sillyvec, group_names, loci, groupvec, 
     
   foreach::foreach(g = test_groups, .packages = c("tidyverse", "rubias")) %dopar% {
     
+    #Test group scenarios
     tgscn <- sample_sizes %>% 
       dplyr::filter(test_group == g) %>% 
       dplyr::pull(scenario) %>% 
       unique()
     
-    sapply(tgscn, function(scn){
+   #Loop through scenarios  
+   for(scn in tgscn){
       
       my.sample_sizes <- sample_sizes %>% 
         dplyr::filter(test_group == g, scenario == scn)
@@ -154,7 +156,7 @@ CreateRubiasBaselineEval.GCL <- function(sillyvec, group_names, loci, groupvec, 
         
       }) %>% 
         dplyr::bind_rows() %>% 
-        dplyr::mutate(sample_type = "mixture")
+        dplyr::mutate(sample_type = "mixture", repunit = NA, collection = paste(g, scn, sep = "_"))
       
       baseline <- full_base %>% 
         dplyr::filter(!indiv%in%mixture$indiv)
@@ -163,7 +165,7 @@ CreateRubiasBaselineEval.GCL <- function(sillyvec, group_names, loci, groupvec, 
       
       readr::write_csv(baseline, path = paste0(base.path, "/", g, "_", scn, ".base.csv"))
       
-    })
+    } #End for loop
     
   } #End multicore
   
