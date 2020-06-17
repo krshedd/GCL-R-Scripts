@@ -13,9 +13,9 @@ RemoveDups.GCL <- function(dupcheck){
   #  This function returns a tibble of IDs removed for each silly in dupcheck.
   #
   # Examples~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #  password = "************"
   #  CreateLocusControl.GCL(markersuite = "Sockeye2011_96SNPs", username = "awbarclay", password = password)
   #  sillyvec = c("SMCDO03", "SNEVA13")
-  #  password = "************"
   #  LOKI2R.GCL(sillyvec = sillyvec, username = "awbarclay", password = password)
   #  RemoveIndMissLoci.GCL(sillyvec = sillyvec)
   #
@@ -25,6 +25,8 @@ RemoveDups.GCL <- function(dupcheck){
   # Note~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #   When quantile is set to NULL this function utilizes rubias::close_matching_samples() to perform the duplicate check and it much faster than when you set a quantile.
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
+  if(is_empty(dupcheck)){stop("Nothing removed. There are no duplicates to remove in dupcheck.", call. = FALSE)}
   
   if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse)  # Install packages, if not in library and then load them.
 
