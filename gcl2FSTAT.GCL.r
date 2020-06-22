@@ -43,7 +43,7 @@ gcl2FSTAT.GCL <- function(sillyvec, loci, path, ncores = 4){
   }
   
   
-  if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse, doParallel, foreach) #Install packages, if not in library and then load them.
+  if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse, doParallel, parallel, foreach) #Install packages, if not in library and then load them.
   
   if(ncores > parallel::detectCores()) {
     
