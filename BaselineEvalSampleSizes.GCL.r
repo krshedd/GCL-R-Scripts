@@ -46,7 +46,7 @@ BaselineEvalSampleSizes.GCL <- function(sillyvec, group_names, groupvec, mixsize
   
   if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse) #Install packages, if not in library and then load them.
   
-  #Determine the the 
+  #Determine which scenarios to test for each group without removing maxprop of fish from the baseline.
   maxp <- silly_n.GCL(sillyvec) %>% 
     dplyr::mutate(groupvec = !!groupvec) %>% 
     dplyr::group_by(groupvec) %>% 
