@@ -25,11 +25,13 @@ gcl2Nexus.GCL <- function(sillyvec, loci, path, VialNums = TRUE, PopNames = NULL
   #
   # Example~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
   # 
-  #   load("V:/Analysis/2_Central/Sockeye/Cook Inlet/2012 Baseline/Baseline/CI2012Baseline.RData")
-  #   CreateLocusControl.GCL(markersuite = "Sockeye2011_96SNPs", locusnames = NULL, username = "awbarclay", password = password) 
-  #   old2new_gcl.GCL(sillyvec = PooledNames71)
+  #  load("V:/Analysis/2_Central/Chinook/Susitna River/Susitna_Chinook_baseline_2020/Susitna_Chinook_baseline_2020.Rdata")
   #  
-  #   gcl2Nexus.GCL(sillyvec = PooledNames71, loci = loci96, path = "V:/Analysis/2_Central/Sockeye/Cook Inlet/2012 Baseline/Baseline/Output/nexusfile.nex", VialNums = TRUE, PopNames = CINames71, ncores = 4)
+  #  #Combine some loci for example hapset
+  #  CombineLoci.GCL(sillyvec31, markerset = c("Ots_U211", "Ots_U212-297"), update = TRUE)
+  #  CombineLoci.GCL(sillyvec31, markerset = c("Ots_UNKN4-150", "Ots_UNKN6-187"), update = TRUE)
+  #
+  #   gcl2Nexus.GCL(sillyvec = sillyvec31, loci = c(loci80, "Ots_U211.Ots_U212-297", "Ots_UNKN4-150.Ots_UNKN6-187") , path = "nexusfile.nex", VialNums = TRUE, PopNames = Final_Pops$location, ncores = 8)
   #
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
@@ -41,7 +43,11 @@ gcl2Nexus.GCL <- function(sillyvec, loci, path, VialNums = TRUE, PopNames = NULL
     
   }
   
-  if(sum(is.na(match(loci,LocusControl$locusnames)))){stop(paste("'",loci[is.na(match(loci,LocusControl$locusnames))],"' from argument 'loci' not found in 'LocusControl' object!!!",sep=""))}
+  if(sum(is.na(match(loci,LocusControl$locusnames)))){
+    
+    stop(paste("'", loci[is.na(match(loci, LocusControl$locusnames))], "' from argument 'loci' not found in 'LocusControl' object!!!", sep = ""))
+    
+    }
   
   if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse, doParallel, foreach) #Install packages, if not in library and then load them.
   
@@ -51,21 +57,29 @@ gcl2Nexus.GCL <- function(sillyvec, loci, path, VialNums = TRUE, PopNames = NULL
     
   }
   
+  if(is.null(PopNames)) {
+    
+    PopNames = sillyvec
+    
+    }
+  
+  PopNames <- gsub(pattern = " ", x = PopNames, replacement = "_")
+  
   ploidy <- LocusControl %>% 
-    filter(locusnames%in%loci) %>% 
-    pull(ploidy) %>% 
-    set_names(loci) %>% 
+    dplyr::filter(locusnames%in%loci) %>% 
+    dplyr::pull(ploidy) %>% 
+    purrr::set_names(loci) %>% 
     sort(decreasing = TRUE)
   
   loci <- names(ploidy)
   
   alleles <- LocusControl$alleles[loci] %>% 
-    bind_rows(.id = "locus")
+    dplyr::bind_rows(.id = "locus")
   
   nalleles <- LocusControl %>% 
-    filter(locusnames%in%loci) %>% 
-    pull(nalleles) %>% 
-    set_names(loci)
+    dplyr:: filter(locusnames%in%loci) %>% 
+    dplyr:: pull(nalleles) %>% 
+    purrr::set_names(loci)
   
   nloci <- length(loci)
   
@@ -79,7 +93,8 @@ gcl2Nexus.GCL <- function(sillyvec, loci, path, VialNums = TRUE, PopNames = NULL
   
   if(!length(PopNames)==length(sillyvec)){stop("PopNames is not the same length as sillyvec.")}
   
-  PopNames <- PopNames %>% purrr::set_names(sillyvec)
+  PopNames <- PopNames %>% 
+    purrr::set_names(sillyvec)
   
   file <- "#nexus"
   
@@ -98,7 +113,8 @@ gcl2Nexus.GCL <- function(sillyvec, loci, path, VialNums = TRUE, PopNames = NULL
     if(length(hapset0)>1){hapset <- paste(range(hapset0), collapse="-")}
     
     file <- rbind(file, paste0("hapset ", hapset, ";"))
-  }
+    
+  } else{hapset = FALSE}
   
   file <- rbind(file, "locusallelelabels")
   
@@ -118,10 +134,11 @@ gcl2Nexus.GCL <- function(sillyvec, loci, path, VialNums = TRUE, PopNames = NULL
     
   }) %>% purrr::set_names(sillyvec)
   
-  if(exists("hapset")){
+  if(!hapset==FALSE){
     
     scores_names <- sapply(loci[-hapset0], function(locus) {c(locus, paste0(locus, ".1"))}) %>% 
-      as.vector() 
+      as.vector() %>% 
+      c(loci[hapset0])
     
   } else{
     
@@ -154,21 +171,33 @@ gcl2Nexus.GCL <- function(sillyvec, loci, path, VialNums = TRUE, PopNames = NULL
     
     dimnames(scores)[[1]] = IDs 
     
-    scores[scores==0] <- "?"
-      
-    scores[is.na(scores)] <- "?"
+    scores[scores==0] <- NA
     
-    pop_scores <- lapply(loci[-hapset0], function(loc){
+    pop_scores <- lapply(loci, function(loc){ 
       
-      variables <- c(loc, paste(loc, 1, sep = "."))
+      if(ploidy[loc]==2){
+        
+        variables <- c(loc, paste(loc, 1, sep = "."))
+                       
+      } else{
+                         
+        variables <- loc
+        
+        }
+      
+      my.alleles <- alleles %>% 
+        filter(locus==loc) %>% 
+        pull(call)
       
       scores %>%
-        dplyr::select(tidyselect::all_of(variables))%>% 
-        tidyr::unite(col = loc, variables, sep = "/  ")
+        dplyr::select(tidyselect::all_of(variables)) %>% 
+        dplyr::mutate_all(factor, levels = my.alleles) %>% 
+        dplyr::mutate_all(as.numeric) %>%
+        replace(is.na(.), "?") %>%
+        tidyr::unite(col = loc, all_of(variables), sep = "/  ")
       
     }) %>% 
       dplyr::bind_cols() %>% 
-      dplyr::bind_cols(scores %>% select(all_of(loci[hapset0]))) %>% 
       purrr::set_names(loci) %>% 
       dplyr::mutate(ID = paste0(vials)) %>% 
       tidyr::unite("comb_scores", tidyselect::all_of(loci), sep = "   ") %>% 
