@@ -66,6 +66,13 @@ CreateRubiasBaselineEval.GCL <- function(sillyvec, group_names, loci, groupvec, 
   
   start_time <- Sys.time()
   
+  if(sum(str_detect(group_names, "\\W"))>0){
+    
+    stop("Special characters and spaces were detected in your group_names. 
+          Using spaces and delimiters other than underscore in your group names may cause function errors later in your analysis.")
+    
+  }
+  
   group_check <- match(test_groups, sample_sizes$test_group %>% unique()) %>% 
     is.na() %>% 
     sum()

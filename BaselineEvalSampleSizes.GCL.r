@@ -46,6 +46,13 @@ BaselineEvalSampleSizes.GCL <- function(sillyvec, group_names, groupvec, mixsize
   
   if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse) #Install packages, if not in library and then load them.
   
+  if(sum(str_detect(group_names, "\\W"))>0){
+    
+    stop("Special characters and spaces were detected in your group_names. 
+          Using spaces and delimiters other than underscore in your group names may cause function errors later in your analysis.")
+    
+  }
+    
   #Determine which scenarios to test for each group without removing maxprop of fish from the baseline.
   maxp <- silly_n.GCL(sillyvec) %>% 
     dplyr::mutate(groupvec = !!groupvec) %>% 
