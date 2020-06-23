@@ -25,10 +25,10 @@ summarize_rubias_baseline_eval.GCL <- function(mixvec, sample_sizes, method = c(
   #  estimates - a tibble containing the following variables: test_group, scenario, repunit, mean, sd, lo5CI (5% CI), hi95CI (95% CI), P=0, true_proportion (actual proportion in mixture), total_samples (mixture size), and method (PB or MCMC)
   #  
   #  summary_stats - a tibble containing mixture summary statistics for each group tested: method (PB or MCMC), test_group, RMSE (root mean squared error), Mean_Bias (average bias among all test mixtures for a given test_group), and 
-  #                  proportion_within_10% (the proportion of mixtures for a given test group that fell within 10% of the true proportion)
+  #                  90%_within (the maximum proportion from the true proportion where 90% of point estimates occurred)
   #
   # Example~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  #  attach("V:/Analysis/2_Central/Chinook/Susitna River/Susitna_Chinook_baseline_2020/Susitna_Chinook_baseline_2020.Rdata")
+  #  load("V:/Analysis/2_Central/Chinook/Susitna River/Susitna_Chinook_baseline_2020/Susitna_Chinook_baseline_2020.Rdata")
   #  require(tidyverse)
   #  tests <- sample_sizes %>% group_by(test_group, scenario) %>% summarize(test_group = test_group %>% unique(), scenario = scenario %>% unique(), .groups = "drop_last")#Total of 510 tests  # 
   #  mixvec <- tests %>% unite(col = "mixvec", test_group, scenario, sep ="_" ) %>% pull()
@@ -71,6 +71,8 @@ summarize_rubias_baseline_eval.GCL <- function(mixvec, sample_sizes, method = c(
     
     doParallel::registerDoParallel(cl, cores = ncores)  
     
+    parallel::clusterExport(cl = cl, varlist = "custom_combine_rubias_output") # For some reason custom_combine_rubias_output() couldn't be found within the foreach loop, this solves that issue.
+    
     estimates <- foreach::foreach(bias_corr = c(TRUE, FALSE), .packages = "tidyverse", .export = "custom_combine_rubias_output") %dopar% {
       
       custom_combine_rubias_output(rubias_output = NULL, mixvec = mixvec, group_names = group_names, group_names_new = group_names_new,
@@ -101,7 +103,7 @@ summarize_rubias_baseline_eval.GCL <- function(mixvec, sample_sizes, method = c(
     dplyr::group_by(method, test_group)%>%
     dplyr::mutate(Bias = mean-true_proportion, Abs_Bias = abs(mean-true_proportion), Bias_squared = (mean-true_proportion)^2, CI_width = hi95CI-lo5CI,
            lo5CI_within = true_proportion-lo5CI, hi95CI_within = hi95CI-true_proportion) %>%
-    dplyr::summarise(RMSE = sqrt(mean(Bias_squared)), Mean_Bias = mean(Bias), `proportion_within_10%` = sum(Abs_Bias <= 0.10)/length(Abs_Bias), .groups = "drop_last")
+    dplyr::summarise(RMSE = sqrt(mean(Bias_squared)), Mean_Bias = mean(Bias), `90%_within` = quantile(Abs_Bias, probs = 0.9), .groups = "drop_last")
   
   return(list(estimates = estimates_out, summary_stats = summary_stats))
     
