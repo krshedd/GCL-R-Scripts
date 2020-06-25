@@ -24,18 +24,20 @@ RemoveIDs.GCL <- function(silly, IDs){
   
   if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse)  # Install packages, if not in library and then load them.
   
-  my.gcl <- get(paste(silly,".gcl",sep=""), pos = 1)
+  my.gcl <- get(paste0(silly, ".gcl"), pos = 1)
   
-  if(purrr::is_character(IDs)){IDs <- as.numeric(IDs)}
+  if(purrr::is_character(IDs)) {IDs <- as.numeric(IDs)}
   
-  if(sum(my.gcl$FK_FISH_ID%in%IDs) < length(IDs)){
+  if(!all(IDs %in% my.gcl$FK_FISH_ID)){
     
-    stop(paste0("No IDs were removed. Some of the IDs do not exist for ", silly, ". "))
+    stop(paste0("No IDs were removed. Some of the IDs do not exist for ", silly, "."))
     
   }
 
-  assign(paste(silly,".gcl",sep=""), my.gcl %>% dplyr::filter(!FK_FISH_ID%in%IDs), pos = 1)
- 
-  warning(paste0(length(IDs), " IDs were removed from ", silly, ".gcl\n"))
+  assign(paste(silly, ".gcl", sep = ""),
+         my.gcl %>% dplyr::filter(!FK_FISH_ID %in% IDs),
+         pos = 1)
+  
+  message(paste0(length(IDs), " IDs were removed from ", silly, ".gcl"))
   
 }
