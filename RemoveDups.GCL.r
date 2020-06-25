@@ -1,12 +1,18 @@
-RemoveDups.GCL <- function(dupcheck){
+RemoveDups.GCL <- function(dupcheck, remove_both = FALSE){
   
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  #  This function removes duplicated "IDs" with the highest number of missing loci. 
-  #  If both IDs have the same number of missing loci, ID1 is removed.
+  #  This function removes duplicated "IDs" found with "CheckDupWithinSilly.GCL"
+  #  The default option is to remove the duplicated "IDs" with the highest number of missing loci for
+  #  each duplicate pair (remove_both = FALSE). 
+  #  If remove_both = FALSE and both IDs have the same number of missing loci, ID1 is removed.
+  #  If remove_both = TRUE, both duplicated "IDs" are removed, use this option if you have paired data 
+  #  that has become compromised by the duplicate pair (i.e. ASL, otolith data, etc.).
   #
   # Inputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #   
   #   dupcheck - an object created by the function "CheckDupWithinSilly.GCL". 
+  #
+  #   remove_both - TRUE/FALSE on whether to remove both duplicated "IDs" or just one of "IDs"
   #
   # Output~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #
@@ -22,43 +28,58 @@ RemoveDups.GCL <- function(dupcheck){
   #  dupcheck <- CheckDupWithinSilly.GCL(sillyvec = sillyvec, loci = LocusControl$locusnames, quantile = NULL, minproportion = 0.95, ncores = 8)
   #  removed_dups <- RemoveDups.GCL(dupcheck)
   #
-  # Note~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  #   When quantile is set to NULL this function utilizes rubias::close_matching_samples() to perform the duplicate check and it much faster than when you set a quantile.
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
   if(is_empty(dupcheck)){stop("Nothing removed. There are no duplicates to remove in dupcheck.", call. = FALSE)}
   
   if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse)  # Install packages, if not in library and then load them.
-
+  
   if(!tibble::is_tibble(dupcheck)){dupcheck <- dupcheck$report}
   
   dupcheck_names <-  c("silly", "ID1", "ID2", "Missing1", "Missing2", "proportion")
   
-  if(length(setdiff(dupcheck_names, names(dupcheck))) > 0){
+  if(!all(dupcheck_names %in% names(dupcheck))){
     
     stop(paste0("Nothing removed. Dupcheck must contain the folling variables: ", paste0(dupcheck_names, collapse = ", ")))
     
-    }
+  }
   
   sillys <- dupcheck$silly %>% 
     unique()
   
-  to_remove <- dupcheck %>%
-    mutate(remove = case_when(Missing1 > Missing2~ID1,
-                              Missing2 > Missing1~ID2,
-                              Missing1 == Missing2~ID1))
+  if(remove_both) {
+    
+    to_remove <- dupcheck %>%
+      tidyr::pivot_longer(
+        cols = c("ID1", "ID2"),
+        names_to = "ID",
+        values_to = "remove"
+      )
+    
+  } else {
+    
+    to_remove <- dupcheck %>%
+      dplyr::mutate(
+        remove = dplyr::case_when(
+          Missing1 > Missing2 ~ ID1,
+          Missing2 > Missing1 ~ ID2,
+          Missing1 == Missing2 ~ ID1
+        )
+      )
+    
+  }
   
   results <- lapply(sillys, function(silly){
     
     remove <- to_remove %>% 
-      filter(silly==!!silly) %>% 
-      select(silly, removed_IDs = remove)
+      dplyr::filter(silly == !!silly) %>% 
+      dplyr::select(silly, removed_IDs = remove)
     
     RemoveIDs.GCL(silly = silly, IDs = remove$removed_IDs)
     
     remove
     
-  }) %>% bind_rows()
-
+  }) %>% dplyr::bind_rows()
+  
   return(results)
 }
