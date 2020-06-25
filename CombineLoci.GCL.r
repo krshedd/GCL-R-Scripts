@@ -1,5 +1,5 @@
-CombineLoci.GCL <- function(sillyvec, markerset, update = FALSE, delim = c(".","_")[1]){
-
+CombineLoci.GCL <- function(sillyvec, markerset, update = TRUE, delim = c(".", "_")[1]){
+  
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #   This function combines a set of markers into a single marker. 
   #
@@ -35,54 +35,54 @@ CombineLoci.GCL <- function(sillyvec, markerset, update = FALSE, delim = c(".","
   #
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
   
-  if(sum(is.na(match(markerset, LocusControl$locusnames)))){
+  if(!all(markerset %in% LocusControl$locusnames)){
     
-    stop(paste("'", markerset[is.na(match(markerset, LocusControl$locusnames))], "' from argument 'markerset' not found in 'LocusControl' object!!!", sep = ""))
+    stop(paste0("'", setdiff(markerset, LocusControl$locusnames), "' from argument 'markerset' not found in 'LocusControl' object!!!"))
     
   }
   
-  if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse) #Install packages, if not in library and then load them.
-
+  if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse)  # Install packages, if not in library and then load them.
+  
   nmarkers <- length(markerset)  
- 
+  
   myploidy <- LocusControl$ploidy[markerset]
-
-  if(sum(myploidy==myploidy[1]) != nmarkers){
+  
+  if(sum(myploidy == myploidy[1]) != nmarkers){
     
     stop("'markerset' has different ploidies!!!")
     
-    }  
-
+  }  
+  
   MarkerSuite <- LocusControl$MarkerSuite %>% 
     unique()
   
   locusnames <- LocusControl$locusnames
-
+  
   newmarkername <- paste(markerset, collapse = delim)
-
-  existnewmarker <- !is.na(match(newmarkername, locusnames))
-
+  
+  existnewmarker <- newmarkername %in% locusnames
+  
   loci <- unique(c(locusnames, newmarkername))
-
+  
   nloci <- length(loci)
-
+  
   Publishedlocusnames <- LocusControl$Publishedlocusnames
   
   Publishedlocusnames <- c(Publishedlocusnames, purrr::set_names(NA, newmarkername))
-
+  
   newalleles <- AllPossiblePhenotypes.GCL(markerset)
   
   maxchar <- max(nchar(newalleles))
-
+  
   alleles <- LocusControl$alleles[locusnames]
   
   nalleles <- LocusControl$nalleles[locusnames]
   
   ploidy <- LocusControl$ploidy[locusnames]
-
+  
   if(!existnewmarker){
     
-    alleles[[length(locusnames)+1]] <- tibble::tibble(allele = seq(length(newalleles)), call = newalleles)
+    alleles[[length(locusnames) + 1]] <- tibble::tibble(allele = seq_along(newalleles), call = newalleles)
     
     nalleles <- c(nalleles, length(newalleles)) 
     
@@ -91,58 +91,55 @@ CombineLoci.GCL <- function(sillyvec, markerset, update = FALSE, delim = c(".","
   }  
   
   names(alleles) <- names(nalleles) <- names(ploidy) <- loci
-
+  
   for(silly in sillyvec){
     
-    my.gcl <- get(paste(silly, ".gcl", sep = ""), pos = 1)
+    my.gcl <- get(paste0(silly, ".gcl"), pos = 1)
     
-    if(!is.na(match(newmarkername, names(my.gcl)))){
+    if(newmarkername %in% names(my.gcl)){
       
-      warning(paste("'", newmarkername, "'"," already created in silly '", silly,"'!!!",sep = ""))
+      warning(paste0("'", newmarkername, "'"," already created in silly '", silly,"'!!!"))
       next()
       
     }
     
-    var_names <- lapply(setdiff(loci, markerset), function(l){c(l, paste0(l, ".1"))}) %>%
-      unlist()
-    
-    newmarkername_1 <- paste0(newmarkername, ".1")#Allele 2 name
+    newmarkername_1 <- paste0(newmarkername, ".1")  # Allele 2 name
     
     # Combine haploid
-    if(unique(myploidy)==1){ 
+    if(unique(myploidy) == 1){ 
       
       new.gcl <- my.gcl %>% 
-        tidyr::unite(col = {{newmarkername}}, tidyselect::all_of(markerset), sep = '', remove = FALSE, na.rm = TRUE) %>% #Had to add the {{}} around the col object for this to work. 
-        mutate(!!rlang::sym(newmarkername) := dplyr::case_when(nchar(!!rlang::sym(newmarkername)) < maxchar~NA_character_, #Added this mutate case_when to replace any genotypes with less than maxchar with NA's. Maybe there is a better way?
-                                                               TRUE~!!rlang::sym(newmarkername)), 
+        tidyr::unite(col = {{newmarkername}}, tidyselect::all_of(markerset), sep = '', remove = FALSE, na.rm = TRUE) %>%  # Had to add the {{}} around the col object for this to work. 
+        mutate(!!rlang::sym(newmarkername) := dplyr::case_when(nchar(!!rlang::sym(newmarkername)) < maxchar ~ NA_character_,  # Added this mutate case_when to replace any genotypes with less than maxchar with NA's. Maybe there is a better way?
+                                                               TRUE ~ !!rlang::sym(newmarkername)), 
                !!rlang::sym(newmarkername_1) := NA_character_) %>% 
         dplyr::relocate(!!rlang::sym(newmarkername), .after = tidyselect::last_col()) %>% 
-        dplyr::relocate(!!rlang::sym(newmarkername_1), .after = tidyselect::last_col()) #Had to relocate alleles separately or they get reordered
+        dplyr::relocate(!!rlang::sym(newmarkername_1), .after = tidyselect::last_col())  # Had to relocate alleles separately or they get reordered
       
     }
     
     # Combine diploid
     if(unique(myploidy)==2){ 
       
-    new.gcl <- my.gcl %>% 
-      tidyr::unite(col = {{newmarkername}}, tidyselect::all_of(sort(c(markerset, paste0(markerset, ".1")))), sep = '', remove = FALSE, na.rm = TRUE) %>% #Had to add the {{}} around the col object for this to work. 
-      mutate(!!rlang::sym(newmarkername) := dplyr::case_when(nchar(!!rlang::sym(newmarkername)) < maxchar~NA_character_, #Added this mutate case_when to replace any genotypes with less than maxchar with NA's. Maybe there is a better way?
-                                                      TRUE~!!rlang::sym(newmarkername)), 
-             !!rlang::sym(newmarkername_1) := NA_character_) %>% 
-      dplyr::relocate(!!rlang::sym(newmarkername), .after = tidyselect::last_col()) %>% 
-      dplyr::relocate(!!rlang::sym(newmarkername_1), .after = tidyselect::last_col())#Had to relocate alleles separately or they get reordered
-    
+      new.gcl <- my.gcl %>% 
+        tidyr::unite(col = {{newmarkername}}, tidyselect::all_of(sort(c(markerset, paste0(markerset, ".1")))), sep = '', remove = FALSE, na.rm = TRUE) %>%  # Had to add the {{}} around the col object for this to work. 
+        mutate(!!rlang::sym(newmarkername) := dplyr::case_when(nchar(!!rlang::sym(newmarkername)) < maxchar ~ NA_character_,  # Added this mutate case_when to replace any genotypes with less than maxchar with NA's. Maybe there is a better way?
+                                                               TRUE ~ !!rlang::sym(newmarkername)), 
+               !!rlang::sym(newmarkername_1) := NA_character_) %>% 
+        dplyr::relocate(!!rlang::sym(newmarkername), .after = tidyselect::last_col()) %>% 
+        dplyr::relocate(!!rlang::sym(newmarkername_1), .after = tidyselect::last_col())  # Had to relocate alleles separately or they get reordered
+      
     }
     
     if(update){
-       
-      assign(paste(silly, ".gcl", sep = ""), new.gcl, pos = 1)
-       
-     }
+      
+      assign(paste0(silly, ".gcl"), new.gcl, pos = 1)
+      
+    }
     
     if(!update){
       
-      assign(paste(silly, ".temp.gcl", sep = ""), new.gcl, pos = 1)
+      assign(paste0(silly, ".temp.gcl"), new.gcl, pos = 1)
       
     } 
     
@@ -150,7 +147,18 @@ CombineLoci.GCL <- function(sillyvec, markerset, update = FALSE, delim = c(".","
   
   if(update){
     
-    assign("LocusControl", tibble::tibble(MarkerSuite = MarkerSuite, locusnames = loci, Publishedlocusnames = Publishedlocusnames, nalleles = nalleles, ploidy = ploidy, alleles = alleles), pos=1)
+    assign(
+      x = "LocusControl",
+      value = tibble::tibble(
+        MarkerSuite = MarkerSuite,
+        locusnames = loci,
+        Publishedlocusnames = Publishedlocusnames,
+        nalleles = nalleles,
+        ploidy = ploidy,
+        alleles = alleles
+      ),
+      pos = 1
+    )
     
   }   
   
