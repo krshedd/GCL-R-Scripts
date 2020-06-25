@@ -49,7 +49,7 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci = LocusControl$locusnames, qu
   if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse, doParallel, parallel, foreach, rubias)  # Install packages, if not in library and then load them.
   
   
-  if(ncores > detectCores()) {
+  if(ncores > parallel::detectCores()) {
     stop("'ncores' is greater than the number of cores available on machine\nUse 'detectCores()' to determine the number of cores on your machine")
   }
   
@@ -60,10 +60,30 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci = LocusControl$locusnames, qu
   ploidy <- LocusControl$ploidy[loci]
   
   scores_cols <- sapply(loci, function(locus) {c(locus, paste0(locus, ".1"))}) %>% 
-    as.vector() #This keeps the scores columns in the correct order when there are loci with similar names.
-  
-  attr <- c("FK_FISH_ID","COLLECTION_ID","SILLY_CODE","PLATE_ID","PK_TISSUE_TYPE","CAPTURE_LOCATION","CAPTURE_DATE","END_CAPTURE_DATE","MESH_SIZE","MESH_SIZE_COMMENT","LATITUDE","LONGITUDE","AGENCY","VIAL_BARCODE",
-  "DNA_TRAY_CODE","DNA_TRAY_WELL_CODE","DNA_TRAY_WELL_POS","CONTAINER_ARRAY_TYPE_ID", "SillySource")
+    as.vector()  # This keeps the scores columns in the correct order when there are loci with similar names.
+   
+  attr <-
+    c(
+      "FK_FISH_ID",
+      "COLLECTION_ID",
+      "SILLY_CODE",
+      "PLATE_ID",
+      "PK_TISSUE_TYPE",
+      "CAPTURE_LOCATION",
+      "CAPTURE_DATE",
+      "END_CAPTURE_DATE",
+      "MESH_SIZE",
+      "MESH_SIZE_COMMENT",
+      "LATITUDE",
+      "LONGITUDE",
+      "AGENCY",
+      "VIAL_BARCODE",
+      "DNA_TRAY_CODE",
+      "DNA_TRAY_WELL_CODE",
+      "DNA_TRAY_WELL_POS",
+      "CONTAINER_ARRAY_TYPE_ID",
+      "SillySource"
+    )
   
   sillyvec_new <- silly_n.GCL(sillyvec) %>% 
     dplyr::filter(n > 1) %>% 
@@ -71,8 +91,9 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci = LocusControl$locusnames, qu
   
   my.gcl <- sapply(sillyvec_new, function(silly){
     
-    gcl <- get(paste(silly, ".gcl", sep=""), pos = 1) %>% 
-      select(all_of(attr), all_of(scores_cols))
+    gcl <- get(paste0(silly, ".gcl"), pos = 1) %>%
+      dplyr::select(tidyselect::all_of(attr),
+                    tidyselect::all_of(scores_cols))
     
     maxna <- max(rowSums(is.na(gcl[, scores_cols])))  # What is max number of missing loci?
     
@@ -171,12 +192,12 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci = LocusControl$locusnames, qu
         dplyr::left_join(dups, by = "ID2") %>% 
         dplyr::arrange(order)
       
-      full_join(ID1, ID2) %>% 
+      dplyr::full_join(ID1, ID2, by = c("ID1", "silly", "ID2", "proportion", "order")) %>% 
         dplyr::select(silly, ID1, ID2, Missing1, Missing2, proportion)
       
     }) %>%  dplyr::bind_rows()  
     
-    print(Sys.time()-start.time)
+    print(Sys.time() - start.time)
     
     return(report)
     
@@ -300,7 +321,7 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci = LocusControl$locusnames, qu
     
     output <- list(report = report, DupDist = DupDist)
     
-    print(Sys.time()-start.time)
+    print(Sys.time() - start.time)
     
     return(output)
     
