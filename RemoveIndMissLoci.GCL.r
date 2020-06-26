@@ -52,8 +52,10 @@ RemoveIndMissLoci.GCL <- function(sillyvec, loci = LocusControl$locusnames, prop
       dplyr::filter(prop_loci <= proportion) %>% 
       dplyr::pull(FK_FISH_ID)
     
-    assign(x = paste0(silly, ".gcl"), value = my.gcl %>% dplyr::filter(!FK_FISH_ID%in%IDsToRemove), pos = 1, envir = .GlobalEnv )
-    
+    if(!purrr::is_empty(IDsToRemove)) {
+      assign(x = paste0(silly, ".gcl"), value = my.gcl %>% dplyr::filter(!FK_FISH_ID %in% IDsToRemove), pos = 1, envir = .GlobalEnv )
+    }
+
     tibble::tibble(SILLY_CODE = silly, IDs_Removed = IDsToRemove)
     
   }) %>% 
