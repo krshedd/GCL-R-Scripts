@@ -35,12 +35,22 @@ create_rubias_mixture <- function(sillyvec, loci, path = "rubias/mixture") {
     
     s <- match(silly, sillyvec)
     
-   silly_mix <- get(paste0(silly, ".gcl")) %>% 
-      dplyr::mutate(sample_type = "mixture", repunit = NA , collection = silly,  indiv = SillySource) %>% 
-      dplyr::select(sample_type, repunit, collection, indiv, tidyselect::all_of(scores_cols)) %>% 
-      dplyr::na_if(0)#I think this can be removed now that we convert all zeros to NAs when using LOKI2R.GCL
+    silly_mix <- get(paste0(silly, ".gcl")) %>%
+      dplyr::mutate(
+        sample_type = "mixture",
+        repunit = NA ,
+        collection = silly,
+        indiv = SillySource
+      ) %>%
+      dplyr::select(sample_type,
+                    repunit,
+                    collection,
+                    indiv,
+                    tidyselect::all_of(scores_cols)) %>%
+      dplyr::na_if(0)  # I think this can be removed now that we convert all zeros to NAs when using LOKI2R.GCL
     
     readr::write_csv(x = silly_mix, path = paste0(path, "/", silly, "_mix.csv"))
+    
   }) %>% 
     dplyr::bind_rows() 
   

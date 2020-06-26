@@ -5,8 +5,8 @@ create_rubias_baseline <- function(sillyvec, loci, group_names, groupvec, path =
   # Inputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #   sillyvec - character vector of populations in the baseline
   #   loci - character vector of the loci you wish to include
-  #   group_names - character vector of group names
-  #   groupvec - numeric vector indicating the group affiliation of each pop in sillyvec
+  #   group_names - character vector of group names (length = number of groups)
+  #   groupvec - numeric vector indicating the group affiliation of each pop in sillyvec (length = length(sillyvec))
   #   path - character vector of where to save each mixture as a .csv
   #   baseline_name - character vector of what to name the baseline.csv
   #
@@ -38,13 +38,22 @@ create_rubias_baseline <- function(sillyvec, loci, group_names, groupvec, path =
     
     s <- match(silly, sillyvec)
     
-    get(paste0(silly, ".gcl")) %>% 
-      dplyr::mutate(sample_type = "reference", repunit = group_names[groupvec[s]], collection = silly,  indiv = SillySource) %>% 
-      dplyr::select(sample_type, repunit, collection, indiv, tidyselect::all_of(scores_cols))
+    get(paste0(silly, ".gcl")) %>%
+      dplyr::mutate(
+        sample_type = "reference",
+        repunit = group_names[groupvec[s]],
+        collection = silly,
+        indiv = SillySource
+      ) %>%
+      dplyr::select(sample_type,
+                    repunit,
+                    collection,
+                    indiv,
+                    tidyselect::all_of(scores_cols))
     
-    }) %>% 
+  }) %>% 
     dplyr::bind_rows() %>% 
-    dplyr::na_if(0)#I think this can be removed now that we convert all zeros to NAs when using LOKI2R.GCL
+    dplyr::na_if(0)  # I think this can be removed now that we convert all zeros to NAs when using LOKI2R.GCL
   
   readr::write_csv(x = baseline, path = paste0(path, "/", baseline_name, "_base.csv"))
   
