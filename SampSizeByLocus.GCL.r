@@ -31,7 +31,7 @@ SampSizeByLocus.GCL <- function(sillyvec, loci = LocusControl$locusnames){
     stop(paste0("'", setdiff(loci, LocusControl$locusnames), "' from argument 'loci' not found in 'LocusControl' object!!!"))
     
   }
-
+  
   if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse)  # Install packages, if not in library and then load them.
   
   nsilly <- length(sillyvec)
@@ -50,5 +50,5 @@ SampSizeByLocus.GCL <- function(sillyvec, loci = LocusControl$locusnames){
     dplyr::bind_rows()
   
   return(output)
-    
+  
 }
