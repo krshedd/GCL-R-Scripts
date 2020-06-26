@@ -1,4 +1,4 @@
-SampSizeByLocus.GCL <- function(sillyvec, loci){
+SampSizeByLocus.GCL <- function(sillyvec, loci = LocusControl$locusnames){
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #   This function creates a tibble of sample sizes by locus.
   #
@@ -7,8 +7,6 @@ SampSizeByLocus.GCL <- function(sillyvec, loci){
   #   sillyvec - a vector of silly codes without the ".gcl" extention (e.g. sillyvec <- c("KQUART06","KQUART08","KQUART10")). 
   #
   #   loci - vector of locus names.
-  #
-  #   plot - logical; if set to TRUE a plotly heatmap the proportion of fish with scores for each locus and silly.
   #
   # Outputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #  
@@ -20,7 +18,7 @@ SampSizeByLocus.GCL <- function(sillyvec, loci){
   #  password = "************"
   #  LOKI2R.GCL(sillyvec = sillyvec, username = "awbarclay", password = password)
   #  RemoveIndMissLoci.GCL(sillyvec = sillyvec)
-  #si
+  #
   #  SampSizeByLocus.GCL(sillyvec = sillyvec, loci = LocusControl$locusnames)
   # 
   #  Note~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -28,11 +26,11 @@ SampSizeByLocus.GCL <- function(sillyvec, loci){
   #  of the proportion of fish with scores for each locus and silly
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
-  if(sum(is.na(match(loci, LocusControl$locusnames)))){
+  if(!all(loci %in% LocusControl$locusnames)){
     
-    stop(paste("'", loci[is.na(match(loci, LocusControl$locusnames))], "' from argument 'loci' not found in 'LocusControl' object!!!", sep = ""))
+    stop(paste0("'", setdiff(loci, LocusControl$locusnames), "' from argument 'loci' not found in 'LocusControl' object!!!"))
     
-    }
+  }
 
   if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse)  # Install packages, if not in library and then load them.
   
@@ -43,10 +41,10 @@ SampSizeByLocus.GCL <- function(sillyvec, loci){
     my.gcl <- get(paste0(silly, ".gcl"))
     
     my.gcl %>%
-      dplyr::select(all_of(loci)) %>% 
+      dplyr::select(tidyselect::all_of(loci)) %>% 
       dplyr::summarize_all(function(x){sum(!is.na(x))}) %>% 
       dplyr::mutate(silly = silly) %>% 
-      dplyr::select(silly, everything())
+      dplyr::select(silly, tidyselect::everything())
     
   }) %>% 
     dplyr::bind_rows()
@@ -54,5 +52,3 @@ SampSizeByLocus.GCL <- function(sillyvec, loci){
   return(output)
     
 }
-  
-
