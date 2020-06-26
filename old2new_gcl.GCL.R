@@ -17,7 +17,7 @@ old2new_gcl.GCL <- function (sillyvec, save_old = FALSE){
   # old2new_gcl.GCL(sillyvec = sillyvec157, save_old = TRUE)
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
-  if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse)  # Install packages, if not in library and then load them.
+  if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse, lubridate)  # Install packages, if not in library and then load them.
   
   if(!all(sillyvec %in% stringr::str_remove(string = objects(pattern = "\\.gcl", pos = -1, envir = .GlobalEnv), pattern = "\\.gcl"))) {  # Do all sillys exist in the environment?
     
@@ -40,7 +40,10 @@ old2new_gcl.GCL <- function (sillyvec, save_old = FALSE){
     if(save_old){assign(paste0(silly, ".gcl_old"), value = my.gcl, pos = -1, envir = .GlobalEnv)}  # Saving old gcl
     
     attr <- my.gcl$attributes %>% 
-      dplyr::mutate(SILLY_CODE = silly)  # Some older attributes did not include SILLY_CODE
+      dplyr::mutate(SILLY_CODE = silly,  # Some older attributes did not include SILLY_CODE
+                    FK_FISH_ID = as.double(FK_FISH_ID),  # FK_FISH_ID must be numeric
+                    CAPTURE_DATE = lubridate::as_date(CAPTURE_DATE),  # make date
+                    END_CAPTURE_DATE = lubridate::as_date(END_CAPTURE_DATE))  # make date
     
     scores <- lapply(seq(dim(my.gcl$scores)[[3]]), function(dim){
       
