@@ -36,7 +36,7 @@ PoolCollections.GCL <- function(collections, loci = LocusControl$locusnames, IDs
   
   if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse)  # Install packages, if not in library and then load them.
   
-  if(nchar(newname)>200){
+  if(nchar(newname) > 200){
     
     newname <- substr(newname, start = 1, stop = 200)
     
@@ -44,7 +44,7 @@ PoolCollections.GCL <- function(collections, loci = LocusControl$locusnames, IDs
   
   if(!all(loci %in% LocusControl$locusnames)){
     
-    stop(paste0("The following `loci` were not found in `LocusControl`:\n", paste(setdiff(loci,LocusControl$locusnames), collapse = "\n")))
+    stop(paste0("The following `loci` were not found in `LocusControl`:\n", paste(setdiff(loci, LocusControl$locusnames), collapse = "\n")))
     
   }
   
@@ -85,7 +85,7 @@ PoolCollections.GCL <- function(collections, loci = LocusControl$locusnames, IDs
     
     my.gcl %>% 
       dplyr::filter(FK_FISH_ID %in% IDs[[collection]]) %>% 
-      dplyr::select(dplyr::all_of(attr), dplyr::all_of(SubsetLoci))
+      dplyr::select(tidyselect::all_of(attr), tidyselect::all_of(SubsetLoci))
     
   }) %>% 
     dplyr::bind_rows() %>% 
