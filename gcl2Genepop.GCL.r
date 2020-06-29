@@ -53,9 +53,13 @@ gcl2Genepop.GCL <- function(sillyvec, loci, path, VialNums = TRUE, usat = FALSE,
     
   }
   
-  if(sum(is.na(match(loci,LocusControl$locusnames)))){stop(paste("'",loci[is.na(match(loci,LocusControl$locusnames))],"' from argument 'loci' not found in 'LocusControl' object!!!",sep=""))}
+  if(!all(loci %in% LocusControl$locusnames)){
+    
+    stop(paste0("'", setdiff(loci, LocusControl$locusnames), "' from argument 'loci' not found in 'LocusControl' object!!!"))
+    
+  }
   
-  if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse, doParallel, foreach) #Install packages, if not in library and then load them.
+  if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse, doParallel, foreach)  # Install packages, if not in library and then load them.
   
   if(ncores > parallel::detectCores()) {
     
@@ -64,29 +68,29 @@ gcl2Genepop.GCL <- function(sillyvec, loci, path, VialNums = TRUE, usat = FALSE,
   }
   
   alleles <- LocusControl$alleles[loci] %>% 
-    bind_rows(.id = "locus")
+    dplyr::bind_rows(.id = "locus")
   
   ploidy <- LocusControl %>% 
-    dplyr::filter(locusnames%in%loci) %>% 
+    dplyr::filter(locusnames %in% loci) %>% 
     dplyr::pull(ploidy) %>% 
     purrr::set_names(loci)
   
   if(sum(ploidy == 1)){
     
-    stop("One or more of the loci supplied are haploid. GENEPOP only works with diploid data (ploidy = 2).")
+    stop("One or more of the loci supplied are haploid. GENEPOP only works with diploid data (ploidy = 2)")
     
   }
   
   nalleles <- LocusControl %>% 
-    dplyr::filter(locusnames%in%loci) %>% 
+    dplyr::filter(locusnames %in% loci) %>% 
     dplyr::pull(nalleles) %>% 
     purrr::set_names(loci)
   
-  my.gcl <- lapply(sillyvec, function(silly){
+  my.gcl <- sapply(sillyvec, function(silly){
     
     get(paste(silly, ".gcl", sep=""), pos = 1)
     
-  }) %>% purrr::set_names(sillyvec)
+  }, simplify = FALSE)
   
   file <- "GENEPOP input format"
   
@@ -101,13 +105,17 @@ gcl2Genepop.GCL <- function(sillyvec, loci, path, VialNums = TRUE, usat = FALSE,
     
     new.gcl <- my.gcl[[silly]]
     
-    IDs <- paste(new.gcl$SILLY_CODE, new.gcl$FK_FISH_ID, sep = "_") 
+    IDs <- paste(new.gcl$SILLY_CODE, new.gcl$FK_FISH_ID, sep = "_")  # can't use SillySource since pooled pops preserve collection SillySource
     
     if(!VialNums){ 
       
       vials <- new.gcl$SILLY_CODE
       
-    } else{vials <- IDs}
+    } else {
+      
+      vials <- IDs
+      
+    }
     
     scores_names <- sapply(loci, function(locus) {c(locus, paste0(locus, ".1"))}) %>% 
       as.vector() 
@@ -131,7 +139,7 @@ gcl2Genepop.GCL <- function(sillyvec, loci, path, VialNums = TRUE, usat = FALSE,
           tidyr::replace_na(replace = list(0, 0) %>% 
                               purrr::set_names(variables)) %>%
           dplyr::mutate_all(.funs = stringr::str_pad, width = maxchar, pad = "0", side = "left") %>% 
-          tidyr::unite(col = loc, c(loc, paste(loc, 1, sep = ".")), sep = "")
+          tidyr::unite(col = !!rlang::as_name(loc), tidyselect::all_of(variables), sep = "")
         
       }) %>% 
         dplyr::bind_cols() %>% 
@@ -146,14 +154,14 @@ gcl2Genepop.GCL <- function(sillyvec, loci, path, VialNums = TRUE, usat = FALSE,
       
     } else {
       
-      maxchar <- max(nchar(alleles$allele))+1
+      maxchar <- max(nchar(alleles$allele)) + 1
       
       pop_scores <- lapply(loci, function(loc){
         
         variables <- c(loc, paste(loc, 1, sep = "."))
         
         my.alleles <- alleles %>% 
-          dplyr::filter(locus==loc)
+          dplyr::filter(locus == loc)
         
         scores %>%
           dplyr::select(tidyselect::all_of(variables)) %>% 
@@ -163,7 +171,7 @@ gcl2Genepop.GCL <- function(sillyvec, loci, path, VialNums = TRUE, usat = FALSE,
           tidyr::replace_na(replace = list(0, 0) %>% 
                               set_names(variables)) %>%
           dplyr::mutate_all(.funs = stringr::str_pad, width = maxchar, pad = "0", side = "left") %>% 
-          tidyr::unite(col = loc, c(loc, paste(loc, 1, sep = ".")), sep = "")
+          tidyr::unite(col = !!rlang::as_name(loc), tidyselect::all_of(variables), sep = "")
         
       }) %>% 
         dplyr::bind_cols() %>% 
@@ -178,7 +186,7 @@ gcl2Genepop.GCL <- function(sillyvec, loci, path, VialNums = TRUE, usat = FALSE,
       
     }
     
-  }#End multicore loop
+  }  # End multicore loop
   
   parallel::stopCluster(cl)
   
