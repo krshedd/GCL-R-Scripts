@@ -1,5 +1,5 @@
-FreqPop.GCL <- function(sillyvec, loci, ncores = 4 ){
- 
+FreqPop.GCL <- function(sillyvec, loci = LocusControl$locusnames, ncores = 4){
+  
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #   This function gets the allele frequency for each locus in loci for each silly in sillyvec.
   #
@@ -7,7 +7,7 @@ FreqPop.GCL <- function(sillyvec, loci, ncores = 4 ){
   #   
   #   sillyvec - a vector of silly codes without the ".gcl" extention (e.g. sillyvec <- c("KQUART06","KQUART08","KQUART10")). 
   #
-  #   loci - vector of locus names; if set to NULL all loci in the ".gcl" obejects will be used.
+  #   loci - vector of locus names; default is all LocusControl$locusnames.
   #
   #   ncores - the number of cores to use in a foreach %dopar% loop. If the nubmer of core exceeds the number on your device, then ncores defaults to detectCores()
   # 
@@ -22,25 +22,24 @@ FreqPop.GCL <- function(sillyvec, loci, ncores = 4 ){
   #  Freq <- FreqPop.GCL(sillyvec = sillyvec67, loci = loci413)
   #
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
+  
   start.time <- Sys.time() 
   
-  if(sum(is.na(match(loci, LocusControl$locusnames)))){
+  if(!all(loci %in% LocusControl$locusnames)){
     
-    stop(paste("'", loci[is.na(match(loci,LocusControl$locusnames))], "' from argument 'loci' not found in 'LocusControl' object!!!", sep = ""))
+    stop(paste0("'", setdiff(loci, LocusControl$locusnames), "' from argument 'loci' not found in 'LocusControl' object!!!"))
     
   }
   
-  if(ncores > detectCores()){
+  if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse, doParallel, parallel, foreach)  # Install packages, if not in library and then load them
+  
+  if(ncores > parallel::detectCores()) {
     
     stop("'ncores' is greater than the number of cores available on machine\nUse 'detectCores()' to determine the number of cores on your machine")
+    
+  }
   
-    }
-  
-  if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse, doParallel, parallel, foreach)  # Install packages, if not in library and then load them
-
-  all.gcl <- lapply(sillyvec, function(silly){get(paste(silly, ".gcl", sep = ""), pos = 1)}) %>% 
-    purrr::set_names(sillyvec)
+  all.gcl <- sapply(sillyvec, function(silly){get(paste0(silly, ".gcl"), pos = 1)}, simplify = FALSE)
   
   scores_cols <- sapply(loci, function(locus) {c(locus, paste0(locus, ".1"))}) %>% 
     as.vector() 
@@ -52,28 +51,28 @@ FreqPop.GCL <- function(sillyvec, loci, ncores = 4 ){
   cl <- parallel::makePSOCKcluster(ncores)
   
   doParallel::registerDoParallel(cl, cores = ncores)  
-
-  #Start parallel loop
+  
+  # Start parallel loop
   freqs <- foreach::foreach(silly = sillyvec, .packages = c("tidyverse")) %dopar% {
     
     my.gcl <- all.gcl[[silly]]
     
     my.gcl %>% 
       dplyr::select(all_of(scores_cols)) %>% 
-      tidyr::gather(key = "locus", value = "allele") %>% 
-      dplyr::mutate(locus = gsub("\\.1$", "", locus)) %>% 
-      dplyr::group_by(locus, allele) %>% 
-      dplyr::summarise(freq = length(allele), .groups = "drop_last") %>% 
-      dplyr::right_join(alleles, by = c("locus"="locus", "allele"="call"), keep = TRUE) %>%
-      replace_na(list(freq = 0)) %>% 
+      tidyr::pivot_longer(cols = tidyselect::everything(), names_to = "locus", values_to = "allele") %>% 
+      dplyr::mutate(locus = stringr::str_replace(string = locus, pattern = "\\.1$", replacement = "")) %>% 
+      dplyr::count(locus, allele) %>% 
+      dplyr::rename(freq = n) %>% 
+      dplyr::right_join(alleles, by = c("locus" = "locus", "allele" = "call"), keep = TRUE) %>%
+      tidyr::replace_na(list(freq = 0)) %>% 
       dplyr::mutate(silly = !!silly) %>% 
       dplyr::select(silly, locus = locus.y, allele_no, allele = call, freq) %>% 
       dplyr::arrange(locus, allele)
-   
+    
   } %>% 
     dplyr::bind_rows() 
   
-  parallel::stopCluster(cl) #End parallel loop
+  parallel::stopCluster(cl)  # End parallel loop
   
   output <- freqs %>% 
     dplyr::group_by(silly, locus) %>% 
@@ -82,7 +81,7 @@ FreqPop.GCL <- function(sillyvec, loci, ncores = 4 ){
     dplyr::mutate(proportion = freq/total) %>% 
     dplyr::select(-total)
   
-  print(Sys.time()-start.time)
+  print(Sys.time() - start.time)
   
   return(output)
   
