@@ -24,11 +24,11 @@ RemoveIDs.GCL <- function(silly, IDs){
   
   if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse)  # Install packages, if not in library and then load them.
   
-  if(purrr::is_empty(silly)){
-    stop( paste0("Silly is empty - is this expected?")) # check to see if silly contains anything
-  }
-  
   my.gcl <- get(paste0(silly, ".gcl"), pos = 1)
+  
+  if(nrow(my.gcl) == 0){
+    stop( paste0(silly, ".gcl is empty - is this expected?"))  # check to see if silly contains anything
+  }
   
   if(purrr::is_character(IDs)) {IDs <- as.numeric(IDs)}
   
