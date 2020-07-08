@@ -38,7 +38,7 @@ create_rubias_mixture <- function(sillyvec, loci, path = "rubias/mixture") {
     silly_mix <- get(paste0(silly, ".gcl")) %>%
       dplyr::mutate(
         sample_type = "mixture",
-        repunit = NA ,
+        repunit = NA_character_ ,
         collection = silly,
         indiv = SillySource
       ) %>%
