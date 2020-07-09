@@ -15,8 +15,6 @@ Plot_Allele_Freq.GCL <- function(freq, file, sillyvec = NULL, groupvec = NULL, l
   #
   #   loci - vector of locus names; if set to NULL all loci in the ".gcl" obejects will be used.
   #
-  #   ncores - the number of cores to use in a foreach %dopar% loop. If the nubmer of core exceeds the number on your device, then ncores defaults to detectCores()
-  # 
   # Outputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #  A pdf file containing allele fequency plots for each locus in loci
   #
