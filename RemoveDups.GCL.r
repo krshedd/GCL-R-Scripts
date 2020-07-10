@@ -16,7 +16,10 @@ RemoveDups.GCL <- function(dupcheck, remove_both = FALSE){
   #
   # Output~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #
-  #  This function returns a tibble of IDs removed for each silly in dupcheck.
+  #    Returns a tibble with 3 variables: 
+  #                  SILLY_CODE <chr> = the silly with IDs removed 
+  #                  IDs <list> = the IDs removed
+  #                  is_empty <lgl> = were all IDs removed?
   #
   # Examples~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #  password = "************"
@@ -69,7 +72,7 @@ RemoveDups.GCL <- function(dupcheck, remove_both = FALSE){
     
   }
   
-  results <- lapply(sillys, function(silly){
+  output <- lapply(sillys, function(silly){
     
     remove <- to_remove %>% 
       dplyr::filter(silly == !!silly) %>% 
@@ -77,9 +80,7 @@ RemoveDups.GCL <- function(dupcheck, remove_both = FALSE){
     
     RemoveIDs.GCL(silly = silly, IDs = remove$removed_IDs)
     
-    remove
-    
   }) %>% dplyr::bind_rows()
   
-  return(results)
+  return(output)
 }

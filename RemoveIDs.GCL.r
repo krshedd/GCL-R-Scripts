@@ -12,10 +12,16 @@ RemoveIDs.GCL <- function(silly, IDs){
   #  
   #  Assigns "*.gcl" objects with removed IDs to the current workspace. 
   #
+  #  The function returns a tibble with 3 variables: 
+  #                  SILLY_CODE <chr> = the silly with IDs removed 
+  #                  IDs <list> = the IDs removed
+  #                  is_empty <lgl> = were all IDs removed?
+  #
   # Examples~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #  password <- "************"
+  #
   #  CreateLocusControl.GCL(markersuite = "Sockeye2011_96SNPs", username = "awbarclay", password = password)
-  #  sillyvec = c("SMCDO03", "SNEVA13")
-  #  password = "************"
+  #  sillyvec <- c("SMCDO03", "SNEVA13")
   #  LOKI2R.GCL(sillyvec = sillyvec, username = "awbarclay", password = password)
   #  RemoveIndMissLoci.GCL(sillyvec = sillyvec)
   #
@@ -25,7 +31,9 @@ RemoveIDs.GCL <- function(silly, IDs){
   if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse)  # Install packages, if not in library and then load them.
   
   if(purrr::is_empty(silly)){
+    
     stop( paste0("Silly is empty - is this expected?")) # check to see if silly contains anything
+    
   }
   
   my.gcl <- get(paste0(silly, ".gcl"), pos = 1)
@@ -43,5 +51,13 @@ RemoveIDs.GCL <- function(silly, IDs){
          pos = 1)
   
   message(paste0(length(IDs), " IDs were removed from ", silly, ".gcl"))
+  
+  if(dim(get(paste0(silly, ".gcl"), pos = 1))[1]==0){
+    
+    warning(paste0("All IDs were removed from ", silly, ".gcl"))
+    
+  }
+  
+  return(tibble::tibble(SILLY_CODE = silly, IDs_Removed= list(IDs) %>% purrr::set_names(silly), is_empty = dim(get(paste0(silly, ".gcl"), pos = 1))[1]==0))
   
 }
