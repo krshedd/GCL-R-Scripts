@@ -1,4 +1,4 @@
-Plot_Allele_Freq.GCL <- function(freq, file, sillyvec = NULL, groupvec = NULL, loci = NULL, group_col = NULL, popnames = sillyvec, xlab.cex = 6, ylab.cex = 12){
+Plot_Allele_Freq.GCL <- function(freq, file, sillyvec = NULL, groupvec = NULL, loci = NULL, group_col = NULL, popnames = NULL, xlab.cex = 6, ylab.cex = 12, xtick.int = 1){
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #   This function uses the output from FreqPop.GCL() and produces allele freqency bubble plots.
@@ -17,61 +17,76 @@ Plot_Allele_Freq.GCL <- function(freq, file, sillyvec = NULL, groupvec = NULL, l
   #
   #   loci - vector of locus names; if set to NULL all loci in the ".gcl" obejects will be used.
   #
-  #   popnames - a vector of new population names (e.g. popnames <- c("KQUART","KCUP","KPINT"); Default is just sillyvec ; NULL assigns numbers seq_along(sillyvec), 
+  #   popnames - a vector of new population names (e.g. popnames <- c("KQUART","KCUP","KPINT"); Default is NULL, which assigns numbers seq_along(sillyvec) to popnames. 
+  #              Note: Setting popnames for a large number of pops may cause the x-axis tick labels to become unreadable
   #
   #   xlab.cex  - text size on x axis
   # 
   #   ylab.cex - text size y axis
   #
+  #   xtick.int - x-axis tick interval. This argument only works when popnames = NULL. Default is set to 1, which will produce ticks and tick labels for all pops.  
+  #
   # Outputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #  A pdf file containing allele fequency plots for each locus in loci
   #
   # Examples~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  #  load("V:/Analysis/2_Central/Chinook/Cook Inlet/2019/2019_UCI_Chinook_baseline_hap_data/2019_UCI_Chinook_baseline_hap_data.RData")
-  #  old2new_LocCtrl.GCL()  
-  #  old2new_gcl.GCL(sillyvec67)
-  #  Freq <- FreqPop.GCL(sillyvec = sillyvec67, loci = loci413)
+  #  load("V:\\Analysis\\5_Coastwide\\Chum\\NPen2WA_Chum_baseline\\NPen2WA_Chum_baseline.Rdata")
+  #  Freq <- FreqPop.GCL(sillyvec = sillyvec227, loci = loci91)
   #   
-  #  Plot_Allele_Freq.GCL(freq = Freq, file = "./test_freq_plots.pdf", sillyvec = sillyvec67, groupvec = groupvec, loci = loci413, group_col = grcol, popnames = NULL)
-  # Note~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  #   When quantile is set to NULL this function utilizes rubias::close_matching_samples() to perform the duplicate check and it much faster than when you set a quantile.
+  #  Plot_Allele_Freq.GCL(freq = Freq, file = "./test_freq_plots.pdf", sillyvec = sillyvec227, groupvec = groupvec19, loci = loci91, group_col = grcol, popnames = sillyvec227, xlab.cex = 6, ylab.cex = 12, xtick.int = 10)
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  
+  if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse)  # Install packages, if not in library and then load them
+    
   if(is.null(loci)) {
     loci = freq$locus %>% unique()
   }
   
   if (is.null(groupvec)) {
+    
     groupvec = seq(length(freq$silly %>% unique()))
+    
   }
   
   if (is.null(group_col)) {
+    
     group_col = rainbow(max(groupvec))
+    
   }
   
   if(is.null(sillyvec)) {
+    
     sillyvec = freq$silly %>% unique()
+    
   }
   
   if(!length(sillyvec)==length(groupvec)) {
+    
     stop("Make sure sillyvec and groupvec are the same length!!")
     
   }
   
   # set popnames to numeric if NULL
   if (is.null(popnames)) {
+    
     popnames = seq_along(sillyvec)
-  }
+    
+  } else{
+    
+    warning("Setting popnames for a large number of pops may cause the x-axis tick labels to become unreadable. 
+           If this occurs, try setting popnames = NULL to label them with population numbers and increase xtick.int(x tick interval) to reduce the number of ticks and tick labels on the x-axis.")
+    
+    }
   
   # Making it esier to read numbers on the x-axis of plots
   if (is.numeric(popnames)) {
+    
     angle = 45
+    
   } else {
+    
     angle = 90
+    
   }
-  
-  
-  if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse)  # Install packages, if not in library and then load them
   
   freq$proportion[freq$proportion == 0] <- NA 
   
@@ -79,6 +94,22 @@ Plot_Allele_Freq.GCL <- function(freq, file, sillyvec = NULL, groupvec = NULL, l
     dplyr::left_join(dplyr::tibble(silly = sillyvec, groupvec), 
                      by = "silly") %>% 
     dplyr::mutate(groupvec = factor(groupvec))
+  
+  if(is.numeric(popnames)){
+    
+    brks <- c(1, seq(0, length(popnames), by = xtick.int))
+    
+    breaks <- sillyvec[brks]
+    
+    labels <- factor(popnames)[brks]
+      
+  } else{
+    
+    breaks <- ggplot2::waiver()
+    
+    labels <- popnames
+    
+  }
   
   pdf(file = file)
   
@@ -92,13 +123,14 @@ Plot_Allele_Freq.GCL <- function(freq, file, sillyvec = NULL, groupvec = NULL, l
       ggplot2::ggplot(aes(x = silly, y = allele, color = groupvec, size = proportion*100)) +
       ggplot2::geom_point() + 
       ggplot2::scale_color_manual(values = group_col, guide = FALSE) +
-      ggplot2::scale_x_discrete(labels = popnames) +
+      ggplot2::scale_x_discrete(labels = labels, breaks = breaks) +
+      ggplot2::xlab("Pop")
       ggplot2::theme(legend.position = "none", 
                      axis.text.x = ggplot2::element_text(angle = angle, hjust = 1, vjust = 0.5, size = xlab.cex), 
                      axis.text.y = ggplot2::element_text(size = ylab.cex)) +
       ggplot2::ggtitle(label = locus)
     
-    print(plot)
+   suppressWarnings(print(plot))
     
     })
   
