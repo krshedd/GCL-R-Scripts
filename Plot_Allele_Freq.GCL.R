@@ -33,7 +33,7 @@ Plot_Allele_Freq.GCL <- function(freq, file, sillyvec = NULL, groupvec = NULL, l
   #  load("V:\\Analysis\\5_Coastwide\\Chum\\NPen2WA_Chum_baseline\\NPen2WA_Chum_baseline.Rdata")
   #  Freq <- FreqPop.GCL(sillyvec = sillyvec227, loci = loci91)
   #   
-  #  Plot_Allele_Freq.GCL(freq = Freq, file = "./test_freq_plots.pdf", sillyvec = sillyvec227, groupvec = groupvec19, loci = loci91, group_col = grcol, popnames = sillyvec227, xlab.cex = 6, ylab.cex = 12, xtick.int = 10)
+  #  Plot_Allele_Freq.GCL(freq = Freq, file = "./test_freq_plots.pdf", sillyvec = sillyvec227, groupvec = groupvec19, loci = loci91, group_col = grcol, popnames = NULL, xlab.cex = 6, ylab.cex = 12, xtick.int = 10)
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse)  # Install packages, if not in library and then load them
     
