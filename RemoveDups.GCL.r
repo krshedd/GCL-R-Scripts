@@ -33,7 +33,13 @@ RemoveDups.GCL <- function(dupcheck, remove_both = FALSE){
   #
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
-  if(is_empty(dupcheck)){stop("Nothing removed. There are no duplicates to remove in dupcheck.", call. = FALSE)}
+  if(is_empty(dupcheck)){
+    
+    warning("Nothing removed. There are no duplicates to remove in dupcheck.", call. = FALSE)
+    
+    return(data.frame())
+    
+    }
   
   if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse)  # Install packages, if not in library and then load them.
   
