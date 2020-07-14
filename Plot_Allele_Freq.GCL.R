@@ -124,7 +124,7 @@ Plot_Allele_Freq.GCL <- function(freq, file, sillyvec = NULL, groupvec = NULL, l
       ggplot2::geom_point() + 
       ggplot2::scale_color_manual(values = group_col, guide = FALSE) +
       ggplot2::scale_x_discrete(labels = labels, breaks = breaks) +
-      ggplot2::xlab("Pop")
+      ggplot2::xlab("Pop")+
       ggplot2::theme(legend.position = "none", 
                      axis.text.x = ggplot2::element_text(angle = angle, hjust = 1, vjust = 0.5, size = xlab.cex), 
                      axis.text.y = ggplot2::element_text(size = ylab.cex)) +
