@@ -20,9 +20,9 @@ PoolCollections.GCL <- function(collections, loci = LocusControl$locusnames, IDs
   #    Assigns a new "pooled collection" to your workspace
   #
   # Example~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  #   load("V:/Analysis/2_Central/Chinook/Cook Inlet/2019/2019_UCI_Chinook_baseline_hap_data/2019_UCI_Chinook_baseline_hap_data.RData")
+  #   load("V:/Analysis/2_Central/Chinook/Cook Inlet/2019/2019_UCI_Chinook_baseline_hap_data/2019_UCI_Chinook_baseline_hap_data_test.RData")
   # 
-  #   removedInd <- (collections = c("KQUART06","KQUART08","KQUART10"), loci = loci, IDs = list(KQUART06 = 3:12, KQUART08 = 1:10, KQUART10 = 1:4), newname = "QuartzCr")
+  #   PoolCollections.GCL(collections = c("KQUART06","KQUART08","KQUART10"), loci = loci557, IDs = list(KQUART06 = 3:12, KQUART08 = 1:10, KQUART10 = 1:4), newname = "QuartzCr")
   #
   # Note~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #   This function is also useful for producing "pooled mixture" objects for mixed stock analysis. 
