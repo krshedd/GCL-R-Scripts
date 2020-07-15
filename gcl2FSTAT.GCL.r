@@ -2,7 +2,7 @@ gcl2FSTAT.GCL <- function(sillyvec, loci, path, ncores = 4){
   
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #
-  #   This function creates a GENEPOP input file from "*.gcl" objects.
+  #   Write out an FSTAT input file from "*.gcl" objects.
   #
   # Inputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #   
@@ -10,7 +10,9 @@ gcl2FSTAT.GCL <- function(sillyvec, loci, path, ncores = 4){
   #
   #   loci - a character vector of locus names
   #   
-  #   path - the file path with file name in cluding .dat extension
+  #   path - full file path to write out the FSTAT file with "\\" or "/" separator between folders 
+  #           example: "V:\\Analysis\\2_Central\\Chinook\\Cook Inlet\\2019\\2019_UCI_Chinook_baseline_hap_data\\FSTAT\\FSTATfile.dat"
+  #                   or "V:/Analysis/2_Central/Chinook/Cook Inlet/2019/2019_UCI_Chinook_baseline_hap_data/FSTAT/FSTATfile.dat"
   #
   #   ncores - a numeric vector of length one indicating the number of cores to use
   #
@@ -18,7 +20,7 @@ gcl2FSTAT.GCL <- function(sillyvec, loci, path, ncores = 4){
   # 
   # Outputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #
-  #  "fstatfile.dat" is put into "dir"
+  #   Writes out an FSTAT file to path.
   #
   # Example~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #   load("V:/Analysis/2_Central/Chinook/Susitna River/Susitna_Chinook_baseline_2020/Susitna_Chinook_baseline_2020.Rdata")

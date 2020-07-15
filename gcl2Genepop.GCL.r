@@ -1,7 +1,7 @@
 gcl2Genepop.GCL <- function(sillyvec, loci, path, VialNums = TRUE, usat = FALSE, ncores = 4){
   
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  #   This function creates a GENEPOP input file from "*.gcl" objects.
+  #   Write out a GENEPOP input file from "*.gcl" objects.
   #
   # Inputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #   
@@ -13,7 +13,7 @@ gcl2Genepop.GCL <- function(sillyvec, loci, path, VialNums = TRUE, usat = FALSE,
   #           example: "V:\\Analysis\\2_Central\\Chinook\\Cook Inlet\\2019\\2019_UCI_Chinook_baseline_hap_data\\GENEPOP\\genepopfile.gen"
   #                   or "V:/Analysis/2_Central/Chinook/Cook Inlet/2019/2019_UCI_Chinook_baseline_hap_data/GENEPOP/genepopfile.gen"
   # 
-  #   VialNums - logical; if TRUE (default), vial numbers will be included for each individual next to their silly code separated by an underscore (e.g. KCRESC10_1)
+  #    - logical; if TRUE (default), vial numbers will be included for each individual next to their silly code separated by an underscore (e.g. KCRESC10_1)
   #                       if FALSE, only the silly code will be included for each individual.
   #
   #   usat - logical; whether the data are from microsatellites (TRUE) or not (FALSE). 
@@ -22,7 +22,7 @@ gcl2Genepop.GCL <- function(sillyvec, loci, path, VialNums = TRUE, usat = FALSE,
   #   ncores - the number of cores for mulitcoring using doParallel and foreach. 
   # 
   # Outputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  #    Writes out a GENEPOP file.
+  #    Writes out a GENEPOP file to path.
   #
   # Examples~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
   #  
