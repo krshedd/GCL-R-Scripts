@@ -1,7 +1,7 @@
 CombineLoci.GCL <- function(sillyvec, markerset, update = TRUE, delim = c(".", "_")[1]){
   
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  #   This function combines a set of markers into a single marker. 
+  #   This function combines a set of markers into a single marker set. 
   #
   # Inputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #
@@ -14,9 +14,6 @@ CombineLoci.GCL <- function(sillyvec, markerset, update = TRUE, delim = c(".", "
   #	
   #   delim - specifies the separator between combined loci, either a period (.) which is the default or an underscore (_) so locus names will work in SPAM 
   #	
-  #
-  # Outputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  #
   # Example~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #  
   #   password = "************"
