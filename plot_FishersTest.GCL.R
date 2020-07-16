@@ -21,6 +21,15 @@ plot_FishersTest.GCL <- function(pooling_test) {
   #   
   #   plot_FishersTest.GCL(pooling_test = temp_pool)
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
+  
+  # just setting variables for use in plotting - set ncol to something reasonable in facet_wrap 
+  if( length(pooling_test$test_sillys) > 4){
+    ncols <- round( length(pooling_test$test_sillys) / 3, 0)
+  } else {
+    ncols <- NULL
+  }
+  
   pooling_test %>% unnest(bylocus) %>%
     filter(locus != "Overall") %>%
     ggplot(aes(x = pval)) +
@@ -31,6 +40,6 @@ plot_FishersTest.GCL <- function(pooling_test) {
       colour = "red",
       size = 6
     ) +
-    facet_grid(. ~ test_sillys) +
+    facet_wrap(~ test_sillys, ncol = ncols) +
     theme_bw()
 }
