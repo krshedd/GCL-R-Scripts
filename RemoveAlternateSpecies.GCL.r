@@ -1,4 +1,4 @@
-RemoveAlternateSpecies.GCL=function(AlternateSpeciesReport, AlternateCutOff = 0.5, FailedCutOff = 0.5, NonmissingCutOff){
+RemoveAlternateSpecies.GCL <- function(AlternateSpeciesReport, AlternateCutOff = 0.5, FailedCutOff = 0.5, NonmissingCutOff){
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #   This function removes fish that have been indentified, via genetic markers, as the wrong species.
   #   It relies on output from FindAlternateSpecies.GCL. 
@@ -6,9 +6,9 @@ RemoveAlternateSpecies.GCL=function(AlternateSpeciesReport, AlternateCutOff = 0.
   # Inputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #
   #   AlternateSpeciesReport - The object created by FindAlternateSpecies.GCL
-  #   AlternateCutOff - The percent similarity that you want to call a fish as 'wrong species'; default 0.5
-  #   FailedCutOff - The percent similarity that you want to call a fish as 'wrong species'; default 0.5
-  #   NonmissingCutOff - The number of nonmissing alternate loci
+  #   AlternateCutOff - The minimum proportion of alternate alleles an individual must have in order to be considered the 'wrong species'; default 0.5
+  #   FailedCutOff - The minimum proportion of failed loci an individual must have in order to be considered the 'wrong species'; default 0.5
+  #   NonmissingCutOff - The minimum number of nonmissing alternate loci an individual must have in order to be considered the 'wrong species'
   #
   # Outputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #   Tibble showing which fish were removed and their stats (alternate, failed markers)
@@ -38,10 +38,7 @@ RemoveAlternateSpecies.GCL=function(AlternateSpeciesReport, AlternateCutOff = 0.
     ) %>%
     dplyr::filter(fate == "remove") # Just get fish marked to remove
   
-  #RemoveIDs.GCL(silly = RemovedSpp$silly, IDs = RemovedSpp$ID) # Call on RemoveIDs to take care of removal.
-  
-  output <- lapply(
-    RemovedSpp$silly %>% unique(), function(silly){
+  output <- lapply(RemovedSpp$silly %>% unique(), function(silly){
     
     IDsToRemove <-  RemovedSpp %>% 
       dplyr::filter(silly == !!silly) %>% 
@@ -51,11 +48,18 @@ RemoveAlternateSpecies.GCL=function(AlternateSpeciesReport, AlternateCutOff = 0.
       
       RemoveIDs.GCL(silly = silly, IDs = IDsToRemove)
       
-    }
+    }else(data.frame())
 
   }) %>%
     dplyr::bind_rows()
   
+  if(is_empty(output)){
+    
+    warning("No fish were identified as the wrong species.")
+    
+  }
+  
   return(output)
+  
 }
 
