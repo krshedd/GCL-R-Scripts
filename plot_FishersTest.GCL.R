@@ -31,16 +31,16 @@ plot_FishersTest.GCL <- function(pooling_test, loci) {
     ncols <- NULL
   }
   
-  pooling_test %>% unnest(bylocus) %>%
-    filter(locus != "Overall") %>%
-    ggplot(aes(x = pval)) +
-    geom_histogram(binwidth = 0.05) +
-    geom_hline(yintercept = length(loci) / 20, colour = "red") +
-    geom_text(
+  pooling_test %>% tidyr::unnest(bylocus) %>%
+    dplyr::filter(locus != "Overall") %>%
+    ggplot2::ggplot(aes(x = pval)) +
+    ggplot2::geom_histogram(binwidth = 0.05) +
+    ggplot2::geom_hline(yintercept = length(loci) / 20, colour = "red") +
+    ggplot2::geom_text(
       mapping = aes(x = 0.5, y = 15, label = overall),
       colour = "red",
       size = 6
     ) +
-    facet_wrap(~ test_sillys, ncol = ncols) +
-    theme_bw()
+    ggplot2::facet_wrap(~ test_sillys, ncol = ncols) +
+    ggplot2::theme_bw()
 }
