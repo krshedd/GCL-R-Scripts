@@ -1,4 +1,4 @@
-plot_FishersTest.GCL <- function(pooling_test) {
+plot_FishersTest.GCL <- function(pooling_test, loci) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #   This function plots results from FishersTest.GCL(). You can feed alist of sillys and it will facet by sillys.
   #   Null hypothesis: there are no significant differences in allele freqencies.
@@ -6,6 +6,7 @@ plot_FishersTest.GCL <- function(pooling_test) {
   # Inputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #   
   #   pooling_test - raw output from FishersTest.GCL()
+  #   loci <- vector of loci
   #
   # Outputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #    Produces a plot of the results from FishersTest.GCL. Specifically, displays p-value, overall p-value, by silly.
@@ -19,7 +20,7 @@ plot_FishersTest.GCL <- function(pooling_test) {
   # 
   #   temp_pool <- FishersTest.GCL(freq = freq, loci = loci443, tests = list(c("KKILL05","KKILL06"), c("KFUNN05", "KFUNN06")))
   #   
-  #   plot_FishersTest.GCL(pooling_test = temp_pool)
+  #   plot_FishersTest.GCL(pooling_test = temp_pool, loci = loci443)
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
   
@@ -34,7 +35,7 @@ plot_FishersTest.GCL <- function(pooling_test) {
     filter(locus != "Overall") %>%
     ggplot(aes(x = pval)) +
     geom_histogram(binwidth = 0.05) +
-    geom_hline(yintercept = length(loci96) / 20, colour = "red") +
+    geom_hline(yintercept = length(loci) / 20, colour = "red") +
     geom_text(
       mapping = aes(x = 0.5, y = 15, label = overall),
       colour = "red",
