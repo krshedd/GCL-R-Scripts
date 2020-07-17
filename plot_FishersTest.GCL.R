@@ -1,4 +1,4 @@
-plot_FishersTest.GCL <- function(pooling_test, loci) {
+plot_FishersTest.GCL <- function(pooling_test) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #   This function plots results from FishersTest.GCL(). You can feed alist of sillys and it will facet by sillys.
   #   Null hypothesis: there are no significant differences in allele freqencies.
@@ -6,7 +6,6 @@ plot_FishersTest.GCL <- function(pooling_test, loci) {
   # Inputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #   
   #   pooling_test - raw output from FishersTest.GCL()
-  #   loci <- vector of loci
   #
   # Outputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #    Produces a plot of the results from FishersTest.GCL. Specifically, displays p-value, overall p-value, by silly.
@@ -32,10 +31,10 @@ plot_FishersTest.GCL <- function(pooling_test, loci) {
   }
   
   pooling_test %>% tidyr::unnest(bylocus) %>%
-    dplyr::filter(locus != "Overall") %>%
+    dplyr::filter(locus != "Overall") %>% # I don't think we actually need this?
     ggplot2::ggplot(aes(x = pval)) +
     ggplot2::geom_histogram(binwidth = 0.05) +
-    ggplot2::geom_hline(yintercept = length(loci) / 20, colour = "red") +
+    ggplot2::geom_hline(yintercept = (pooling_test %>% tidyr::unnest(bylocus) %>% dplyr::select(locus) %>% dplyr::n_distinct()) / 20, colour = "red") + #XXXX okay -how do I reference the 'locus' column in the tibble I pipe to ggplot?? seems silly to remake it
     ggplot2::geom_text(
       mapping = aes(x = 0.5, y = 15, label = overall),
       colour = "red",
