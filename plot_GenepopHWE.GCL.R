@@ -1,4 +1,4 @@
-plot_GenepopHWE.GCL <- function(GenepopHWE_report, sillyvec, loci) {
+plot_GenepopHWE.GCL <- function(GenepopHWE_report, sillyvec) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #   This function plots results from ReadGenepopHWE.GCL(). You provide the report, a list of sillys, and loci and it will provide a visual of
   #   p-values faceted by silly.
@@ -7,7 +7,6 @@ plot_GenepopHWE.GCL <- function(GenepopHWE_report, sillyvec, loci) {
   #   
   #   GenepopHWE_report - raw output from ReadGenepopHWE.GCL()
   #   sillyvec <- vector of sillys you're interested in
-  #   loci <- vector of loci
   #
   # Outputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #    Produces a plot of the results from ReadGenepopHWE.GCL. Specifically, displays p-value, overall p-value, by silly.
@@ -37,7 +36,7 @@ plot_GenepopHWE.GCL <- function(GenepopHWE_report, sillyvec, loci) {
   # Now plot the pvals
     ggplot2::ggplot(data = HWEpval %>% dplyr::filter(locus != "Overall Loci"), aes(x = pval)) +
     ggplot2::geom_histogram(binwidth = 0.05) +
-    ggplot2::geom_hline(yintercept = length(loci) / 20, colour = "red") +
+    ggplot2::geom_hline(yintercept = (HWEpval %>% dplyr::select(locus) %>% dplyr::n_distinct()) / 20, colour = "red") +
     ggplot2::geom_text(
       data = HWEpval %>% dplyr::filter( locus == "Overall Loci"),
       mapping = aes(x = 0.5, y = 15, label = pval),
