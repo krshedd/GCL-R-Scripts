@@ -116,7 +116,7 @@ Plot_Allele_Freq.GCL <- function(freq, file, sillyvec = NULL, groupvec = NULL, l
   lapply(loci, function(locus){
     
     plot <- freq_df %>%
-      filter(locus == locus) %>% 
+      dplyr::filter(locus == locus) %>% 
       dplyr::filter(locus == !!locus) %>% 
       dplyr::mutate(silly = factor(silly, levels = sillyvec), 
                     allele = factor(allele, unique(allele))) %>% 
