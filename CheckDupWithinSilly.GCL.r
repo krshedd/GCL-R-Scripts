@@ -27,14 +27,15 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci = LocusControl$locusnames, qu
   # Examples~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #
   # password <- "************"
-  # CreateLocusControl.GCL(markersuite = "Sockeye2011_96SNPs", username = "awbarclay", password = password)
+  # username <- "******"
+  # CreateLocusControl.GCL(markersuite = "Sockeye2011_96SNPs", username = username, password = password)
   # sillyvec <- c("SMCDO03", "SNEVA13")
-  #  LOKI2R.GCL(sillyvec = sillyvec, username = "awbarclay", password = password)
+  # LOKI2R.GCL(sillyvec = sillyvec, username = username, password = password)
   # RemoveIndMissLoci.GCL(sillyvec = sillyvec)
   # PoolCollections.GCL(c("SMCDO03", "SNEVA13"))
   # 
-  # dupcheck <- CheckDupWithinSilly.GCL(sillyvec = "SMCDO03.SNEVA13", loci = LocusControl$locusnames, quantile = 0.99, minproportion = 0.95, ncores = 8)
-  # dupcheckNULLQantile <- CheckDupWithinSilly.GCL(sillyvec = "SMCDO03.SNEVA13", loci = LocusControl$locusnames, quantile = NULL, minnonmissing = 0.6, minproportion = 0.95, ncores = 8)
+  # dupcheck <- CheckDupWithinSilly.GCL(sillyvec = "SMCDO03.SNEVA13", loci = LocusControl$locusnames, quantile = 0.99, minproportion = 0.95, ncores = 4)
+  # dupcheckNULLQantile <- CheckDupWithinSilly.GCL(sillyvec = "SMCDO03.SNEVA13", loci = LocusControl$locusnames, quantile = NULL, minnonmissing = 0.6, minproportion = 0.95, ncores = 4)
   # 
   # Note~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #   When quantile is set to NULL this function utilizes rubias::close_matching_samples() to perform the duplicate check and it much faster than when you set a quantile.
@@ -155,8 +156,8 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci = LocusControl$locusnames, qu
     parallel::stopCluster(cl)
     
     dupcheck <- dupcheck0 %>% 
-      tidyr::separate(indiv_1, into = c(NA, "ID1"), sep = "\\_(?=[^\\_.]+$)", extra = "drop") %>% 
-      tidyr::separate(indiv_2, into = c(NA, "ID2"), sep = "\\_(?=[^\\_.]+$)", extra = "drop") %>% 
+      tidyr::separate(indiv_1, into = c(NA, "ID1"), sep = "\\_(?=[^\\_]+$)", extra = "drop") %>% 
+      tidyr::separate(indiv_2, into = c(NA, "ID2"), sep = "\\_(?=[^\\_]+$)", extra = "drop") %>%
       dplyr::mutate(silly = collection_1, 
                     proportion = num_match/num_non_miss) %>% 
       dplyr::select(silly, ID1, ID2, proportion)
