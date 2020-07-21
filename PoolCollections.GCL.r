@@ -1,4 +1,4 @@
-PoolCollections.GCL <- function(collections, loci = LocusControl$locusnames, IDs = NULL, newname = paste(collections,collapse=".")){
+PoolCollections.GCL <- function(collections, loci = LocusControl$locusnames, IDs = NULL, newname = paste(collections, collapse = ".")){
   
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #   This function combines "*.gcl" objects into a new one called "newname.gcl".
@@ -89,7 +89,7 @@ PoolCollections.GCL <- function(collections, loci = LocusControl$locusnames, IDs
     
   }) %>% 
     dplyr::bind_rows() %>% 
-    dplyr::mutate(FK_FISH_ID = seq(length(unlist(IDs))))
+    dplyr::mutate(FK_FISH_ID = seq(length(unlist(IDs))), SILLY_CODE = newname)
   
   assign(paste0(newname, ".gcl"), output, pos = 1, envir = .GlobalEnv)  
   
