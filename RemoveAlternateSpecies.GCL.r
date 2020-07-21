@@ -28,7 +28,7 @@ RemoveAlternateSpecies.GCL <- function(AlternateSpeciesReport, AlternateCutOff =
   if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse)  # Install packages, if not in library and then load them.
   
   RemovedSpp <- AlternateSpeciesReport %>% # This is output from FindAlternateSpecies.GCL
-    tidyr::separate(col = "silly_fish", into = c("silly", "ID"), sep = "_") %>% # Split out silly and fish
+    tidyr::separate(col = "silly_fish", into = c("silly", "ID"), sep = "\\_(?=[^\\_.]+$)") %>% # Split out silly and fish
     dplyr::mutate(
       fate =
         dplyr::case_when(

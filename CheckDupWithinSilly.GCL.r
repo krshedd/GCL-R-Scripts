@@ -155,8 +155,8 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci = LocusControl$locusnames, qu
     parallel::stopCluster(cl)
     
     dupcheck <- dupcheck0 %>% 
-      tidyr::separate(indiv_1, into = c(NA, "ID1"), sep = "_") %>% 
-      tidyr::separate(indiv_2, into = c(NA, "ID2"), sep = "_") %>% 
+      tidyr::separate(indiv_1, into = c(NA, "ID1"), sep = "\\_(?=[^\\_.]+$)", extra = "drop") %>% 
+      tidyr::separate(indiv_2, into = c(NA, "ID2"), sep = "\\_(?=[^\\_.]+$)", extra = "drop") %>% 
       dplyr::mutate(silly = collection_1, 
                     proportion = num_match/num_non_miss) %>% 
       dplyr::select(silly, ID1, ID2, proportion)
