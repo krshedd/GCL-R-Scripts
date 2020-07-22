@@ -32,7 +32,7 @@ summarize_rubias_baseline_eval.GCL <- function(mixvec, sample_sizes, method = c(
   #  require(tidyverse)
   #  tests <- sample_sizes %>% group_by(test_group, scenario) %>% summarize(test_group = test_group %>% unique(), scenario = scenario %>% unique(), .groups = "drop_last")#Total of 510 tests  # 
   #  mixvec <- tests %>% unite(col = "mixvec", test_group, scenario, sep ="_" ) %>% pull()
-  #  path <-  "V:/Analysis/2_Central/Chinook/Susitna River/Susitna_Chinook_baseline_2020/rubias/output"
+  #  path <-  "V:/Analysis/2_Central/Chinook/Susitna River/Susitna_Chinook_baseline_2020/rubias/output/3groups"
   #
   #  summarize_rubias_baseline_eval.GCL (mixvec = mixvec, sample_sizes = sample_sizes, method = "both", group_names = NULL, group_names_new = NULL, groupvec = NULL, groupvec_new = NULL, path = path, alpha = 0.1, 
   #                                  burn_in = 5000, threshold = 5e-7, ncores = 8) 
@@ -88,7 +88,7 @@ summarize_rubias_baseline_eval.GCL <- function(mixvec, sample_sizes, method = c(
   
   # Create estimates output summary
   estimates_out <- estimates %>% 
-    tidyr::separate(mixture_collection, into = c("test_group", "scenario"), sep = "@|\\_(?=[^\\_]+$)", remove = TRUE) %>%#The regular expression means the last instance of "_", just in case someone has a group name with an underscore.
+    tidyr::separate(mixture_collection, into = c("test_group", "scenario"), sep = "\\_(?=[^\\_]+$)", remove = TRUE) %>%#The regular expression means the last instance of "_", just in case someone has a group name with an underscore.
     dplyr::mutate(scenario = as.numeric(scenario)) %>% 
     dplyr::left_join(sample_sizes, by = c("repunit" = "repunit", "scenario" = "scenario", "test_group" = "test_group")) %>% 
     dplyr::group_by(test_group, scenario, method) %>% 
