@@ -54,7 +54,7 @@ RemoveIDs.GCL <- function(silly, IDs){
   
   if(dim(get(paste0(silly, ".gcl"), pos = 1))[1]==0){
     
-    warning(paste0("All IDs were removed from ", silly, ".gcl"))
+    warning(paste0("All IDs were removed from ", silly, ".gcl \n"))
     
   }
   
