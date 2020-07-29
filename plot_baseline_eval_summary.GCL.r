@@ -31,13 +31,13 @@ plot_baseline_eval_summary.GCL <- function(summary, file, method = c("MCMC", "PB
   # Example~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #  load("V:/Analysis/2_Central/Chinook/Susitna River/Susitna_Chinook_baseline_2020/Susitna_Chinook_baseline_2020.Rdata")
   #  require(tidyverse)
-  #  tests <- sample_sizes %>% group_by(test_group, scenario) %>% summarize(test_group = test_group %>% unique(), scenario = scenario %>% unique(), .groups = "drop_last")#Total of 510 tests  # 
+  #  tests <- sample_sizes %>% group_by(test_group, scenario) %>% summarize(test_group = test_group %>% unique(), scenario = scenario %>% unique(), .groups = "drop_last")#Total of 510 tests  #
   #  mixvec <- tests %>% unite(col = "mixvec", test_group, scenario, sep ="_" ) %>% pull()
-  #  path <-  "V:/Analysis/2_Central/Chinook/Susitna River/Susitna_Chinook_baseline_2020/rubias/output"
+  #  path <-  "V:/Analysis/2_Central/Chinook/Susitna River/Susitna_Chinook_baseline_2020/rubias/output/3groups"
   #  summary <- summarize_rubias_baseline_eval.GCL (mixvec = mixvec, sample_sizes = sample_sizes, method = "both", group_names = NULL, group_names_new = NULL, groupvec = NULL, groupvec_new = NULL, path = path, alpha = 0.1, burn_in = 5000, threshold = 5e-7, ncores = 8)
-  #
-  #  plot_baseline_eval_summary.GCL(summary = summary, file = "Baseline_eval_plots.pdf", method = "both", test_groups = groups, group_colors = grcol)
   # 
+  #  plot_baseline_eval_summary.GCL(summary = summary, file = "Baseline_eval_plots.pdf", method = "both", test_groups = groups3, group_colors = c("green", "magenta", "red"))
+  #  
   # Note~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #
   #  If a large number of test_groups are supplied the faceted plots will become too small to see on one page.  
@@ -127,6 +127,7 @@ plot_baseline_eval_summary.GCL <- function(summary, file, method = c("MCMC", "PB
         ggplot2::geom_text(aes(x = .3, y = 1, label = paste0("RMSE:", round(RMSE, digits = 3))), color = "black", size = 3)+ 
         ggplot2::geom_text(aes(x = .3, y = .94, label = paste0("Bias:", round(Mean_Bias, digits = 3))), color="black", size = 3)+
         ggplot2::geom_text(aes(x = .3, y = .88, label = paste0("90% Within: ", round(100*`90%_within`, 1), "%")), color = "black", size = 3)+
+        ggplot2::geom_text(aes(x = .3, y = .82, label = paste0("Within Interval: ", round(100*Within_Interval, 1), "%")), color = "black", size = 3)+
         ggplot2::facet_wrap(~ test_group) +
         ggplot2::theme(legend.position = "none", strip.text.x = element_text(size = 16), panel.spacing.y = unit(3, "lines"))+
         ggplot2::xlab("True Proportion") +
@@ -156,6 +157,7 @@ plot_baseline_eval_summary.GCL <- function(summary, file, method = c("MCMC", "PB
       ggplot2::geom_text(aes(x = .3, y = 1, label = paste0("RMSE:", round(RMSE, digits = 3))), color = "black", size = 3)+ 
       ggplot2::geom_text(aes(x = .3, y = .94, label = paste0("Bias:", round(Mean_Bias, digits = 3))), color="black", size = 3)+
       ggplot2::geom_text(aes(x = .3, y = .88, label = paste0("90% Within: ", round(100*`90%_within`, 1), "%")), color = "black", size = 3)+
+      ggplot2::geom_text(aes(x = .3, y = .82, label = paste0("Within Interval: ", round(100*Within_Interval, 1), "%")), color = "black", size = 3)+
       ggplot2::facet_wrap(~ test_group) +
       ggplot2::theme(legend.position = "none", strip.text.x = element_text(size = 16), panel.spacing.y = unit(3, "lines"))+
       ggplot2::xlab("True Proportion") +
