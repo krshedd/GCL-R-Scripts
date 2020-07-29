@@ -103,7 +103,7 @@ summarize_rubias_baseline_eval.GCL <- function(mixvec, sample_sizes, method = c(
     dplyr::group_by(method, test_group) %>%
     dplyr::mutate(Bias = mean-true_proportion, Abs_Bias = abs(mean-true_proportion), Bias_squared = (mean-true_proportion)^2, CI_width = hi95CI-lo5CI,
            lo5CI_within = true_proportion-lo5CI, hi95CI_within = hi95CI-true_proportion, Within_CI = dplyr::case_when(true_proportion >= lo5CI & true_proportion <= hi95CI ~ TRUE, TRUE~FALSE)) %>%
-    dplyr::summarise(RMSE = sqrt(mean(Bias_squared)), Mean_Bias = mean(Bias), `90%_within` = quantile(Abs_Bias, probs = 0.9), .groups = "drop_last", Within_Interval = sum(Within_CI)/dplyr::n())
+    dplyr::summarise(RMSE = sqrt(mean(Bias_squared)), Mean_Bias = mean(Bias), `90%_within` = quantile(Abs_Bias, probs = 0.9), Within_Interval = sum(Within_CI)/dplyr::n(), .groups = "drop_last") 
   
   return(list(estimates = estimates_out, summary_stats = summary_stats))
     
