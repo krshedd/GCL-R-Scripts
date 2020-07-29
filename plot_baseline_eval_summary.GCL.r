@@ -114,9 +114,9 @@ plot_baseline_eval_summary.GCL <- function(summary, file, method = c("MCMC", "PB
     sapply(c("MCMC", "PB"), function(meth){
       
       plot <- summary$estimates %>%
-        dplyr::mutate(test_group = factor(test_group, levels = test_groups), repunit = factor(repunit, levels = unique(repunit))) %>% 
         dplyr::filter(method==meth, test_group==repunit) %>% 
-        dplyr::left_join(summary$summary_stats, by = c("test_group", "method")) %>% 
+        dplyr::left_join(summary$summary_stats, by = c("test_group", "method")) %>%
+        dplyr::mutate(test_group = factor(test_group, levels = levels(repunit))) %>% 
         ggplot2::ggplot(aes(x = true_proportion, y = mean, colour = repunit)) +
         ggplot2::geom_point() +
         ggplot2::geom_linerange(aes(ymin = lo5CI, ymax = hi95CI))+
@@ -144,9 +144,9 @@ plot_baseline_eval_summary.GCL <- function(summary, file, method = c("MCMC", "PB
     meth <- method
     
     plot <- summary$estimates %>%
-      dplyr::mutate(test_group = factor(test_group, levels = test_groups), repunit = factor(repunit, levels = unique(repunit))) %>% 
       dplyr::filter(method==meth, test_group==repunit) %>% 
-      dplyr::left_join(summary$summary_stats, by = c("test_group", "method")) %>% 
+      dplyr::left_join(summary$summary_stats, by = c("test_group", "method")) %>%
+      dplyr::mutate(test_group = factor(test_group, levels = levels(repunit))) %>% 
       ggplot2::ggplot(aes(x = true_proportion, y = mean, colour = repunit)) +
       ggplot2::geom_point() +
       ggplot2::geom_linerange(aes(ymin = lo5CI, ymax = hi95CI))+
