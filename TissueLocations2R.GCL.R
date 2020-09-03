@@ -26,8 +26,10 @@ TissueLocations_2R.GCL <- function(unit, username, password, bad_location = FALS
   #  all_data = TRUE # yes, I want all the data
   #
   #  TissueLocations_2R.GCL(unit = unit, username = username, password = .password, bad_location = bad_location, all_data = all_data)
-  #
-  #
+  #  
+  #  write_csv(x = tissuemap, path = paste0("C:/Users/csjalbert/Desktop/tissuemap_", Sys.Date(), ".csv")) # export CSV of the tissue map
+  #  write_csv(x = all_data, path = paste0("C:/Users/csjalbert/Desktop/tissues_all_locations_", Sys.Date(), ".csv")) # export CSV of ALL tissues
+  #  write_csv(x = bad_location, path = paste0("C:/Users/csjalbert/Desktop/bad_tissue_locations_", Sys.Date(), ".csv")) # export CSV of incorrect tissues
   ##########################################
   
   # Setup  
