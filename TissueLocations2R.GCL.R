@@ -28,13 +28,20 @@ TissueLocations_2R.GCL <- function(unit, username, password, bad_location = FALS
   #
   #  TissueLocations_2R.GCL(unit = unit, username = username, password = password, bad_location = bad_location, all_data = all_data)
   #  
-  #  write_csv(x = tissuemap, path = paste0("C:/Users/csjalbert/Desktop/tissuemap_", Sys.Date(), ".csv")) # export CSV of the tissue map
-  #  write_csv(x = all_data, path = paste0("C:/Users/csjalbert/Desktop/tissues_all_locations_", Sys.Date(), ".csv")) # export CSV of ALL tissues
-  #  write_csv(x = bad_location, path = paste0("C:/Users/csjalbert/Desktop/bad_tissue_locations_", Sys.Date(), ".csv")) # export CSV of incorrect tissues
+  #  write_csv(x = tissuemap, path = paste0("V:/Lab/Archive Storage/Archive Sample Maps from R/tissuemap_", Sys.Date(), ".csv")) # export CSV of the tissue map
+  #  write_csv(x = all_data, path = paste0("V:/Lab/Archive Storage/Archive Sample Maps from R/_", Sys.Date(), ".csv")) # export CSV of ALL tissues
+  #  write_csv(x = bad_location, path = paste0("V:/Lab/Archive Storage/Archive Sample Maps from R/_", Sys.Date(), ".csv")) # export CSV of incorrect tissues
+  #
+  #   TO DO:
+  #   CSV's need to be output automatically, they can be saved to V:/Lab/Archive Storage/Archive Sample Maps from R/
+  #
   ##########################################
   
   # Setup  
   if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(RJDBC, tidyverse, lubridate) #Install packages, if not in library and then load them.
+  
+  # Source R functions:
+  source("C:/Documents/R/Functions.GCL.R")
   
   # Database setup
   ## This copies the "odbc8.jar" file to the R folder on your computer if it doesn't exist there. This file contains the java odbc drivers needed for RJDBC
@@ -103,10 +110,10 @@ TissueLocations_2R.GCL <- function(unit, username, password, bad_location = FALS
     dplyr::filter(
       !grepl("ERICTEST", SILLY_CODE, ignore.case = TRUE),
       # drop Eric's test sillys
-      PK_TISSUE_TYPE != "DNA",
+      PK_TISSUE_TYPE != "DNA"
       # drop DNA tissue type
-      is.na(EXHAUSTED_HOW) |
-        EXHAUSTED_HOW != "Discarded"
+      #is.na(EXHAUSTED_HOW) |
+      #  EXHAUSTED_HOW != "Discarded"
     ) %>% # drop tissues marked as discarded
     dplyr::select(
       c(
@@ -117,7 +124,8 @@ TissueLocations_2R.GCL <- function(unit, username, password, bad_location = FALS
         PK_TISSUE_TYPE,
         UNIT,
         SHELF_RACK,
-        SLOT
+        SLOT,
+        EXHAUSTED_HOW
       )
     ) %>% # select columns
     tidyr::unite(
@@ -140,18 +148,18 @@ TissueLocations_2R.GCL <- function(unit, username, password, bad_location = FALS
         # Freezer 99 - acceptable locations are: ###_UppercaseLetter
         UNIT %in% unit[stringr::str_detect(unit, "99")] &
           !stringr::str_detect(string = shelf_id, pattern = "[0-9]{3}_[A-Z]") ~ "wrong",
-        # Warehouse - acceptable locations are: [1-25]_[1-10]
+        # Warehouse - acceptable locations are: W[1-33]_[1-10]
         UNIT %in% unit[stringr::str_detect(unit, "^(W[A-Z])$")] &
-          !str_detect(string = shelf_id, pattern = "^([1-9]|1[0-9]|2[0-5])_([1-9]|10)$") ~ "wrong",
-        # Freezer 7 or 8 - acceptable locations are: XXX?? UppercaseLetter_[1-9]
+          !str_detect(string = shelf_id, pattern = "^([1-9]|1[0-9]|2[0-9]|3[0-3])_([1-9]|10)$") ~ "wrong",
+        # Freezer 7 or 8 - acceptable locations are: UppercaseLetter[A-E]_[1-6]
         UNIT %in% unit[stringr::str_detect(unit, "^([7-8])$")] &
-          !stringr::str_detect(string = shelf_id, pattern = "^([A-Z])_([1-9])$") ~ "wrong",
-        # B7 - acceptable locations are: XXX?? [-10]_UppercaseLetter
-        UNIT %in% unit[stringr::str_detect(unit, "^([A-Z])$")] &
+          !stringr::str_detect(string = shelf_id, pattern = "^([A-E])_([1-6])$") ~ "wrong",
+        # B7 - acceptable locations are:  [1-10]_UppercaseLetter
+        UNIT %in% unit[stringr::str_detect(unit, "^([A-W])$")] &
           !stringr::str_detect(string = shelf_id, pattern = "^([1-9]|10)_([A-Z])$") ~ "wrong",
-        # Freezer 1 - acceptable locations are: XXX?? UppercaseLetter_[1-9]LowercaseLetter
+        # Freezer 1 - acceptable locations are: UppercaseLetter[A-E]_[1-6]
         UNIT %in% unit[stringr::str_detect(unit, "1")] &
-          !stringr::str_detect(string = shelf_id, pattern = "^([A-Z]_[1-9][a-z])$") ~ "wrong",
+          !stringr::str_detect(string = shelf_id, pattern = "^([A-E]_[1-6])$") ~ "wrong",
         TRUE ~ "correct"
       )
     ) %>%
