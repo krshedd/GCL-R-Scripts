@@ -1,4 +1,4 @@
-TissueLocations_2R.GCL <- function(unit, username, password, bad_location = FALSE, all_data = FALSE) {
+TissueLocations_2R.GCL <- function(unit, username, password, bad_locations = FALSE, all_tissues = FALSE) {
   #########################################
   # This function pulls tissue data from OceanAK, for a given storage location, and updates the tissue location maps.
   # Created by: Chase Jalbert
@@ -10,31 +10,25 @@ TissueLocations_2R.GCL <- function(unit, username, password, bad_location = FALS
   #  username - your LOKI username and password
   #  password - your LOKI password
   #  bad_locations - TRUE or FALSE, do you want a list of tissues with incorrect location information; default = FALSE
-  #  all_data - TRUE or FALSE, do you want a list of ALL tissues [potentially large file]]; default = FALSE
+  #  all_tissues- TRUE or FALSE, do you want a list of ALL tissues [potentially large file]]; default = FALSE
   #
   #
   # Outputs~~~~~~~~~~~~~~~~~
   #  tissuemap - an object mapping out all the tissues for a storage unit
-  #  all_data - an object consisting of all tissues within OceanAK, within a storage unit
-  #  bad_location - an object consisting of all tissues within OceanAK, containing unexpected, missing, or otherwise incorrect location information (i.e., SHELF_RACK and/or SLOT)
+  #  all_tissues- an object consisting of all tissues within OceanAK, within a storage unit
+  #  bad_locations - an object consisting of all tissues within OceanAK, containing unexpected, missing, or otherwise incorrect location information (i.e., SHELF_RACK and/or SLOT)
   #
   #
   # Example~~~~~~~~~~~~~~~~~
   #  username = "awesomeuser"
   #  password = "awesomepassword1"
   #  unit = c("A", "B", "C", "D", "E", "F") # We want these units in B7
-  #  bad_location = TRUE # yes, I want to identify all wrong/missing locations
-  #  all_data = TRUE # yes, I want all the data
+  #  bad_locations = TRUE # yes, I want to identify all wrong/missing locations
+  #  all_tissues = TRUE # yes, I want all the data
   #
   #  TissueLocations_2R.GCL(unit = unit, username = username, password = password, bad_location = bad_location, all_data = all_data)
   #  
-  #  write_csv(x = tissuemap, path = paste0("V:/Lab/Archive Storage/Archive Sample Maps from R/tissuemap_", Sys.Date(), ".csv")) # export CSV of the tissue map
-  #  write_csv(x = all_data, path = paste0("V:/Lab/Archive Storage/Archive Sample Maps from R/_", Sys.Date(), ".csv")) # export CSV of ALL tissues
-  #  write_csv(x = bad_location, path = paste0("V:/Lab/Archive Storage/Archive Sample Maps from R/_", Sys.Date(), ".csv")) # export CSV of incorrect tissues
-  #
-  #   TO DO:
-  #   CSV's need to be output automatically, they can be saved to V:/Lab/Archive Storage/Archive Sample Maps from R/
-  #
+  # 
   ##########################################
   
   # Setup  
@@ -167,7 +161,11 @@ TissueLocations_2R.GCL <- function(unit, username, password, bad_location = FALS
     dplyr::select(-wrong)
   
   ## If, you said TRUE in setup, then assign the bad location object to your environment. From here you can export or do whatever you want with it.
-  if (bad_location == TRUE) {
+  if (bad_locations == TRUE) {
+    
+    # export CSV of incorrect tissues
+    write_csv(x = bad_location, path = paste0("V:/Lab/Archive Storage/Archive Sample Maps from R/bad_tissue_locations_", Sys.Date(), ".csv")) 
+    
     assign(
       x = "bad_location",
       value = bad_location,
@@ -175,8 +173,7 @@ TissueLocations_2R.GCL <- function(unit, username, password, bad_location = FALS
       envir = .GlobalEnv
     )
     message(paste(
-      "All tissues with incorrect locations stored in object `bad_location`"
-    ))
+      "All tissues with incorrect locations stored in object `bad_location` and a CSV was output"))
   }
   
   # Create final map
@@ -198,13 +195,28 @@ TissueLocations_2R.GCL <- function(unit, username, password, bad_location = FALS
     ) %>% # dropping any unknown/incorrect location collections
     dplyr::group_by(tissue_id) %>% # for each tissue id:
     dplyr::summarise(min = min(FK_FISH_ID), # find the min fish number
-                     max = max(FK_FISH_ID)) # find the max fish number
+                     max = max(FK_FISH_ID), # find the max fish number
+                     .groups = "drop_last") 
   
   ## Assign the fish range to each fish
   TissueData <-
     fish_range %>% # contains tissue range and does not include bad_location tissues
     dplyr::left_join(
       dataSubset %>% # Original data
+        dplyr::anti_join(
+          bad_location,
+          by = c(
+            "FK_COLLECTION_ID",
+            "tissue_id",
+            "SILLY_CODE",
+            "FK_FISH_ID",
+            "STORAGE_ID",
+            "PK_TISSUE_TYPE",
+            "UNIT",
+            "SHELF_RACK",
+            "SLOT"
+          )
+        ) %>% # dropping any unknown/incorrect location collections
         dplyr::select(tissue_id, UNIT, SHELF_RACK, SLOT) %>% # just grab a few columns from this data set
         tidyr::unite(col = "shelf_id", SHELF_RACK, SLOT, remove = FALSE),
       # make shelf location info
@@ -245,6 +257,9 @@ TissueLocations_2R.GCL <- function(unit, username, password, bad_location = FALS
     envir = .GlobalEnv
   )
   
+  ## write a csv of the tissue map to the folder:
+  write_csv(x = tissuemap, path = paste0("V:/Lab/Archive Storage/Archive Sample Maps from R/tissuemap_", Sys.Date(), ".csv"))
+  
  # Wrap up function 
   stop.time <- Sys.time()
   
@@ -252,17 +267,21 @@ TissueLocations_2R.GCL <- function(unit, username, password, bad_location = FALS
   
   
   print(fulltime)
-  message(paste0("Map of tissue locations stored in object 'tissuemap'"))
+  message(paste0("Map of tissue locations stored in object 'tissuemap' and a CSV was output"))
   
   ## If, you said TRUE in setup, then assign the all_data object to your environment. From here you can export or do whatever you want with it.
-  if (all_data == TRUE) {
-    #all_data %>% write_csv(path = paste0("tissues_all_locations_", Sys.Date(), ".csv")) # xxx do we want to just export a CSV to some directory?? desktop??
+  if (all_tissues == TRUE) {
+    
+    # export CSV of ALL tissues
+    write_csv(x = dataAll, path = paste0("V:/Lab/Archive Storage/Archive Sample Maps from R/all_tissues_", Sys.Date(), ".csv"))
+    
     assign(
-      x = "all_data",
+      x = "all_tissues",
       value = dataAll,
       pos = 1,
       envir = .GlobalEnv
     )
-    message(paste("All fish (raw) from database stored in object `all_data`"))
+    
+    message(paste("All fish (raw) from database stored in object `all_data` and a CSV was output"))
   }
 }
