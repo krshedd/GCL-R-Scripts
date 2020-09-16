@@ -164,7 +164,7 @@ TissueLocations2R.GCL <- function(unit, username, password, bad_locations = TRUE
   if (bad_locations == TRUE) {
     
     # export CSV of incorrect tissues
-    write_csv(x = bad_location, path = paste0("V:/Lab/Archive Storage/Archive Sample Maps from R/bad_tissue_locations_", Sys.Date(), ".csv")) 
+    write_csv(x = bad_location, path = paste0("V:/Lab/Archive Storage/Archive Sample Maps from R/bad_tissue_locations_", format(Sys.Date(), format = "%Y%m%d"), ".csv")) 
     
     assign(
       x = "bad_location",
@@ -258,7 +258,7 @@ TissueLocations2R.GCL <- function(unit, username, password, bad_locations = TRUE
   )
   
   ## write a csv of the tissue map to the folder:
-  write_csv(x = tissuemap, path = paste0("V:/Lab/Archive Storage/Archive Sample Maps from R/tissuemap_", Sys.Date(), ".csv"))
+  write_csv(x = tissuemap, path = paste0("V:/Lab/Archive Storage/Archive Sample Maps from R/tissuemap_", format(Sys.Date(), format = "%Y%m%d"), ".csv"))
   
  # Wrap up function 
   stop.time <- Sys.time()
@@ -273,7 +273,7 @@ TissueLocations2R.GCL <- function(unit, username, password, bad_locations = TRUE
   if (all_tissues == TRUE) {
     
     # export CSV of ALL tissues
-    write_csv(x = dataAll, path = paste0("V:/Lab/Archive Storage/Archive Sample Maps from R/all_tissues_", Sys.Date(), ".csv"))
+    write_csv(x = dataAll, path = paste0("V:/Lab/Archive Storage/Archive Sample Maps from R/all_tissues_", format(Sys.Date(), format = "%Y%m%d"), ".csv"))
     
     assign(
       x = "all_tissues",
