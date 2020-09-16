@@ -1,4 +1,4 @@
-TissueLocations_2R.GCL <- function(unit, username, password, bad_locations = FALSE, all_tissues = FALSE) {
+TissueLocations2R.GCL <- function(unit, username, password, bad_locations = TRUE, all_tissues = TRUE) {
   #########################################
   # This function pulls tissue data from OceanAK, for a given storage location, and updates the tissue location maps.
   # Created by: Chase Jalbert
@@ -35,7 +35,7 @@ TissueLocations_2R.GCL <- function(unit, username, password, bad_locations = FAL
   if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(RJDBC, tidyverse, lubridate) #Install packages, if not in library and then load them.
   
   # Source R functions:
-  source("C:/Documents/R/Functions.GCL.R")
+  source("C:/Users/hahoyt1/Documents/R/Functions.GCL.R")
   
   # Database setup
   ## This copies the "odbc8.jar" file to the R folder on your computer if it doesn't exist there. This file contains the java odbc drivers needed for RJDBC
