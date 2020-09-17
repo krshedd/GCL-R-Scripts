@@ -1,83 +1,122 @@
-HoFisFstTable.GCL=function(sillyvec,loci,fstatdir = NULL, dir = NULL){
+HoFisFstTable.GCL <- function(sillyvec, loci, fstatdir = NULL, dir = NULL, ncores = 4){
   
-  require("hierfstat")
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #
+  #   This function creates a table of statistics containing obseved hetrozygosity (Ho), Fis, and Fst for each locus in loci.
+  #
+  # Inputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #   
+  #   sillyvec - a vector of silly codes without the ".gcl" extention (e.g. sillyvec <- c("KQUART06","KQUART08","KQUART10")). 
+  #
+  #   loci - a character vector of locus names
+  #   
+  #   fstatdir - the path to an existing FSTAT .dat file. If none is supplied the user must supply a directory (dir) where 
+  #              an FSTAT .dat file can be written.
+  #
+  #   dir -  directory where the FSTAT .dat file is dumped.
+  #
+  #   ncores - a numeric vector of length one indicating the number of cores to use
+  # 
+  # Outputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #   A tibble is returned containing locusname, Ho, Fis, and Fst
+  #
+  #  if is.null(fstatdir) and exists(dir) "fstatfile.dat" is put into "dir"
+  #
+  # Examples~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #   load("V:/Analysis/2_Central/Chinook/Susitna River/Susitna_Chinook_baseline_2020/Susitna_Chinook_baseline_2020.Rdata")
+  #
+  #   HoFisFstTable.GCL(sillyvec = sillyvec31, loci = loci82, fstatdir =  NULL, dir = "FSTAT", ncores = 8)
+  #
+  #   HoFisFstTable.GCL(sillyvec = sillyvec31, loci = loci82, fstatdir = "FSTAT/fstat.dat", dir = NULL, ncores = 8)
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
-  nsillys=length(sillyvec)
+  if(!exists("LocusControl")) {
+    
+    stop("'LocusControl' is required and not found, please create.")
+    
+  }
   
-  maxsillychar=nchar(nsillys)+1
+  if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse, doParallel, foreach, parallel, hierfstat) #Install packages, if not in library and then load them.
   
-  nloci=length(loci)
+  if(ncores > detectCores()) {
+    
+    stop("'ncores' is greater than the number of cores available on machine\nUse 'detectCores()' to determine the number of cores on your machine")
+    
+  }
   
-  ploidy=LocusControl$ploidy[loci]
+  start.time <- Sys.time()
   
-  nalleles=LocusControl$nalleles[loci]
-  
-  maxchar=nchar(nalleles)+1
-  names(maxchar)=loci
-  
-  alleles=LocusControl$alleles[loci]
+  ploidy <- LocusControl$ploidy[loci]
   
   if(is.null(fstatdir)) {
     
-    fstatdir=paste(dir,"\\fstatfile.dat",sep="")  
+    fstatdir <- paste0(dir, "/fstat.dat")
     
-    my.gcl=lapply(sillyvec,function(silly){get(paste(silly,".gcl",sep=""),pos=1)})
-    names(my.gcl)=sillyvec
-    
-    n=sapply(sillyvec,function(silly){my.gcl[[silly]]$n})
-    names(n)=sillyvec
-    
-    scores=lapply(sillyvec,function(silly){scrs=my.gcl[[silly]]$scores[,loci,];scrs[scrs%in%c("0","Unk","XXX")]=NA;scrs})
-    names(scores)=sillyvec
-    
-    counts=lapply(sillyvec,function(silly){
-      sapply(1:n[silly],function(i){
-        paste(c(match(silly,sillyvec),sapply(loci,function(locus){
-          ifelse(is.na(scores[[silly]][i,locus,1]),paste(rep(0,ploidy[locus]*maxchar[locus]),collapse=""),paste(sapply(1:ploidy[locus],function(allele){
-            paste(c(rep(0,maxchar[locus]-nchar(match(scores[[silly]][i,locus,allele],alleles[[locus]]))),match(scores[[silly]][i,locus,allele],alleles[[locus]])),collapse="")
-          }),collapse=""))
-        })),collapse=" ")
-      })
-    })      
-    names(counts)=sillyvec
-    
-    fstat=paste(nsillys,nloci,max(nalleles),max(maxchar),sep=" ")
-    
-    fstat=rbind(fstat,cbind(loci))
-    
-    fstat=rbind(fstat,cbind(as.vector(unlist(counts))))
-    
-    write.table(fstat,fstatdir,row.names=FALSE,col.names=FALSE,quote=FALSE) 
+    gcl2FSTAT.GCL(sillyvec = sillyvec, loci = loci, path = fstatdir, ncores = ncores)
   
   }
 
-  dat=read.fstat.data(fstatdir)
+  dat <- read.fstat.data(fstatdir) #Read in FSTAT file
 
-  MyVC=array(0,c(nloci,3),dimnames=list(loci,c("P","I","G")))
+  cl <- parallel::makePSOCKcluster(ncores)
   
-  for(locus in loci){
-    diploid=ploidy[locus]==2
+  doParallel::registerDoParallel(cl, cores = ncores) #Start cluster  
+  
+  #Get variance components
+  #Start parallel loop
+  MyVC <- foreach::foreach(locus = loci, .packages = "hierfstat") %dopar% {
+    
+    diploid <- ploidy[locus]==2
+    
     if(diploid){
-      MyVC[locus,c("P","I","G")]=hierfstat::varcomp(dat[,c("Pop",locus)],diploid=diploid)$overall
+      
+      VC <- hierfstat::varcomp(dat[, c("Pop", locus)], diploid = diploid)$overall
+      
+      table <- tibble::tibble(locus = !!locus, P = VC[1], I = VC[2], G = VC[3])
+      
     }
+    
     if(!diploid){
-      MyVC[locus,c("P","G")]=hierfstat::varcomp(dat[,c("Pop",locus)],diploid=diploid)$overall
-    }    
-  }
+      
+      VC <- hierfstat::varcomp(dat[, c("Pop", locus)], diploid = diploid)$overall
+      
+      table <- tibble::tibble(locus = !!locus, P = VC[1], I = NA, G = VC[2])
+      
+    } 
+    
+    table
+    
+  } %>%  bind_rows()
+  
+  parallel::stopCluster(cl)# Stop cluster
+  
+  #Summarize variance components
+  MyTable0 <- MyVC %>% 
+    rowwise() %>%  
+    mutate(total = sum(c(P,I,G))) %>% 
+    mutate(P = P/total, I = I/total) %>% 
+    select(locus, P, I, total) %>% 
+    ungroup()
+  
+  Overall <- MyVC %>% 
+    summarize(P = sum(P), I = sum(I), total = sum(MyTable0$total)) %>% 
+    mutate(locus = "Overall", I = I/total, P = P/total)
+  
+  MyTable <- bind_rows(MyTable0, Overall) 
+  
+  #Heterozygosities
+  Hovec <- apply(hierfstat::basic.stats(dat[, c("Pop", loci[ploidy==2])])$Ho, 1, mean)
+  
+  Ho <- tibble(locus = c(loci[ploidy==2], "Overall"), Ho = c(Hovec, mean(Hovec)))
+  
+  #Join varcomp summary with Ho  
+  output <- MyTable %>% 
+    left_join(Ho, by = "locus") %>% 
+    mutate(Fis = I, Fst = P) %>% 
+    select(locus, Ho, Fis, Fst)
+  
+  print(Sys.time() - start.time)
 
-  MyTable=MyVC[loci,c("P","I")]/apply(MyVC,1,sum)
-
-  MyTable=rbind(MyTable,Overall=apply(MyVC[loci,c("P","I")],2,sum)/sum(apply(MyVC,1,sum)))
-
-  Ho=rep("-",nloci+1)
-
-  names(Ho)=c(loci,"Overall")
-
-  Ho[loci[ploidy==2]]=apply(basic.stats(dat[,c("Pop",loci[ploidy==2])])$Ho,1,mean)
-
-  Ho["Overall"]=mean(as.numeric(Ho[loci[ploidy==2]]))
-
-  MyTable=data.frame(Ho=Ho,Fis=MyTable[,"I"],Fst=MyTable[,"P"])
-
-  return(MyTable)
+  return(output)
+  
 }

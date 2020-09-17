@@ -16,7 +16,7 @@ LOKI2R.GCL <- function(sillyvec, username, password){
   #   This function assigns a tibble with the following columns for each silly.
   #
   #               Columns 1-19
-  #                     FK_FISH_ID <character>: fish ID numbers for each individual  
+  #                     FK_FISH_ID <double>: fish ID numbers for each individual  
   #                     COLLECTION_ID <double>: the unique collection ID nubmer for each individual
   #                     SILLY_CODE <character>: the silly code for each individual
   #                     PLATE_ID <character>: the extraction plate ID for each individual
@@ -145,7 +145,7 @@ LOKI2R.GCL <- function(sillyvec, username, password){
     dplyr::distinct(SILLY_CODE, FISH_ID) %>% 
     tidyr::unite(col = "SillySource", c("SILLY_CODE", "FISH_ID"), sep = "_", remove = FALSE) %>% 
     tibble::add_column(!!!purrr::set_names(x = rep(NA_real_, nloci), nm = loci)) %>% 
-    tidyr::gather(LOCUS, na, -SILLY_CODE, -FISH_ID, -SillySource) %>% 
+    tidyr::pivot_longer(cols = c(-SILLY_CODE, -FISH_ID, -SillySource), names_to = "LOCUS", values_to = "na") %>% 
     dplyr::select(-na) %>% 
     dplyr::anti_join(dplyr::select(.data = dataAll, SILLY_CODE, FISH_ID, LOCUS), by = c("SILLY_CODE", "FISH_ID", "LOCUS")) %>% 
     tidyr::nest(missing_loci = LOCUS) %>% 

@@ -1,4 +1,4 @@
-PoolCollections.GCL <- function(collections, loci = LocusControl$locusnames, IDs = NULL, newname = paste(collections,collapse=".")){
+PoolCollections.GCL <- function(collections, loci = LocusControl$locusnames, IDs = NULL, newname = paste(collections, collapse = ".")){
   
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #   This function combines "*.gcl" objects into a new one called "newname.gcl".
@@ -10,7 +10,7 @@ PoolCollections.GCL <- function(collections, loci = LocusControl$locusnames, IDs
   #
   #   loci - a character vector of locus names
   # 
-  #   IDs - a named list of fish ID vectors (either character or numeric), each vector is associated with and named after a member of "collections".
+  #   IDs - a named list of FK_FISH_ID vectors (either character or numeric), each vector is associated with and named after a member of "collections".
   #         These will be used to subset each collection before pooling. If no IDs are supplied all individuals from each collection are used.
   #
   #   newname - is the name of the new "*.gcl" created. Do not provide ".gcl" extention. If no name supplied then the newname defaults to
@@ -20,9 +20,9 @@ PoolCollections.GCL <- function(collections, loci = LocusControl$locusnames, IDs
   #    Assigns a new "pooled collection" to your workspace
   #
   # Example~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  #   load("V:/Analysis/2_Central/Chinook/Cook Inlet/2019/2019_UCI_Chinook_baseline_hap_data/2019_UCI_Chinook_baseline_hap_data.RData")
+  #   load("V:/Analysis/2_Central/Chinook/Cook Inlet/2019/2019_UCI_Chinook_baseline_hap_data/2019_UCI_Chinook_baseline_hap_data_test.RData")
   # 
-  #   removedInd <- (collections = c("KQUART06","KQUART08","KQUART10"), loci = loci, IDs = list(KQUART06 = 3:12, KQUART08 = 1:10, KQUART10 = 1:4), newname = "QuartzCr")
+  #   PoolCollections.GCL(collections = c("KQUART06","KQUART08","KQUART10"), loci = loci557, IDs = list(KQUART06 = 3:12, KQUART08 = 1:10, KQUART10 = 1:4), newname = "QuartzCr")
   #
   # Note~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #   This function is also useful for producing "pooled mixture" objects for mixed stock analysis. 
@@ -36,7 +36,7 @@ PoolCollections.GCL <- function(collections, loci = LocusControl$locusnames, IDs
   
   if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse)  # Install packages, if not in library and then load them.
   
-  if(nchar(newname)>200){
+  if(nchar(newname) > 200){
     
     newname <- substr(newname, start = 1, stop = 200)
     
@@ -44,7 +44,7 @@ PoolCollections.GCL <- function(collections, loci = LocusControl$locusnames, IDs
   
   if(!all(loci %in% LocusControl$locusnames)){
     
-    stop(paste0("The following `loci` were not found in `LocusControl`:\n", paste(setdiff(loci,LocusControl$locusnames), collapse = "\n")))
+    stop(paste0("The following `loci` were not found in `LocusControl`:\n", paste(setdiff(loci, LocusControl$locusnames), collapse = "\n")))
     
   }
   
@@ -85,11 +85,11 @@ PoolCollections.GCL <- function(collections, loci = LocusControl$locusnames, IDs
     
     my.gcl %>% 
       dplyr::filter(FK_FISH_ID %in% IDs[[collection]]) %>% 
-      dplyr::select(attr, SubsetLoci)
+      dplyr::select(tidyselect::all_of(attr), tidyselect::all_of(SubsetLoci))
     
   }) %>% 
     dplyr::bind_rows() %>% 
-    dplyr::mutate(FK_FISH_ID = seq(length(unlist(IDs))))
+    dplyr::mutate(FK_FISH_ID = seq(length(unlist(IDs))), SILLY_CODE = newname)
   
   assign(paste0(newname, ".gcl"), output, pos = 1, envir = .GlobalEnv)  
   

@@ -13,13 +13,23 @@ RemoveIndMissLoci.GCL <- function(sillyvec, loci = LocusControl$locusnames, prop
   #          This argument is useful if you have loci in your markersuite that do not perform well in the lab and they will be dropped from the final dataset. 
   # 
   # Outputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  #    Returns a tibble of indiduals removed by silly.
+  #    Returns a tibble with 3 variables: 
+  #                  SILLY_CODE <chr> = the silly with IDs removed 
+  #                  IDs <list> = the IDs removed
+  #                  is_empty <lgl> = were all IDs removed?
+  #
   #    Assigns the ".gcl" objects back to workspace after removing individuals with missing loci.
   #
   # Example~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  #   load("V:/Analysis/2_Central/Chinook/Cook Inlet/2019/2019_UCI_Chinook_baseline_hap_data/2019_UCI_Chinook_baseline_hap_data.RData")
-  # 
-  #   missloci_ind <- RemoveIndMissLoci.GCL(sillyvec = sillyvec157, proportion = 0.8)
+  #  CreateLocusControl.GCL(markersuite = "Sockeye2011_96SNPs", username = "awbarclay", password = password)
+  #  sillyvec <- c("SMCDO03", "SNEVA13")
+  #  LOKI2R.GCL(sillyvec = sillyvec, username = "awbarclay", password = password)
+  #
+  #  naloci <- dimnames(SMCDO03.gcl)[[2]][100:199]
+  #  empty.gcl <- SMCDO03.gcl
+  #  empty.gcl[,naloci] <- NA
+  #
+  #  RemoveIndMissLoci.GCL(sillyvec = c(sillyvec, "empty"), loci = LocusControl$locusnames, proportion = 0.8)
   #
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
@@ -52,10 +62,12 @@ RemoveIndMissLoci.GCL <- function(sillyvec, loci = LocusControl$locusnames, prop
       dplyr::filter(prop_loci <= proportion) %>% 
       dplyr::pull(FK_FISH_ID)
     
-    assign(x = paste0(silly, ".gcl"), value = my.gcl %>% dplyr::filter(!FK_FISH_ID%in%IDsToRemove), pos = 1, envir = .GlobalEnv )
-    
-    tibble::tibble(SILLY_CODE = silly, IDs_Removed = IDsToRemove)
-    
+    if(!purrr::is_empty(IDsToRemove)) {
+      
+      RemoveIDs.GCL(silly = silly, IDs = IDsToRemove)
+      
+    }
+
   }) %>% 
     dplyr::bind_rows()
   
@@ -65,7 +77,7 @@ RemoveIndMissLoci.GCL <- function(sillyvec, loci = LocusControl$locusnames, prop
     
   } else {
     
-    message(paste0("A total of ", dim(output)[1]), " individuals were removed from sillys in sillyvec.")
+    message(paste0("A total of ", output$IDs_Removed %>% unlist() %>% length()), " individuals were removed from sillys in sillyvec.")
     
   }
   

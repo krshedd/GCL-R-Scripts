@@ -7,7 +7,7 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci = LocusControl$locusnames, qu
   #   
   #   sillyvec - a vector of silly codes without the ".gcl" extention (e.g. sillyvec <- c("KQUART06","KQUART08","KQUART10")). 
   #
-  #   loci - vector of locus names; if set to NULL all loci in the ".gcl" obejects will be used.
+  #   loci - vector of locus names; if set to NULL all loci in the ".gcl" objects will be used.
   #
   #   quantile - this argument along with minproportion are used together to determine the cut-off proportion at which a pair of duplicates 
   #                                is defined: i.e. proportion = max(quantile(duplication, quantile), minproportion. 
@@ -23,17 +23,20 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci = LocusControl$locusnames, qu
   #    When quantile is set to NULL, returns a tibble of duplicate pairs of individuals by silly.
   #    When quantile is a number, a list containing a tibble of duplicate pairs of individuals by silly and tibble the porportion of duplication for each pair of individuals.
   #
+  #
   # Examples~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  #  CreateLocusControl.GCL(markersuite = "Sockeye2011_96SNPs", username = "awbarclay", password = password)
-  #  sillyvec = c("SMCDO03", "SNEVA13")
-  #  password = "************"
-  #  LOKI2R.GCL(sillyvec = sillyvec, username = "awbarclay", password = password)
-  #  RemoveIndMissLoci.GCL(sillyvec = sillyvec)
   #
-  #  dupcheck <- CheckDupWithinSilly.GCL(sillyvec = sillyvec, loci = LocusControl$locusnames, quantile = 0.99, minproportion = 0.95, ncores = 8)
-  #  dupcheckNULLQantile <- CheckDupWithinSilly.GCL(sillyvec = sillyvec, loci = LocusControl$locusnames, quantile = NULL, minproportion = 0.95, ncores = 8)
-  #
-  #
+  # password <- "************"
+  # username <- "******"
+  # CreateLocusControl.GCL(markersuite = "Sockeye2011_96SNPs", username = username, password = password)
+  # sillyvec <- c("SMCDO03", "SNEVA13")
+  # LOKI2R.GCL(sillyvec = sillyvec, username = username, password = password)
+  # RemoveIndMissLoci.GCL(sillyvec = sillyvec)
+  # PoolCollections.GCL(c("SMCDO03", "SNEVA13"))
+  # 
+  # dupcheck <- CheckDupWithinSilly.GCL(sillyvec = "SMCDO03.SNEVA13", loci = LocusControl$locusnames, quantile = 0.99, minproportion = 0.95, ncores = 4)
+  # dupcheckNULLQantile <- CheckDupWithinSilly.GCL(sillyvec = "SMCDO03.SNEVA13", loci = LocusControl$locusnames, quantile = NULL, minnonmissing = 0.6, minproportion = 0.95, ncores = 4)
+  # 
   # Note~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #   When quantile is set to NULL this function utilizes rubias::close_matching_samples() to perform the duplicate check and it much faster than when you set a quantile.
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -49,7 +52,7 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci = LocusControl$locusnames, qu
   if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse, doParallel, parallel, foreach, rubias)  # Install packages, if not in library and then load them.
   
   
-  if(ncores > detectCores()) {
+  if(ncores > parallel::detectCores()) {
     stop("'ncores' is greater than the number of cores available on machine\nUse 'detectCores()' to determine the number of cores on your machine")
   }
   
@@ -59,8 +62,31 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci = LocusControl$locusnames, qu
   
   ploidy <- LocusControl$ploidy[loci]
   
-  scores_cols <- c(loci, paste0(loci, ".1")) %>% 
-    sort()
+  scores_cols <- sapply(loci, function(locus) {c(locus, paste0(locus, ".1"))}) %>% 
+    as.vector()  # This keeps the scores columns in the correct order when there are loci with similar names.
+   
+  attr <-
+    c(
+      "FK_FISH_ID",
+      "COLLECTION_ID",
+      "SILLY_CODE",
+      "PLATE_ID",
+      "PK_TISSUE_TYPE",
+      "CAPTURE_LOCATION",
+      "CAPTURE_DATE",
+      "END_CAPTURE_DATE",
+      "MESH_SIZE",
+      "MESH_SIZE_COMMENT",
+      "LATITUDE",
+      "LONGITUDE",
+      "AGENCY",
+      "VIAL_BARCODE",
+      "DNA_TRAY_CODE",
+      "DNA_TRAY_WELL_CODE",
+      "DNA_TRAY_WELL_POS",
+      "CONTAINER_ARRAY_TYPE_ID",
+      "SillySource"
+    )
   
   sillyvec_new <- silly_n.GCL(sillyvec) %>% 
     dplyr::filter(n > 1) %>% 
@@ -68,7 +94,9 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci = LocusControl$locusnames, qu
   
   my.gcl <- sapply(sillyvec_new, function(silly){
     
-    gcl = get(paste(silly, ".gcl", sep=""), pos = 1)
+    gcl <- get(paste0(silly, ".gcl"), pos = 1) %>%
+      dplyr::select(tidyselect::all_of(attr),
+                    tidyselect::all_of(scores_cols))
     
     maxna <- max(rowSums(is.na(gcl[, scores_cols])))  # What is max number of missing loci?
     
@@ -112,9 +140,9 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci = LocusControl$locusnames, qu
         dplyr::mutate(
           sample_type = "reference",
           repunit = NA_character_,
-          collection = SILLY_CODE,
-          indiv = SillySource
+          collection = SILLY_CODE
         ) %>%
+        tidyr::unite(col = "indiv", SILLY_CODE, FK_FISH_ID, sep = "_") %>% 
         dplyr::select(sample_type,
                       repunit,
                       collection,
@@ -128,8 +156,8 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci = LocusControl$locusnames, qu
     parallel::stopCluster(cl)
     
     dupcheck <- dupcheck0 %>% 
-      tidyr::separate(indiv_1, into = c(NA, "ID1")) %>% 
-      tidyr::separate(indiv_2, into = c(NA, "ID2")) %>% 
+      tidyr::separate(indiv_1, into = c(NA, "ID1"), sep = "\\_(?=[^\\_]+$)", extra = "drop") %>% 
+      tidyr::separate(indiv_2, into = c(NA, "ID2"), sep = "\\_(?=[^\\_]+$)", extra = "drop") %>%
       dplyr::mutate(silly = collection_1, 
                     proportion = num_match/num_non_miss) %>% 
       dplyr::select(silly, ID1, ID2, proportion)
@@ -153,7 +181,7 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci = LocusControl$locusnames, qu
         dplyr::select(ID1, tidyselect::all_of(loci)) %>% 
         tidyr::gather(-ID1, key = "Locus", value = "allele") %>% 
         dplyr::group_by(ID1) %>% 
-        dplyr::summarize(Missing1 = sum(is.na(allele))) %>% 
+        dplyr::summarize(Missing1 = sum(is.na(allele)), .groups = "drop_last") %>% 
         dplyr::left_join(dups, by = "ID1")%>% 
         dplyr::arrange(order)
       
@@ -163,17 +191,16 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci = LocusControl$locusnames, qu
         dplyr::select(ID2, tidyselect::all_of(loci)) %>% 
         tidyr::gather(-ID2, key = "Locus", value = "allele") %>% 
         dplyr::group_by(ID2) %>% 
-        dplyr::summarize(Missing2 = sum(is.na(allele))) %>% 
+        dplyr::summarize(Missing2 = sum(is.na(allele)), .groups = "drop_last") %>% 
         dplyr::left_join(dups, by = "ID2") %>% 
         dplyr::arrange(order)
       
-      bind_cols(ID1, ID2) %>% 
-        dplyr::mutate(silly = !!silly) %>% 
+      dplyr::full_join(ID1, ID2, by = c("ID1", "silly", "ID2", "proportion", "order")) %>% 
         dplyr::select(silly, ID1, ID2, Missing1, Missing2, proportion)
       
     }) %>%  dplyr::bind_rows()  
     
-    print(Sys.time()-start.time)
+    print(Sys.time() - start.time)
     
     return(report)
     
@@ -297,7 +324,7 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci = LocusControl$locusnames, qu
     
     output <- list(report = report, DupDist = DupDist)
     
-    print(Sys.time()-start.time)
+    print(Sys.time() - start.time)
     
     return(output)
     

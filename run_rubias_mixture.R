@@ -27,11 +27,22 @@ run_rubias_mixture <- function(reference, mixture, group_names, gen_start_col, m
   # load(".RData")
   # lynncanal_2015 <- run_rubias_mixture(reference = , mixture = , gen_start_col = 5, path = "rubias/output)
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  while(!require(rubias)){install.packages("rubias")}
+  if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse, rubias)  # Install packages, if not in library and then load them.
   
   if(!dir.exists(path)) {stop("`path` to save output does not exist, hoser!!!")}
+  
+  if(sum(names(reference)!=names(mixture))>0){
+    
+    stop("The reference and mixture data frames differ in structure; check # of columns and variable names. 
+         Are you using an old rubias reference object with a new mixture object? 
+         Old reference objects may have locus headers with periods replacing hyphens.")
+    
+  }
+  
   if(!(all(group_names %in% unique(reference$repunit)) & all(unique(reference$repunit) %in% group_names))) {
-    stop("Mismatch between `group_names` and `reference`, hoser!!!")
+    
+    stop("Mismatch between `group_names` and `reference`")
+    
   }
   
   ### Run infer mixture

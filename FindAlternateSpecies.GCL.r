@@ -1,107 +1,199 @@
-FindAlternateSpecies.GCL=function(sillyvec,species="chum"){
-
-  require("abind")
-
-  if(species=="chum"){
-    AlternateGenotypesPath="V:/Analysis/R files/Alternate Homo Markers Chum.txt"
-    FailedMarkersPath="V:/Analysis/R files/Failed Chum Markers.txt"
-  }
-
-  if(species=="sockeye"){
-    AlternateGenotypesPath="V:/Analysis/R files/Alternate Homo Markers Sockeye.txt"
-    FailedMarkersPath="V:/Analysis/R files/Failed Sockeye Markers.txt"
-  }
-
-
-  AlternateGenotypes=read.table(AlternateGenotypesPath,sep="\t",header=TRUE)
-
-  AlternateMarkers=as.vector(AlternateGenotypes[,1])
-
-  loci=LocusControl$locusnames
-
-  if(sum(is.na(match(AlternateMarkers,loci)))){
-    if(sum(is.na(match(AlternateMarkers,loci))) == length(AlternateMarkers)) {
-      stop("None of the 'AlternateMarkers' found in 'loci', hoser!!!")
-    } else {
-      warning(paste(sum(is.na(match(AlternateMarkers,loci))), "out of", length(AlternateMarkers), "'AlternateMarkers' not found in 'loci', hoser!!!\nAnalyses were made based on the", sum(!is.na(match(AlternateMarkers,loci))), "remaining alternate marker(s)"))
-      AlternateMarkers <- AlternateMarkers[AlternateMarkers %in% loci]
-    }
+FindAlternateSpecies.GCL <- function(sillyvec, species = "chum"){
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #   This function identifies the likelihood of incorrect species based on a few
+  #   identifiable markers. Specifically, it works with chum and sockeye. 
+  #
+  # Inputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #
+  #   sillyvec - Is a vector of sillys (e.g., c("SYEHR07", "SWENA98", "STATS05"))
+  #   species - The species you are working with; options = sockeye, chum; default = chum
+  #
+  # Outputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #   plot of Failed vs Alternate
+  #   tibble containing 1) silly_fish, 2) prop. alternate markers, 3) prop. failed markers, and 4) number of non-missing alternate markers used for analyses
+  #
+  # Example~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # 
+  # source("/R/Functions.GCL.R")
+  # source(file = "Examples/QCExample.R")
+  # wrong_spp <- FindAlternateSpecies.GCL(sillyvec = sillys, species = "sockeye")
+  #
+  # Note~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #
+  #   This function requires a LocusControl object and gcls. Run CreateLocusControl.GCL
+  #   and LOKI2R.GCL prior to this function.
+  #
+  #   The Alternate and Failed marker lists were text files in a random folder on a random network drive. 
+  #   I hard-coded so we aren't relying on hidden files. In the future, if applicable, we can simply add more markers here. 
+  #   
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
+  
+  if(!exists("LocusControl")){
+    
+    stop("'LocusControl' not yet built.") # Check if LocusControl is present in environment
+    
   }
   
-  FailedMarkers=scan(FailedMarkersPath,what="", quiet = TRUE)[-1]
-
-  if(sum(is.na(match(FailedMarkers,loci)))){
-    if(sum(is.na(match(FailedMarkers,loci))) == length(FailedMarkers)) {
-      stop("None of the 'FailedMarkers' found in 'loci', hoser!!!")
-    } else {
-      warning(paste(sum(is.na(match(FailedMarkers,loci))), "out of", length(FailedMarkers), "'FailedMarkers' not found in 'loci', hoser!!!\nAnalyses were made based on the", sum(!is.na(match(FailedMarkers,loci))), "remaining failed marker(s)"))
-      FailedMarkers <- FailedMarkers[FailedMarkers %in% loci]
-    }
-  }
-
-
-  gclobjects=sapply(sillyvec,function(silly){get(paste(silly,".gcl",sep=""),pos=1)$scores[,c(AlternateMarkers,FailedMarkers),,drop = FALSE]},simplify=FALSE)
-
-  mysillyvial=sapply(sillyvec,function(silly){paste(silly,dimnames(gclobjects[[silly]])[[1]],sep="_")},simplify=FALSE)
-
-  sillyvial=as.vector(unlist(mysillyvial))
-
-  gclobjectAll=NULL
-  for( silly in sillyvec){
-    gclobjectAll=abind(gclobjectAll,gclobjects[[silly]],along=1)
-  }
-  dimnames(gclobjectAll)[[1]]=sillyvial
-
-
-  Failure=apply(is.na(gclobjectAll[sillyvial,FailedMarkers,1]),1,sum)/length(FailedMarkers)
-
-  ploidy=LocusControl$ploidy[c(AlternateMarkers,FailedMarkers)]
-
-  gclobjectAllAlternate=t(sapply(sillyvial,function(vial){
-                            sapply(AlternateMarkers,function(loc){
-                              ifelse(is.na(gclobjectAll[vial,loc,1]),NA,paste(gclobjectAll[vial,loc,1:ploidy[loc]],collapse=""))
-                            })
-                          }))
+  if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse) # Install packages, if not in library and then load them.
   
-  if(length(AlternateMarkers) == 1) {
-    gclobjectAllAlternate <- matrix(data = gclobjectAllAlternate, ncol = 1, dimnames = list(sillyvial, AlternateMarkers))
+  # First, load the alternate & failed markers for a given species, or stop if incorrect species is provided. 
+  if(species == "chum"){
+    
+    AlternateGenotypes <- dplyr::tribble(~AlternateMarker,	~AlternateGenotype,
+                                         "Oke_U1018-50", "TT",
+                                         "Oke_U2032-74",	"GG",
+                                         "Oke_Cr386",	"GH")
+
+    FailedMarkers <- dplyr::tribble(~FailedMarker,
+                                 "Oke_AhR1-78",
+                                 "Oke_CKS1-94",
+                                 "Oke_e2ig5-50",
+                                 "Oke_U1002-262",
+                                 "Oke_U1025-135",
+                                 "Oke_u200-385",
+                                 "Oke_U2025-86",
+                                 "Oke_U502-241")
+  
+    } else if (species == "sockeye") {
+    
+    AlternateGenotypes <- dplyr::tribble(~AlternateMarker, ~AlternateGenotype,
+                                         "One_ctgf-301",	"TT",
+                                         "One_KCT1-453",	"GG",
+                                         "One_taf12-248",	"TT",
+                                         "One_U1013-108",	"GG",
+                                         "One_U1214-107",	"AA")
+    
+    FailedMarkers <- dplyr::tribble(~FailedMarker,
+                                    "One_Hsp47",
+                                    "One_STC-410",
+                                    "One_U1010-81",
+                                    "One_MHC2_190",
+                                    "One_cin-177",
+                                    "One_vatf-214")
+    } else {
+      
+      stop( "This can only be run on sockeye or chum.")
   }
 
-   Alternate=apply(
-               sapply(AlternateMarkers,function(loc){
-                 gclobjectAllAlternate[sillyvial,loc]==AlternateGenotypes[AlternateGenotypes$AlternateMarker==loc,"AlternateGenotype"]
-               }),1,function(rw){
-                   ind=!is.na(rw);
-                   ifelse(length(rw[ind]),sum(rw[ind])/length(rw[ind]),0)  
-               })
-   
-   Results=data.frame(Failure=Failure,Alternate=Alternate)
+  loci <- LocusControl$locusnames # List of loci from LocusControl; Relies on LocusControl in environment!
 
-   MyResultsTab=table(Results)
 
-   xx=as.numeric(dimnames(MyResultsTab)[[1]])
-
-   yy=as.numeric(dimnames(MyResultsTab)[[2]])
-
-   xy=expand.grid(xx,yy)
-
-   plot(x=xy[,1],y=xy[,2],xlim=c(0,1),ylim=c(0,1),col="white",xlab="Failed",ylab="Alternate",xaxp=c(0,1,10),yaxp=c(0,1,10))
-
-   Axis(x=c(0,1),side=4,yaxp=c(0,1,10))
-
-   Axis(x=c(0,1),side=3,xaxp=c(0,1,10))
-
-   labels=paste(xx,sep="")
-
-  IND=labels>"0"
-
-  for(i in 1:nrow(MyResultsTab)){
-    text(x=rep(xx[i],length(yy)),y=yy,labels=MyResultsTab[i,],col="blue",font=2,cex=0.75)
-  }
-
+  # Subset alternate markers by only those found in LocusControl
+  AlternateGenotypes <- AlternateGenotypes %>% 
+    dplyr::filter(AlternateMarker %in% loci) 
+  
+  # How many alternate markers are present in Locus Control?
+  AlternateCount <- AlternateGenotypes %>% 
+    dplyr::tally() %>% 
+    dplyr::pull(n)
+  
+  if( AlternateCount == 0 ) { # If no alternate markers found in LocusControl,
+    
+    stop("None of the alternate markers found in LocusControl.") # Halt - no matching markers
+    
+  } else { # Otherwise, subset based on which alternate markers are present
+    
+    warning(
+      
+      paste0("Performing analyses on ", AlternateCount, " out of ", length(AlternateGenotypes$AlternateMarker), " alternative markers.") # Pasting in values to display number of markers
+     
+      ) # Warning msg displaying number of alternate markers found in LocusControl
+    
+    }
  
-  return(Results)
+  # Subset failed markers by only those found in LocusControl
+  MyFailedMarkers <- FailedMarkers %>% 
+    dplyr::filter(FailedMarker %in% loci) %>% 
+    dplyr::pull(FailedMarker)
+  
+  # How many failed markers are present in Locus Control?
+  FailedCount <- length(MyFailedMarkers) # Total number of failed markers found in LocusControl
+  
+  if( FailedCount == 0 ) { # If no failed markers found in LocusControl,
+    
+    stop("None of the Failed markers found in LocusControl.") # Halt - no matching markers
+    
+  } else { # Otherwise, subset based on which failed markers are present
+    
+    warning(
+      
+      paste0("Performing analyses on ", FailedCount, " out of ", length(FailedMarkers$FailedMarker), " failed markers.") # Pasting in values to display number of markers
+    
+      ) # Warning msg displaying number of failed markers found in LocusControl
+    
+  }
+  
+  alternate_vars <- c(AlternateGenotypes$AlternateMarker, paste0(AlternateGenotypes$AlternateMarker, ".1")) %>%
+    sort() # Vector of variable names to select alternate and failed loci explicitly.
+  
+  failed_vars <- c(MyFailedMarkers, paste0(MyFailedMarkers, ".1")) %>%
+    sort() # Vector of variable names to select alternate and failed loci explicitly. 
+  
+  # Create tibble of all fish in sillyvec, containing just alternate and failed loci
+  gclobjectsAll <- sapply(sillyvec, function(silly){
+    
+    get( paste0(silly, ".gcl")) %>% # Grab gcl objects
+      dplyr::select(SILLY_CODE, FK_FISH_ID, all_of(c(alternate_vars, failed_vars))) %>% # Select fish ids and subset by markers of intrest
+      tidyr::unite(silly_fish, SILLY_CODE, FK_FISH_ID) # Make fish_ID col for convenience
+    
+  }, simplify = FALSE) %>% # Keep nested
+    dplyr::bind_rows() # Turn nested list into tibble
+ 
+ # Calculate failure
+  Failure <- gclobjectsAll %>%
+    dplyr::select(c(silly_fish, dplyr::all_of(MyFailedMarkers))) %>%  # Filter by just failed markers
+    dplyr::mutate(failure = 
+                    rowSums( is.na( dplyr::select(., -silly_fish))) / FailedCount) %>% # Calculate fail
+    dplyr::select(silly_fish, failure) # Grab important columns
 
+ # Create tibble of alternates
+  gclobjectsAllAlternate <- lapply(AlternateGenotypes$AlternateMarker, function(locus){
+    
+    locus_vars <-  c(locus, paste0(locus, ".1")) # List of loci, both versions
+    
+    gclobjectsAll %>% 
+      tidyr::unite(!!dplyr::sym(locus), !!!dplyr::syms(locus_vars), sep = "") %>% # Merge locus and locus.1 calls
+      dplyr::select(!!dplyr::sym(locus)) # Select just the locus
+    
+  }) %>% 
+    dplyr::bind_cols() %>% # Adding locus from apply into tibble cols
+    dplyr::mutate(silly_fish = gclobjectsAll$silly_fish) %>% # Pull in ID column
+    dplyr::select(silly_fish, everything()) %>% # Sort, IDs first followed by loci
+    dplyr::mutate(dplyr::across(all_of(AlternateGenotypes$AlternateMarker), 
+                                .fns = gsub, 
+                                pattern = "NANA", 
+                                replacement = NA) # Replace any NANA which were created by joining locus+locus.1 containing NAs
+                  )
+  
+ # Now calculations to find alternate spp.
+  Alternate <- gclobjectsAllAlternate %>%
+    tidyr::pivot_longer(-silly_fish, names_to = "locus", values_to = "call") %>% # Make long format
+    dplyr::left_join(AlternateGenotypes, by = c("locus" = "AlternateMarker")) %>% # Join the list of alternates
+    dplyr::mutate(GenoMatch = 
+                    dplyr::case_when(
+                      is.na(call)               ~ NA_real_, # If genotype is NA then assign NA
+                      call == AlternateGenotype ~ 1, # Does genotype equal alternate genotype?
+                      TRUE                      ~ 0)) %>% # Otherwise, genotype is not the alternate
+    group_by(silly_fish) %>% 
+    summarize(alternate = sum(GenoMatch, na.rm = TRUE)/AlternateCount, # Calculate prop. alternates
+              non_missing_alt = sum(!is.na(call)), # Calculate number of non-NA alternate markers (i.e., # out of total available for ea. fish)
+              .groups = "drop_last") 
+
+   Results <- Failure %>% dplyr::left_join(Alternate, by = "silly_fish") # Tibble with failure, alternate, and non_missing_alternate calculations
+  
+   plotly::ggplotly(
+     Results %>% 
+       dplyr::filter(!is.na(alternate)) %>%
+       ggplot2::ggplot(aes(x = failure, y = alternate)) +
+       geom_count(alpha = 0.5) +
+       labs(title = "Number of failed vs alternate markers",
+            x = "Failed", 
+            y = "Alternate", 
+            size = 12)
+   ) %>% print() # Trick to print plotly plots AND return tibble of results! 
+   
+ return(Results)
+  
 }
 
 
