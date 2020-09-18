@@ -41,16 +41,19 @@ create_bayes_baseline.GCL <- function(sillyvec, loci, dir, baseline_name, ncores
     dplyr::mutate(silly = as.numeric(silly), locus = as.numeric(locus)) %>% 
     dplyr::ungroup() 
   
+  max_allele <- LocusControl$nalleles[loci] %>% 
+    max()
+  
+  max_char <- bse0$n %>% 
+    nchar() %>% 
+    max()
+  
   bse <- bse0 %>% 
-    dplyr::mutate(across(everything(), ~str_pad(.x, width = 4, side = "left"))) %>% 
+    dplyr::mutate(across(everything(), ~str_pad(.x, width = 1+max_char, side = "left"))) %>% 
     dplyr::mutate(file = paste0(silly, locus, n, `1`, `2`)) %>% 
     dplyr::pull(file)
   
-  max_allele <- LocusControl$nalleles[loci] %>% max()
-  
-  max_char <- bse0$n %>% nchar() %>% max()
-  
-  base_fortran <- paste0(3+max_allele, "(1X,I", max_char, ")")
+  base_fortran <- paste0(3 + max_allele, "(1X,I", max_char, ")")
   
   write.table(bse, filename, quote = FALSE, row.names = FALSE, col.names = FALSE)
   
