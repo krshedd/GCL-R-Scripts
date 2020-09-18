@@ -1,0 +1,59 @@
+create_bayes_baseline.GCL <- function(sillyvec, loci, dir, baseline_name, ncores = 4){
+  
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # This function creates a baseline (.bse) file needed for `BAYES'.
+  #
+  # Inputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #   sillyvec - character vector of populations in the baseline
+  #   loci - character vector of the loci you wish to include
+  #   dir - character vector of where to save the ".bse" file
+  #   baseline_name - character vector of what to name the baseline.bse
+  #   ncores - the number of cores to use in a foreach %dopar% loop. If the nubmer of core exceeds the number on your device, then ncores defaults to detectCores() 
+  #            
+  # Outputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #   Returns the fortran format of the baseline file - this object is needed for create_bayes_control.GCL
+  #   Saves the baseline as a .bse file
+  #
+  # Example~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # load("V:/Analysis/2_Central/Chinook/Susitna River/Susitna_Chinook_baseline_2020/Susitna_Chinook_baseline_2020.Rdata")
+  # sillyvec <- Final_Pops$silly
+  # loci <- loci82
+  # base_fortran <- create_bayes_baseline.GCL(sillyvec = sillyvec, loci = loci, dir = getwd(), baseline_name = "SusitnaChinook31pops82loci", ncores = 8)
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
+  if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse, parallel, doParallel, foreach) #Install packages, if not in library and then load them.
+  
+  if(sum(is.na(match(loci, LocusControl$locusnames)))){
+    
+    stop(paste("'", loci[is.na(match(loci, LocusControl$locusnames))], "' from argument 'loci' not found in 'LocusControl' object!!!", sep = ""))
+    
+    }
+  
+  filename <- paste(dir, "\\", baseline_name, ".bse", sep = "")
+  
+  y <- FreqPop.GCL(sillyvec, loci, ncores)
+  
+  bse0 <- y %>%
+    dplyr::group_by(silly, locus) %>% 
+    dplyr::mutate(n = sum(freq), silly = factor(silly, levels = sillyvec), locus = factor(locus, levels = loci)) %>% 
+    dplyr::select(silly, locus, allele_no, n, freq) %>% 
+    tidyr::pivot_wider(names_from = allele_no, values_from = freq) %>% 
+    dplyr::mutate(silly = as.numeric(silly), locus = as.numeric(locus)) %>% 
+    dplyr::ungroup() 
+  
+  bse <- bse0 %>% 
+    dplyr::mutate(across(everything(), ~str_pad(.x, width = 4, side = "left"))) %>% 
+    dplyr::mutate(file = paste0(silly, locus, n, `1`, `2`)) %>% 
+    dplyr::pull(file)
+  
+  max_allele <- LocusControl$nalleles[loci] %>% max()
+  
+  max_char <- bse0$n %>% nchar() %>% max()
+  
+  base_fortran <- paste0(3+max_allele, "(1X,I", max_char, ")")
+  
+  write.table(bse, filename, quote = FALSE, row.names = FALSE, col.names = FALSE)
+  
+  return(base_fortran)
+  
+}
