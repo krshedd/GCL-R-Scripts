@@ -7,8 +7,8 @@ create_bayes_baseline.GCL <- function(sillyvec, loci, dir, baseline_name, ncores
   #   sillyvec - character vector of populations in the baseline
   #   loci - character vector of the loci you wish to include
   #   dir - character vector of where to save the ".bse" file
-  #   baseline_name - character vector of what to name the baseline.bse
-  #   ncores - the number of cores to use in a foreach %dopar% loop. If the nubmer of core exceeds the number on your device, then ncores defaults to detectCores() 
+  #   baseline_name - character vector of what to name the baseline.bse, not including the .bse extension
+  #   ncores - the number of cores to use in a foreach %dopar% loop. If the number of core exceeds the number on your device, then ncores defaults to detectCores() 
   #            
   # Outputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #   Returns the fortran format of the baseline file - this object is needed for create_bayes_control.GCL
@@ -23,21 +23,21 @@ create_bayes_baseline.GCL <- function(sillyvec, loci, dir, baseline_name, ncores
   
   if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse, parallel, doParallel, foreach) #Install packages, if not in library and then load them.
   
-  if(sum(is.na(match(loci, LocusControl$locusnames)))){
+  if(!all(loci %in% LocusControl$locusnames)){
     
-    stop(paste("'", loci[is.na(match(loci, LocusControl$locusnames))], "' from argument 'loci' not found in 'LocusControl' object!!!", sep = ""))
+    stop(paste0("\n'", setdiff(loci, LocusControl$locusnames), "' from argument 'loci' not found in 'LocusControl' object!!!"))
     
-    }
+  }
   
   filename <- paste(dir, "\\", baseline_name, ".bse", sep = "")
   
-  y <- FreqPop.GCL(sillyvec, loci, ncores)
+  y <- FreqPop.GCL(sillyvec = sillyvec, loci = loci, ncores = ncores)
   
   bse0 <- y %>%
     dplyr::group_by(silly, locus) %>% 
     dplyr::mutate(n = sum(freq), silly = factor(silly, levels = sillyvec), locus = factor(locus, levels = loci)) %>% 
     dplyr::select(silly, locus, allele_no, n, freq) %>% 
-    tidyr::pivot_wider(names_from = allele_no, values_from = freq) %>% 
+    tidyr::pivot_wider(names_from = allele_no, values_from = freq, values_fill = 0) %>% 
     dplyr::mutate(silly = as.numeric(silly), locus = as.numeric(locus)) %>% 
     dplyr::ungroup() 
   
@@ -49,11 +49,11 @@ create_bayes_baseline.GCL <- function(sillyvec, loci, dir, baseline_name, ncores
     max()
   
   bse <- bse0 %>% 
-    dplyr::mutate(across(everything(), ~str_pad(.x, width = 1+max_char, side = "left"))) %>% 
-    dplyr::mutate(file = paste0(silly, locus, n, `1`, `2`)) %>% 
+    dplyr::mutate(dplyr::across(dplyr::everything(), ~stringr::str_pad(.x, width = 1 + max_char, side = "left"))) %>% 
+    tidyr::unite(col = "file", dplyr::everything(), sep = "") %>% 
     dplyr::pull(file)
   
-  base_fortran <- paste0(3 + max_allele, "(1X,I", max_char, ")")
+  base_fortran <- paste0("(",3 + max_allele, "(1X,I", max_char, "))")
   
   write.table(bse, filename, quote = FALSE, row.names = FALSE, col.names = FALSE)
   
