@@ -22,8 +22,8 @@ CombineLoci.GCL <- function(sillyvec, markerset, update = TRUE, delim = c(".", "
   # 
   #   LOKI2R.GCL(sillyvec = c("SLARS11O", "SSKWEN07", "SSKK594L", "SMOOT92"), username = "awbarclay", password = password)
   #
-  #   CombineLoci.GCL(sillyvec = c("SLARS11O", "SSKWEN07", "SSKK594L", "SMOOT92"), markerset = c( "One_CO1", "One_Cytb_17", "One_Cytb_26"), update = TRUE, delim = c(".","_")[1])
-  #   CombineLoci.GCL(sillyvec = c("SLARS11O", "SSKWEN07", "SSKK594L", "SMOOT92"), markerset = c( "One_MHC2_190", "One_MHC2_251"), update = TRUE, delim = c(".","_")[1])
+  #   CombineLoci.GCL(sillyvec = c("SLARS11O", "SSKWEN07", "SSKK594L", "SMOOT92"), markerset = c("One_Cytb_17", "One_CO1","One_Cytb_26"), update = TRUE, delim = c(".","_")[1])
+  #   CombineLoci.GCL(sillyvec = c("SLARS11O", "SSKWEN07", "SSKK594L", "SMOOT92"), markerset = c("One_MHC2_251", "One_MHC2_190"), update = TRUE, delim = c(".","_")[1])
   #
   # Note~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #
@@ -118,8 +118,12 @@ CombineLoci.GCL <- function(sillyvec, markerset, update = TRUE, delim = c(".", "
     # Combine diploid
     if(unique(myploidy)==2){ 
       
+      sel_var <- lapply(markerset, function(mkr){
+        c(mkr,paste0(mkr, ".1"))
+        }) %>% unlist() #Setting up order of variable to unite so the markers are in the same order as markerset
+      
       new.gcl <- my.gcl %>% 
-        tidyr::unite(col = {{newmarkername}}, tidyselect::all_of(sort(c(markerset, paste0(markerset, ".1")))), sep = '', remove = FALSE, na.rm = TRUE) %>%  # Had to add the {{}} around the col object for this to work. 
+        tidyr::unite(col = {{newmarkername}}, tidyselect::all_of(sel_var), sep = '', remove = FALSE, na.rm = TRUE) %>%  # Had to add the {{}} around the col object for this to work. 
         mutate(!!rlang::sym(newmarkername) := dplyr::case_when(nchar(!!rlang::sym(newmarkername)) < maxchar ~ NA_character_,  # Added this mutate case_when to replace any genotypes with less than maxchar with NA's. Maybe there is a better way?
                                                                TRUE ~ !!rlang::sym(newmarkername)), 
                !!rlang::sym(newmarkername_1) := NA_character_) %>% 
