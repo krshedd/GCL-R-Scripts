@@ -1,17 +1,17 @@
-create_bayes_mixture.GCL <- function(sillyvec, loci, dir, ncores = 4){
+create_bayes_mixture.GCL <- function(mixvec, loci, dir, ncores = 4){
   
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # This function creates a BAYES mixure (.mix) file for each silly in sillyvec.
+  # This function creates a BAYES mixure (.mix) file for each silly in mixvec.
   #   **Note: If you want to analyze more than one silly as a mixture, use PoolCollections.GCL to combine them into a new silly.gcl**
   #
   # Inputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  #   sillyvec - character vector of sillys you want to produce mixture files for.
+  #   mixvec - character vector of ".gcl" objects you want to produce mixture files for.
   #   loci - character vector of the loci you wish to include
   #   dir - character vector of where to save the ".bse" file
   #            
   # Outputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  #   Returns the fortran format of the baseline file - this object is needed for create_bayes_control.GCL
-  #   Saves the baseline as a .bse file
+  #   Returns the fortran format of the mixture file - this object is needed for create_bayes_control.GCL
+  #   Saves each mixture in mixvec as a .mix file
   #
   # Example~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # load("V:/Analysis/2_Central/Chinook/Susitna River/Susitna_Chinook_baseline_2020/Susitna_Chinook_baseline_2020.Rdata")
@@ -20,7 +20,7 @@ create_bayes_mixture.GCL <- function(sillyvec, loci, dir, ncores = 4){
   # PoolCollections.GCL(collections = c("KSUSC18FW", "KSUSCN18"), newname = "Susitna2018")
   # PoolCollections.GCL(collections = c("KSUSC19FW", "KSUSCN19"), newname = "Susitna2019")
   # loci <- c(loci82, "Ots_MHC1.Ots_MHC2")
-  # mix_fortran <- create_bayes_mixture.GCL(sillyvec = c("Susitna2018", "Susitna2019"), loci = loci, dir = getwd(), ncores = 8)
+  # mix_fortran <- create_bayes_mixture.GCL(mixvec = c("Susitna2018", "Susitna2019"), loci = loci, dir = getwd(), ncores = 8)
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
   if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse, doParallel, parallel, foreach) #Install packages, if not in library and then load them.
@@ -33,13 +33,13 @@ create_bayes_mixture.GCL <- function(sillyvec, loci, dir, ncores = 4){
   
   start_time <- Sys.time()
   
-  my.gcl <- sapply(sillyvec, function(silly){
+  my.gcl <- sapply(mixvec, function(silly){
     
     get(paste(silly, ".gcl", sep = ""), pos = 1)
     
   }, simplify = FALSE)
    
-  for(silly in sillyvec){ #Start silly loop
+  for(silly in mixvec){ #Start silly loop
     
     new.gcl <- my.gcl[[silly]]
   
