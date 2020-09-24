@@ -1,94 +1,232 @@
-gcl2Nexus.GCL=function(sillyvec,loci,path,VialNums=TRUE,PopNames=sillyvec,Alleles=FALSE){
+gcl2Nexus.GCL <- function(sillyvec, loci, path, VialNums = TRUE, PopNames = NULL, ncores = 4){
 
-###################################################################################################################################################################################
-#This function writes a Nexus format file for use in GDA.  
-#Haplotype loci are moved to the end columns so the "hapset" is a continuous range. Discontinuous hapsets don't work in GDA even though the documentation says it's possible.
-########################################################################### Arguments ############################################################################################# 
-#sillyvec - character vector of ".gcl" object names without the .gcl extension.  
-#loci - character vector of locus names. Loci with a ploidy of "1" will be resorted to the end of the list. 
-#path - directory where the file will be written, include the file name with the ".nex" extension.
-#VialNumbers - logical statement, if set to FALSE, no vial numbers will be written.  Default is TRUE
-#PopNames - a character vector the same length as sillyvec to give populations new names. If no vector is given, PopNames defaults to "sillyvec".  
-#alleles - logical statement, if set to TRUE the file will contain the actual allele calls (letters). If FALSE the alleles will be 1s and 2s.
-###################################################################################################################################################################################  
-#This function is a modification of the gcl2Genepop.GCL function written by Jim Jasper.  A.B. 11/4/2011
-#Added ability to create file with actual allele letters instead of 1s and 2s - Andy Barclay 10/12/18
-###################################################################################################################################################################################
-                         
-  if(sum(is.na(match(loci,LocusControl$locusnames)))){stop(paste("'",loci[is.na(match(loci,LocusControl$locusnames))],"' from argument 'loci' not found in 'LocusControl' object!!!",sep=""))}
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #   This function creates a Nexus file in GDA input format from "*.gcl" objects.
+  #
+  # Inputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #   
+  #   sillyvec - character vector of SILLYs - example: c(KCRES10", "KSTRA10", "KNIKOL12", "KNIKOL13")
+  #
+  #   loci - character vector of locus names as they are spelled in LOKI - example: c("GTH2B-550", "NOD1", "Ots_100884-287")
+  #
+  #   path - full file path to write out the GENEPOP file with "\\" or "/" separator between folders 
+  #           example: "V:\\Analysis\\2_Central\\Chinook\\Cook Inlet\\2019\\2019_UCI_Chinook_baseline_hap_data\\output\\nexusfile.nex"
+  #                   or "V:/Analysis/2_Central/Chinook/Cook Inlet/2019/2019_UCI_Chinook_baseline_hap_data/output/nexusfile.nex"
+  # 
+  #   VialNums - logical; if TRUE (default), vial numbers will be included for each individual next to their silly code separated by an underscore (e.g. KCRESC10_1)
+  #                       if FALSE, only the silly code will be included for each individual.
+  #
+  #   PopNames - a character vector the same length as sillyvec to give populations new names. If no vector is given, PopNames defaults to "sillyvec". 
+  #
+  #   ncores - the number of cores for mulitcoring using doParallel and foreach. 
+  # 
+  # Outputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #    Writes out a nexus file.
+  #
+  # Example~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
+  # 
+  #  load("V:/Analysis/2_Central/Chinook/Susitna River/Susitna_Chinook_baseline_2020/Susitna_Chinook_baseline_2020.Rdata")
+  #  
+  #  #Combine some loci for example hapset
+  #  CombineLoci.GCL(sillyvec31, markerset = c("Ots_U211", "Ots_U212-297"), update = TRUE)
+  #  CombineLoci.GCL(sillyvec31, markerset = c("Ots_UNKN4-150", "Ots_UNKN6-187"), update = TRUE)
+  #
+  #   gcl2Nexus.GCL(sillyvec = sillyvec31, loci = c(loci80, "Ots_U211.Ots_U212-297", "Ots_UNKN4-150.Ots_UNKN6-187") , path = "nexusfile.nex", VialNums = TRUE, PopNames = Final_Pops$location, ncores = 8)
+  #
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
- 
-  ploidy=sort(LocusControl$ploidy[loci],decreasing=TRUE)
+  start_time <- Sys.time()
   
-  loci=names(ploidy)
+  if(!exists("LocusControl")){
+    
+    stop("'LocusControl' not yet built.")
+    
+  }
   
-  alleles=LocusControl$alleles[loci]
- 
-  nalleles=LocusControl$nalleles[loci]
- 
-  maxchar= max(nchar(unlist(sapply(sillyvec,function(silly){as.character(get(paste(silly,".gcl",sep=''))$attributes$SillySource)}))))
-
-  npops=length(sillyvec)
+  if(sum(is.na(match(loci,LocusControl$locusnames)))){
+    
+    stop(paste("'", loci[is.na(match(loci, LocusControl$locusnames))], "' from argument 'loci' not found in 'LocusControl' object!!!", sep = ""))
+    
+    }
   
-  nloci=length(loci)
+  if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse, doParallel, foreach) #Install packages, if not in library and then load them.
+  
+  if(ncores > parallel::detectCores()) {
+    
+    stop("'ncores' is greater than the number of cores available on machine\nUse 'detectCores()' to determine the number of cores on your machine")
+    
+  }
+  
+  if(is.null(PopNames)) {
+    
+    PopNames = sillyvec
+    
+    }
+  
+  PopNames <- gsub(pattern = " ", x = PopNames, replacement = "_")
+  
+  ploidy <- LocusControl %>% 
+    dplyr::filter(locusnames%in%loci) %>% 
+    dplyr::pull(ploidy) %>% 
+    purrr::set_names(loci) %>% 
+    sort(decreasing = TRUE)
+  
+  loci <- names(ploidy)
+  
+  alleles <- LocusControl$alleles[loci] %>% 
+    dplyr::bind_rows(.id = "locus")
+  
+  nalleles <- LocusControl %>% 
+    dplyr:: filter(locusnames%in%loci) %>% 
+    dplyr:: pull(nalleles) %>% 
+    purrr::set_names(loci)
+  
+  nloci <- length(loci)
+  
+  my.gcl <- lapply(sillyvec, function(silly){
+    
+    get(paste(silly, ".gcl", sep=""), pos = 1)
+    
+  }) %>% purrr::set_names(sillyvec)
+  
+  if(is.null(PopNames)){PopNames <- sillyvec}
   
   if(!length(PopNames)==length(sillyvec)){stop("PopNames is not the same length as sillyvec.")}
   
-  names(PopNames)=sillyvec
+  PopNames <- PopNames %>% 
+    purrr::set_names(sillyvec)
   
-  file="#nexus"
+  file <- "#nexus"
   
-  file=rbind(file,"")
+  file <- rbind(file,"")
   
-  file=rbind(file,"begin gdadata; [!GDA input format]")
+  file <- rbind(file, "begin gdadata; [!GDA input format]")
   
-  file=rbind(file,paste("dimensions npops=",npops,"  nloci=",nloci,";",sep=''))
+  file <- rbind(file, paste0("dimensions npops=",length(sillyvec), "  nloci=", nloci, ";"))
   
-  file=rbind(file,paste("format missing=? separator=/;",sep=''))
+  file <- rbind(file, paste0("format missing=? separator=/;"))
   
   if(min(ploidy)==1){
-  hapset=grep("1",ploidy)
-  if(length(hapset)>1){hapset=paste(range(hapset),collapse="-")}
-  file=rbind(file,paste("hapset ",hapset,";",sep=''))
+    
+    hapset0 <- grep("1", ploidy)
+    
+    if(length(hapset0)>1){hapset <- paste(range(hapset0), collapse="-")}
+    
+    file <- rbind(file, paste0("hapset ", hapset, ";"))
+    
+  } else{hapset = FALSE}
+  
+  file <- rbind(file, "locusallelelabels")
+  
+  max.char <- max(nchar(seq(nloci)))
+  
+  locuslabels <- cbind(c(paste0("   ", format(seq(nloci-1), width = max.char), "  ", loci[seq(nloci-1)], ","),
+                         paste0("   ", format(nloci, width = max.char), "  ", loci[nloci]))
+                       )
+  
+  file <- rbind(file, locuslabels)
+  
+  file <- rbind(file, cbind(c(";", "matrix")))
+  
+  my.gcl <- lapply(sillyvec, function(silly){
+    
+    get(paste(silly, ".gcl", sep=""), pos = 1)
+    
+  }) %>% purrr::set_names(sillyvec)
+  
+  if(!hapset==FALSE){
+    
+    scores_names <- sapply(loci[-hapset0], function(locus) {c(locus, paste0(locus, ".1"))}) %>% 
+      as.vector() %>% 
+      c(loci[hapset0])
+    
+  } else{
+    
+    scores_names <- sapply(loci, function(locus) {c(locus, paste0(locus, ".1"))}) %>% 
+      as.vector() 
+    
   }
   
-  file=rbind(file,"locusallelelabels")
+  # Create scores tables
   
-  locuslabels=cbind(c(paste("   ",format(seq(nloci-1),width=max(nchar(seq(length(loci))))),"  ",loci[seq(nloci-1)],",",sep=""),paste("   ",format(nloci,width=max(nchar(seq(length(loci))))),"  ",loci[nloci],sep="")))
-  file=rbind(file,locuslabels)
+  cl <- parallel::makePSOCKcluster(ncores)
   
-  file=rbind(file,cbind(c(";","matrix")))
-
-  for(silly in sillyvec){    
-    my.gcl=get(paste(silly,".gcl",sep=""),pos=1)
-    vials=format(as.character(my.gcl$attributes$SillySource),width=maxchar+1,justify="right")
-    if(!VialNums){vials=sapply(vials,function(vial){strsplit(vial,"_")[[1]][1]})}
-    IDs=dimnames(my.gcl$scores)[[1]]
-    names(vials)=IDs    
-    scores=my.gcl$scores[,loci,]
+  doParallel::registerDoParallel(cl, cores = ncores)  
+  
+  scores_all <- foreach::foreach(silly = sillyvec, .packages = c("tidyverse", "tidyselect")) %dopar% {
     
-    if(Alleles==TRUE){
-      
-      geno=sapply(IDs,function(ID){paste(sapply(loci,function(locus){paste(sapply(1:ploidy[locus],function(ploid){ifelse(is.na(scores[ID,locus,ploid]),paste("?",collapse=""),scores[ID,locus,ploid])}),collapse="/  ")}),collapse="   ")}) 
-      
-      
-    }else{
-      
-      geno=sapply(IDs,function(ID){paste(sapply(loci,function(locus){paste(sapply(1:ploidy[locus],function(ploid){ifelse(is.na(scores[ID,locus,ploid]),paste("?",collapse=""),paste(match(scores[ID,locus,ploid],alleles[[locus]]),collapse=""))}),collapse="/  ")}),collapse="   ")})     
+    new.gcl <- my.gcl[[silly]]
     
+    IDs <- paste(new.gcl$SILLY_CODE, new.gcl$FK_FISH_ID, sep = "_") 
+    
+    if(!VialNums){ 
+      
+      vials <- new.gcl$SILLY_CODE
+      
+    } else{vials <- IDs}
+ 
+    scores <- new.gcl %>% 
+      dplyr::select(tidyselect::all_of(scores_names)) %>% 
+      as.data.frame(stringsAsFactors = FALSE)
+    
+    dimnames(scores)[[1]] = IDs 
+    
+    scores[scores==0] <- NA
+    
+    pop_scores <- lapply(loci, function(loc){ 
+      
+      if(ploidy[loc]==2){
+        
+        variables <- c(loc, paste(loc, 1, sep = "."))
+                       
+      } else{
+                         
+        variables <- loc
+        
+        }
+      
+      my.alleles <- alleles %>% 
+        filter(locus==loc) %>% 
+        pull(call)
+      
+      scores %>%
+        dplyr::select(tidyselect::all_of(variables)) %>% 
+        dplyr::mutate_all(factor, levels = my.alleles) %>% 
+        dplyr::mutate_all(as.numeric) %>%
+        replace(is.na(.), "?") %>%
+        tidyr::unite(col = loc, all_of(variables), sep = "/  ")
+      
+    }) %>% 
+      dplyr::bind_cols() %>% 
+      purrr::set_names(loci) %>% 
+      dplyr::mutate(ID = paste0(vials)) %>% 
+      tidyr::unite("comb_scores", tidyselect::all_of(loci), sep = "   ") %>% 
+      tidyr::unite("ID_scores", c("ID","comb_scores"), sep = "  ") %>% 
+      dplyr::pull(ID_scores) 
+    
+    if(silly == dplyr::last(sillyvec)){
+      
+      rbind(paste0(PopNames[silly],":"), 
+            cbind(pop_scores), 
+            t(cbind(";", "end;")))
+      
+    } else{
+      
+      rbind(paste0(PopNames[silly],":"), 
+            cbind(pop_scores), 
+            t(cbind("", ",")))
+      
       }
     
-    geno=gsub(pattern="0",replacement="?",x=geno)
-    
-    geno=as.character(sapply(IDs,function(ID){paste(paste(vials[ID]," ",sep=""),geno[ID],collapse="")}))
-    
-    file=rbind(file,cbind(c(paste(PopNames[silly],":",sep=''),geno)))
-    file=rbind(file,cbind(c(",")))
-    
-  }
-  file[length(file):(length(file)+1)]=c(";","end;")
+  } #End multicore loop
   
-  write.table(file,path,quote=FALSE,row.names=FALSE,col.names=FALSE)
+  parallel::stopCluster(cl)
+  
+  file <- rbind(file, scores_all %>% unlist() %>% cbind())
+  
+  write.table(file, path, quote = FALSE, row.names = FALSE, col.names = FALSE)
+  
+  Sys.time()-start_time
   
   return(NULL) 
  

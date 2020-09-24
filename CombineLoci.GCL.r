@@ -1,157 +1,166 @@
-CombineLoci.GCL=function(sillyvec,markerset,update=FALSE,delim=c(".","_")[1]){
-
-#########################################################################################################################################################################################
-#
-#  This function combines a set of markers into a single marker.
-#
-#  "sillyvec" is the set of "*.gcl" objects (without ".gcl" extension) you wish to combine markers for. 
-#
-#  "markerset" is the set of loci you wish to combine.
-#
-#  "update" is a logical switch. If TRUE, the "LocusControl" object is updated and all "*.gcl" objects in "sillyvec" will be updated with the new marker.
-#                                If FALSE, the "LocusControl" object is not updated and a temporary object called "*.temp.gcl" with the updated data is created.  
-#	
-#  "delim" specifies the separator between combined loci, either a period (.)which is the default or an underscore (_) so locus names will work in SPAM 4/6/2012 A.B. 
-#	
-#  Written by JJ 4/24/2011
-# 
-#########################################################################################################################################################################################
-
-  if(sum(is.na(match(markerset,LocusControl$locusnames)))){stop(paste("'",markerset[is.na(match(markerset,LocusControl$locusnames))],"' from argument 'markerset' not found in 'LocusControl' object!!!",sep=""))}
-
-  nmarkers=length(markerset)  
- 
-  myploidy=LocusControl$ploidy[markerset]
-
-  if(sort(unique(myploidy))[1]==1){haploid=TRUE}
-
-  if(!sort(unique(myploidy))[1]==1){haploid=FALSE}
-
-  if(sum(myploidy==myploidy[1])!=nmarkers){stop("'markerset' has different ploidies!!!")}  
-
-  MarkerSuite=LocusControl$MarkerSuite
+CombineLoci.GCL <- function(sillyvec, markerset, update = TRUE, delim = c(".", "_")[1]){
   
-  locusnames=LocusControl$locusnames
-
-  newmarkername=paste(markerset,collapse=delim)
-
-  existnewmarker=!is.na(match(newmarkername,locusnames))
-
-  loci=unique(c(locusnames,newmarkername))
-
-  nloci=length(loci)
-
-  Publishedlocusnames=LocusControl$Publishedlocusnames
-  Publishedlocusnames=unique(c(Publishedlocusnames,paste(Publishedlocusnames[match(markerset,locusnames)],collapse=".")))
-
-  newalleles=AllPossiblePhenotypes.GCL(markerset)
-
-  alleles=LocusControl$alleles[locusnames]
-  nalleles=LocusControl$nalleles[locusnames]
-  ploidy=LocusControl$ploidy[locusnames]
-
-  if(!existnewmarker){
-    alleles[[length(locusnames)+1]]=newalleles
-    nalleles=c(nalleles,length(newalleles))
-    ploidy=c(ploidy,1)
-  }  
-  names(alleles)=names(nalleles)=names(ploidy)=loci
-
-  mymessage=NULL
-
-  for(silly in sillyvec){
-    my.gcl=get(paste(silly,".gcl",sep=""),pos=1)
-
-    counts=my.gcl$counts
-
-    scores=my.gcl$scores
-
-    IND=dimnames(scores)
-
-    n=length(IND[[1]])
-
-    if(!is.na(match(newmarkername,IND[[2]]))){
-      mymessage=c(mymessage,paste("'",newmarkername,"'"," already created in silly '", silly,"', hoser!!!",sep=""))
-      next()
-    }
-
-    attributes=my.gcl$attributes
- 
-    myscores=scores
-
-    ID=as.character(IND[[1]])
-
-    newscores=array(NA,c(n,nloci,max(ploidy)),dimnames=list(ID,loci,1:max(ploidy)))
-
-    newscores[IND[[1]],IND[[2]],as.character(1:max(ploidy))]=scores
-
-    if(!haploid){    
-      newscores[IND[[1]],newmarkername,1]=apply(
-                                            sapply(1:length(markerset),function(marker){
-                                              apply(myscores[,markerset[marker],1:ploidy[markerset[marker]]],1,function(myscore){
-                                                if(!sum(is.na(myscore))){
-                                                  ans1=paste(myscore,collapse="")
-                                                };
-                                                if(sum(is.na(myscore))){
-                                                  ans1=NA
-                                                };
-                                                ans1;
-                                              });                                                                                 
-                                            }),1,function(x){
-                                            if(!sum(is.na(x))){
-                                              ans2=paste(x,collapse="")
-                                            };
-                                            if(sum(is.na(x))){
-                                              ans2=NA
-                                            };
-                                            ans2
-                                        })
-    }
-    if(haploid){    
-      newscores[IND[[1]],newmarkername,1]=apply( 
-                                            sapply(1:length(markerset),function(marker){
-                                              sapply(myscores[,markerset[marker],1:ploidy[markerset[marker]]],function(myscore){
-                                                if(!sum(is.na(myscore))){
-                                                  ans1=paste(myscore,collapse="")
-                                                };
-                                                if(sum(is.na(myscore))){
-                                                  ans1=NA
-                                                };
-                                                ans1;
-                                             })
-                                           }),1,function(x){
-                                             if(!sum(is.na(x))){
-                                               ans2=paste(x,collapse="")
-                                             };
-                                             if(sum(is.na(x))){
-                                               ans2=NA
-                                             };
-                                             ans2
-                                         })
-    }
-
-
-    newcounts=array(NA,c(n,nloci,max(nalleles)),dimnames=list(ID,loci,paste("Allele ",1:max(nalleles),sep="")))
-    for(ind in ID){
-      for(locus in loci){
-        for(allele in 1:nalleles[locus]){
-          newcounts[ind,locus,paste("Allele ",allele,sep="")]=sum(newscores[ind,locus,1:ploidy[locus]]==alleles[[locus]][allele]) 
-        }
-        if(sum(is.na(match(newscores[ind,locus,1:ploidy[locus]],alleles[[locus]])))){
-          newscores[ind,locus,1:ploidy[locus]]=rep(NA,ploidy[locus]) 
-          newcounts[ind,locus,1:nalleles[locus]]=rep(NA,nalleles[locus]) 
-        }
-      }
-    }    
-    if(update){
-      assign(paste(silly,".gcl",sep=""),list(counts=newcounts,scores=newscores,n=n,attributes=attributes),pos=1)
-    }
-    if(!update){
-      assign(paste(silly,".temp.gcl",sep=""),list(counts=newcounts,scores=newscores,n=n,attributes=attributes),pos=1)
-    } 
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #   This function combines a set of markers into a single marker set. 
+  #
+  # Inputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #
+  #   sillyvec - a character vector of silly codes (e.g. sillyvec <- c("KQUART06","KQUART08","KQUART09"))
+  #
+  #   markerset - is a vector of the set of loci you wish to combine (e.g., c("Ots_vatf-251", "Ots_ZR-575"))
+  #
+  #   update - is a logical switch. If TRUE, the "LocusControl" object is updated and all "*.gcl" objects in "sillyvec" will be updated with the new marker.
+  #                                 If FALSE, the "LocusControl" object is not updated and a temporary object called "*.temp.gcl" with the updated data is created.  
+  #	
+  #   delim - specifies the separator between combined loci, either a period (.) which is the default or an underscore (_) so locus names will work in SPAM 
+  #	
+  # Example~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #  
+  #   password = "************"
+  #
+  #   CreateLocusControl.GCL(markersuite = "Sockeye2011_96SNPs", username = "awbarclay", password = password)
+  # 
+  #   LOKI2R.GCL(sillyvec = c("SLARS11O", "SSKWEN07", "SSKK594L", "SMOOT92"), username = "awbarclay", password = password)
+  #
+  #   CombineLoci.GCL(sillyvec = c("SLARS11O", "SSKWEN07", "SSKK594L", "SMOOT92"), markerset = c("One_Cytb_17", "One_CO1","One_Cytb_26"), update = TRUE, delim = c(".","_")[1])
+  #   CombineLoci.GCL(sillyvec = c("SLARS11O", "SSKWEN07", "SSKK594L", "SMOOT92"), markerset = c("One_MHC2_251", "One_MHC2_190"), update = TRUE, delim = c(".","_")[1])
+  #
+  # Note~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #
+  #   This function requires a LocusControl object. Run CreateLocusControl.GCL prior to this function.
+  #   This function also requires dplyr version 1.0.0 or higher
+  #
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
+  
+  if(!all(markerset %in% LocusControl$locusnames)){
+    
+    stop(paste0("'", setdiff(markerset, LocusControl$locusnames), "' from argument 'markerset' not found in 'LocusControl' object!!!"))
+    
   }
+  
+  if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse)  # Install packages, if not in library and then load them.
+  
+  nmarkers <- length(markerset)  
+  
+  myploidy <- LocusControl$ploidy[markerset]
+  
+  if(sum(myploidy == myploidy[1]) != nmarkers){
+    
+    stop("'markerset' has different ploidies!!!")
+    
+  }  
+  
+  MarkerSuite <- LocusControl$MarkerSuite %>% 
+    unique()
+  
+  locusnames <- LocusControl$locusnames
+  
+  newmarkername <- paste(markerset, collapse = delim)
+  
+  existnewmarker <- newmarkername %in% locusnames
+  
+  loci <- unique(c(locusnames, newmarkername))
+  
+  nloci <- length(loci)
+  
+  Publishedlocusnames <- LocusControl$Publishedlocusnames
+  
+  Publishedlocusnames <- c(Publishedlocusnames, purrr::set_names(NA, newmarkername))
+  
+  newalleles <- AllPossiblePhenotypes.GCL(markerset)
+  
+  maxchar <- max(nchar(newalleles))
+  
+  alleles <- LocusControl$alleles[locusnames]
+  
+  nalleles <- LocusControl$nalleles[locusnames]
+  
+  ploidy <- LocusControl$ploidy[locusnames]
+  
+  if(!existnewmarker){
+    
+    alleles[[length(locusnames) + 1]] <- tibble::tibble(allele = seq_along(newalleles), call = newalleles)
+    
+    nalleles <- c(nalleles, length(newalleles)) 
+    
+    ploidy <- c(ploidy, 1) 
+    
+  }  
+  
+  names(alleles) <- names(nalleles) <- names(ploidy) <- loci
+  
+  for(silly in sillyvec){
+    
+    my.gcl <- get(paste0(silly, ".gcl"), pos = 1)
+    
+    if(newmarkername %in% names(my.gcl)){
+      
+      warning(paste0("'", newmarkername, "'"," already created in silly '", silly,"'!!!"))
+      next()
+      
+    }
+    
+    newmarkername_1 <- paste0(newmarkername, ".1")  # Allele 2 name
+    
+    # Combine haploid
+    if(unique(myploidy) == 1){ 
+      
+      new.gcl <- my.gcl %>% 
+        tidyr::unite(col = {{newmarkername}}, tidyselect::all_of(markerset), sep = '', remove = FALSE, na.rm = TRUE) %>%  # Had to add the {{}} around the col object for this to work. 
+        mutate(!!rlang::sym(newmarkername) := dplyr::case_when(nchar(!!rlang::sym(newmarkername)) < maxchar ~ NA_character_,  # Added this mutate case_when to replace any genotypes with less than maxchar with NA's. Maybe there is a better way?
+                                                               TRUE ~ !!rlang::sym(newmarkername)), 
+               !!rlang::sym(newmarkername_1) := NA_character_) %>% 
+        dplyr::relocate(!!rlang::sym(newmarkername), .after = tidyselect::last_col()) %>% 
+        dplyr::relocate(!!rlang::sym(newmarkername_1), .after = tidyselect::last_col())  # Had to relocate alleles separately or they get reordered
+      
+    }
+    
+    # Combine diploid
+    if(unique(myploidy)==2){ 
+      
+      sel_var <- lapply(markerset, function(mkr){
+        c(mkr,paste0(mkr, ".1"))
+        }) %>% unlist() #Setting up order of variable to unite so the markers are in the same order as markerset
+      
+      new.gcl <- my.gcl %>% 
+        tidyr::unite(col = {{newmarkername}}, tidyselect::all_of(sel_var), sep = '', remove = FALSE, na.rm = TRUE) %>%  # Had to add the {{}} around the col object for this to work. 
+        mutate(!!rlang::sym(newmarkername) := dplyr::case_when(nchar(!!rlang::sym(newmarkername)) < maxchar ~ NA_character_,  # Added this mutate case_when to replace any genotypes with less than maxchar with NA's. Maybe there is a better way?
+                                                               TRUE ~ !!rlang::sym(newmarkername)), 
+               !!rlang::sym(newmarkername_1) := NA_character_) %>% 
+        dplyr::relocate(!!rlang::sym(newmarkername), .after = tidyselect::last_col()) %>% 
+        dplyr::relocate(!!rlang::sym(newmarkername_1), .after = tidyselect::last_col())  # Had to relocate alleles separately or they get reordered
+      
+    }
+    
+    if(update){
+      
+      assign(paste0(silly, ".gcl"), new.gcl, pos = 1)
+      
+    }
+    
+    if(!update){
+      
+      assign(paste0(silly, ".temp.gcl"), new.gcl, pos = 1)
+      
+    } 
+    
+  }
+  
   if(update){
-    assign("LocusControl",list(MarkerSuite=MarkerSuite,locusnames=loci,Publishedlocusnames=Publishedlocusnames,alleles=alleles,nalleles=nalleles,ploidy=ploidy),pos=1)
+    
+    assign(
+      x = "LocusControl",
+      value = tibble::tibble(
+        MarkerSuite = MarkerSuite,
+        locusnames = loci,
+        Publishedlocusnames = Publishedlocusnames,
+        nalleles = nalleles,
+        ploidy = ploidy,
+        alleles = alleles
+      ),
+      pos = 1
+    )
+    
   }   
-  return(mymessage)
+  
 }

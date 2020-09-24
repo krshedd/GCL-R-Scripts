@@ -1,6 +1,6 @@
 custom_combine_rubias_output <- function(rubias_output = NULL, mixvec = NULL, group_names = NULL, group_names_new = NULL,
                                          groupvec = NULL, groupvec_new = NULL, path = "rubias/output", alpha = 0.1, 
-                                         burn_in = 5000, bias_corr = FALSE, threshold = 5e-7, plot_trace = TRUE) {
+                                         burn_in = 5000, bias_corr = FALSE, threshold = 5e-7, plot_trace = TRUE, ncores = 4) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # This function computes summary statistics from `rubias` output, similar to `CustomCombineBAYESOutput.
   # However, output is a tibble with `mixture_collection` as a column, instead of each mixture as its own list.
@@ -31,6 +31,7 @@ custom_combine_rubias_output <- function(rubias_output = NULL, mixvec = NULL, gr
   #               currently can NOT do bias correction if not using the same repunits that were run in the mixture
   #   threshold - numeric constant specifying how low stock comp is before assume 0, used for `P=0` calculation, default is from BAYES
   #   plot_trace - logical switch, when on will create a trace plot for each mixture and repunit (reporting group)
+  #   ncores - a numeric vector of length one indicating the number of cores to use (ncores is only used when is.null(rubias_output) == TRUE)
   #
   # Outputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #   Returns a tibble with 8 fields for each mixture and repunit (reporting group)
@@ -49,10 +50,15 @@ custom_combine_rubias_output <- function(rubias_output = NULL, mixvec = NULL, gr
   # load("V:/Analysis/1_SEAK/Sockeye/Mixture/Lynn Canal Inseason/2018/OLD rubias/output/test/custom_combine_rubias_output_test.RData")
   # lynncanal_2015_SW26_27.sum <- custom_combine_rubias_output(rubias_output = lynncanal_test.out, group_names = LynnCanal_groups7, bias_corr = TRUE)
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  while(!require(tidyverse)){install.packages("tidyverse")}
+  if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse, doParallel, parallel, foreach) #Install packages, if not in library and then load them.
   
   #~~~~~~~~~~~~~~~~
   ## Error catching
+  if(ncores > parallel::detectCores()) {
+    
+    stop("'ncores' is greater than the number of cores available on machine\nUse 'detectCores()' to determine the number of cores on your machine")
+    
+  }
   if(is.null(rubias_output) & !dir.exists(path)) {
     stop("`path` does not exist in your working directory, hoser!!!\nEither specify `rubias_output` or provide a valid `path` with rubias output .csv files for `mixvec`.")
   }
@@ -87,14 +93,24 @@ custom_combine_rubias_output <- function(rubias_output = NULL, mixvec = NULL, gr
         stop("Not all mixtures in `mixvec` have a `repunit_trace.csv` file in `path`, hoser!!!")
       }  # make sure output files exist
       message("    Building trace output from `repunit_trace.csv` files.")
-      repunit_trace <- dplyr::bind_rows(lapply(mixvec, function(mixture) {
+      
+      cl <- parallel::makePSOCKcluster(ncores)
+      
+      doParallel::registerDoParallel(cl, cores = ncores)  
+      
+      repunit_trace <- foreach::foreach(mixture = mixvec, .packages = c("tidyverse")) %dopar% {
+          
         repunit_trace_mix <- suppressMessages(readr::read_csv(file = paste0(path, "/", mixture, "_repunit_trace.csv")))
         repunit_trace_mix <- repunit_trace_mix %>% 
           tidyr::gather(repunit, rho, -sweep) %>%  # wide to tall
           dplyr::mutate(mixture_collection = mixture) %>%  # add mixture_collection
           dplyr::arrange(mixture_collection, sweep, repunit) %>%  # sort by mixture_collection, sweep, repunit
           dplyr::select(mixture_collection, sweep, repunit, rho)  # reorder columns
-      } ))  # build output from "repunit_trace.csv"
+        
+      } %>% dplyr::bind_rows()  # build output from "repunit_trace.csv"
+      
+      parallel::stopCluster(cl)
+      
       if(is.null(group_names)) {
         group_names <- colnames(suppressMessages(readr::read_csv(file = paste0(path, "/", mixvec[1], "_repunit_trace.csv"))))[-1]
       }  # assign `group_names` from "repunit_trace.csv", if NULL
@@ -105,12 +121,22 @@ custom_combine_rubias_output <- function(rubias_output = NULL, mixvec = NULL, gr
         stop("Not all mixtures in `mixvec` have a `collection_trace.csv` file in `path`, hoser!!!")
       }  # make sure output files exist
       message("    Building trace output from `collection_trace.csv` files, `groupvec`, and `group_names`.")
-      collection_trace <- dplyr::bind_rows(lapply(mixvec, function(mixture) {
+      
+      cl <- parallel::makePSOCKcluster(ncores)
+      
+      doParallel::registerDoParallel(cl, cores = ncores)  
+      
+      collection_trace <- foreach::foreach(mixture = mixvec, .packages = c("tidyverse")) %dopar% {
+        
         collection_trace_mix <- suppressMessages(readr::read_csv(file = paste0(path, "/", mixture, "_collection_trace.csv")))
         collection_trace_mix <- collection_trace_mix %>% 
           tidyr::gather(collection, pi, -sweep) %>% 
           dplyr::mutate(mixture_collection = mixture)
-      } ))  # build output from "collection_trace.csv"
+        
+      } %>% dplyr::bind_rows()  # build output from "collection_trace.csv"
+      
+      parallel::stopCluster(cl)
+      
       base_collections <- unique(collection_trace$collection)  # baseline collections are the same order as in rubias output
       repunit_new.df <- tibble::tibble(collection = base_collections,
                                        repunit_new = group_names[groupvec])  # tibble of new repunit from groupvec
@@ -118,8 +144,8 @@ custom_combine_rubias_output <- function(rubias_output = NULL, mixvec = NULL, gr
         dplyr::left_join(repunit_new.df, by = "collection") %>%  # join with new repunit
         dplyr::rename(repunit = repunit_new) %>%  # rename new repunit
         dplyr::group_by(mixture_collection, sweep, repunit) %>%  # group and order
-        dplyr::summarise(rho = sum(pi)) %>%  # summarise pi (collection) to rho (repunit)
-        dplyr::ungroup()
+        dplyr::summarise(rho = sum(pi), .groups = "drop_last")   # summarise pi (collection) to rho (repunit)
+        
     }  # build repunit_trace from "collection_trace.csv", `groupvec`, and `group_names`
     
     # Build `bootstrapped_proportions` if `bias_corr = TRUE`
@@ -128,11 +154,21 @@ custom_combine_rubias_output <- function(rubias_output = NULL, mixvec = NULL, gr
         stop("Not all mixtures in `mixvec` have a `bias_corr.csv` file in `path`, hoser!!!")
       }  # make sure output files exist
       message("    Building bias correction output from `bias_corr.csv` files.")
-      bootstrapped_proportions <- dplyr::bind_rows(lapply(mixvec, function(mixture) {
+
+      cl <- parallel::makePSOCKcluster(ncores)
+      
+      doParallel::registerDoParallel(cl, cores = ncores)  
+      
+      bootstrapped_proportions <- foreach::foreach(mixture = mixvec, .packages = c("tidyverse")) %dopar% {
+          
         bias_corr_mix <- suppressMessages(readr::read_csv(file = paste0(path, "/", mixture, "_bias_corr.csv")))
         bias_corr_mix <- bias_corr_mix %>% 
           dplyr::mutate(mixture_collection = mixture)
-      } ))  # build bootstrapped_proportions from "bias_corr.csv" files
+        
+      } %>%  dplyr::bind_rows()  # build bootstrapped_proportions from "bias_corr.csv" files
+      
+      parallel::stopCluster(cl)
+      
     }  # bias_corr
     
   }  # build rubias_output from .csv files, ignore "indiv_posteriors"
@@ -140,18 +176,23 @@ custom_combine_rubias_output <- function(rubias_output = NULL, mixvec = NULL, gr
   #~~~~~~~~~~~~~~~~
   ## If rubias_output, create `repunit_trace` and `bootstrapped_proportions`
   if(!is.null(rubias_output)) {
+    
     message("Summarizing results from `rubias output`.")
     
     if(is.null(mixvec)) {
+      
       mixvec <- unique(rubias_output$mix_prop_traces$mixture_collection)
+      
     }  # used to order mixtures as factor
     
     # Build repunit_trace from `rubias_output` if `groupvec` is NULL
     if(is.null(groupvec)) {
+      
       repunit_trace <- rubias_output$mix_prop_traces %>% 
         dplyr::group_by(mixture_collection, sweep, repunit) %>%  # group to summarize across collections
-        dplyr::summarise(rho = sum(pi)) %>%  # summarize collections to repunits
-        dplyr::ungroup()
+        dplyr::summarise(rho = sum(pi), .groups = "drop_last" ) # summarize collections to repunits
+        
+      
       if(is.null(group_names)) {group_names <- unique(repunit_trace$repunit) }  # assign `group_names` from `rubias_output`, if NULL, order may be wrong
       
     } else {
@@ -164,8 +205,8 @@ custom_combine_rubias_output <- function(rubias_output = NULL, mixvec = NULL, gr
         dplyr::select(-repunit) %>%  # drop old repunit
         dplyr::rename(repunit = repunit_new) %>%  # rename new repunit
         dplyr::group_by(mixture_collection, sweep, repunit) %>%  # group and order
-        dplyr::summarise(rho = sum(pi)) %>%  # summarise pi (collection) to rho (repunit)
-        dplyr::ungroup()
+        dplyr::summarise(rho = sum(pi), .groups = "drop_last")   # summarise pi (collection) to rho (repunit)
+        
     }  # build repunit_trace from `rubias_output`, `groupvec`, and `group_names`
     
     # Build `bootstrapped_proportions` if `bias_corr = TRUE`
@@ -184,8 +225,7 @@ custom_combine_rubias_output <- function(rubias_output = NULL, mixvec = NULL, gr
     mixing_proportions_rho <- repunit_trace %>% 
       dplyr::filter(sweep >= burn_in) %>%   # remove burn_in
       dplyr::group_by(mixture_collection, repunit) %>%  # group by mixture and repunit across sweeps
-      dplyr::summarise(rho = mean(rho)) %>% 
-      dplyr::ungroup()
+      dplyr::summarise(rho = mean(rho), .groups = "drop_last") 
     
     d_rho <- mixing_proportions_rho %>% 
       dplyr::left_join(bootstrapped_proportions, by = c("mixture_collection", "repunit")) %>%  # join with `bootstrapped_proportions`
@@ -212,8 +252,7 @@ custom_combine_rubias_output <- function(rubias_output = NULL, mixvec = NULL, gr
     repunit_trace <- repunit_trace %>% 
       dplyr::mutate(repunit = recode(repunit, !!!level_key)) %>% 
       dplyr::group_by(mixture_collection, sweep, repunit) %>% 
-      dplyr::summarise(rho = sum(rho)) %>% 
-      dplyr::ungroup()  
+      dplyr::summarise(rho = sum(rho), .groups = "drop_last") 
   }  
   
   #~~~~~~~~~~~~~~~~
@@ -247,8 +286,7 @@ custom_combine_rubias_output <- function(rubias_output = NULL, mixvec = NULL, gr
                      median = median(rho),
                      loCI = quantile(rho, probs = loCI),
                      hiCI = quantile(rho, probs = hiCI),
-                     `P=0` = sum(rho < threshold) / length(rho)) %>%  # summary statistics to return
-    dplyr::ungroup() %>% 
+                     `P=0` = sum(rho < threshold) / length(rho), .groups = "drop_last") %>%    # summary statistics to return
     dplyr::mutate(loCI = replace(loCI, which(loCI < 0), 0),
                   hiCI = replace(hiCI, which(hiCI < 0), 0),
                   median = replace(median, which(median < 0), 0),
