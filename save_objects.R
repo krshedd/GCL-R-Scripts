@@ -19,7 +19,7 @@ save_objects <- function(objects, path, rds = FALSE) {
   #
   # Example~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # iris <- iris  # bringing into pos = 1
-  # save_objects(objects = "iris", path = "Objects", rds = FALSE)
+  # save_objects(objects = "iris", path = "Objects", rds = TRUE)
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
   if(!all(objects %in% ls(pos = 1))) {
@@ -28,7 +28,7 @@ save_objects <- function(objects, path, rds = FALSE) {
     
   }
   
-  sapply(objects, function(obj){
+ empty <- sapply(objects, function(obj){
     
     if(rds == FALSE){dput(get(obj), paste0(path, "/", obj, ".txt"))}else{
       
