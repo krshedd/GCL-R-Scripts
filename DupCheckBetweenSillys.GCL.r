@@ -29,6 +29,9 @@ DupCheckBetweenSillys.GCL <- function(KeySillys, KeySillyIDs = NULL, BetweenSill
   #       Betweenmissing - the number of loci without genotypes for each BetweenSilly_ID, 
   #       DuplicateRate - the proportion of duplicate genotypes between each KeySilly_ID and BetweenSilly_ID.
   # 
+  #   The table includes the duplicates that exceeded minproportion or had the maximum duplicate rate 
+  #   and, for QC proposes, duplicates that came from the same original collection (i.e. project duplicates)
+  # 
   #   The function also prints a histogram of duplicate rates for each KeySillyID. Each plot has a vertical red line indicating the "minproportion" and the 
   #   highest duplicate rate bar is label with the BetweenSillyIDs with that duplicate rate. The title of each plot indicates the KeySillyID that was checked for duplicates.
   # 
