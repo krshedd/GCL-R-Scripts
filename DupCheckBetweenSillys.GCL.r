@@ -32,21 +32,22 @@ DupCheckBetweenSillys.GCL <- function(KeySillys, KeySillyIDs = NULL, BetweenSill
   # Example~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #
   # password <- "************"
-
-    CreateLocusControl.GCL(markersuite = "CookInletChinook2013_43SNPs", username = "awbarclay", password = password)
-    LOKI2R.GCL(sillyvec =  c("KKILL05","KKILL06", "KFUNN05", "KFUNN06"), username = "awbarclay", password = password)
-    
-    #Creating new sillys with duplicates for an example
-    PoolCollections.GCL(collections = c("KKILL05", "KFUNN05"), IDs = list(KKILL05 = KKILL05.gcl$FK_FISH_ID, KFUNN05 = c(9, 30)), newname = "KKILL05")
-    PoolCollections.GCL(collections = c("KFUNN06", "KKILL06"), IDs = list(KFUNN06 = KFUNN06.gcl$FK_FISH_ID, KKILL06 = c(101, 176)), newname = "KFUNN06")
-    KKILL05.gcl <- KKILL05.gcl %>% mutate(SillySource = case_when(FK_FISH_ID %in% c(69, 70) ~ paste(SILLY_CODE, FK_FISH_ID, sep = "_"), TRUE~SillySource))
-    KFUNN06.gcl <- KFUNN06.gcl %>% mutate(SillySource = case_when(FK_FISH_ID %in% c(184, 185) ~ paste(SILLY_CODE, FK_FISH_ID, sep = "_"), TRUE~SillySource))
-    
-    KeySillys <- c("KKILL06", "KFUNN05")
-    KeySillyIDs <- list(KKILL06 = c(101, 176), KFUNN05 = c(9, 30))
-    BetweenSillys <- c("KKILL05", "KFUNN06")
-    loci <- LocusControl$locusnames
-    results <- DupCheckBetweenSillys.GCL(KeySillys = c("KKILL06", "KFUNN05"), KeySillyIDs = list(KKILL06 = c(101, 176), KFUNN05 = c(9, 30)), BetweenSillys = c("KKILL05", "KFUNN06"), loci = LocusControl$locusnames, minnonmissing = 0.6, minproportion = 0.9, ncores = 4)
+  # 
+  #   CreateLocusControl.GCL(markersuite = "CookInletChinook2013_43SNPs", username = "awbarclay", password = password)
+  #   LOKI2R.GCL(sillyvec =  c("KKILL05","KKILL06", "KFUNN05", "KFUNN06"), username = "awbarclay", password = password)
+  #     
+  #     #Creating new sillys with duplicates for an example
+  #     PoolCollections.GCL(collections = c("KKILL05", "KFUNN05"), IDs = list(KKILL05 = KKILL05.gcl$FK_FISH_ID, KFUNN05 = c(9, 30)), newname = "KKILL05")
+  #     PoolCollections.GCL(collections = c("KFUNN06", "KKILL06"), IDs = list(KFUNN06 = KFUNN06.gcl$FK_FISH_ID, KKILL06 = c(101, 176)), newname = "KFUNN06")
+  #     KKILL05.gcl <- KKILL05.gcl %>% mutate(SillySource = case_when(FK_FISH_ID %in% c(69, 70) ~ paste(SILLY_CODE, FK_FISH_ID, sep = "_"), TRUE~SillySource))
+  #     KFUNN06.gcl <- KFUNN06.gcl %>% mutate(SillySource = case_when(FK_FISH_ID %in% c(184, 185) ~ paste(SILLY_CODE, FK_FISH_ID, sep = "_"), TRUE~SillySource))
+  #     KKILL06QC.gcl <- KKILL06.gcl %>% mutate(SILLY_CODE = "KKILL06QC") %>% mutate(SillySource = paste(SILLY_CODE, FK_FISH_ID, sep ="_"))
+  #     KFUNN05QC.gcl <- KFUNN05.gcl %>% mutate(SILLY_CODE = "KFUNN05QC") %>% mutate(SillySource = paste(SILLY_CODE, FK_FISH_ID, sep ="_"))
+  #     KeySillys <- c("KKILL06QC", "KFUNN05QC")
+  #     KeySillyIDs <- list(KKILL06QC = c(101, 176), KFUNN05QC = c(9, 30))
+  #     BetweenSillys = c("KKILL05", "KKILL06", "KFUNN05", "KFUNN06")
+  #     loci <- LocusControl$locusnames
+  #     results <- DupCheckBetweenSillys.GCL(KeySillys = c("KKILL06QC", "KFUNN05QC"), KeySillyIDs = list(KKILL06QC = c(101, 176), KFUNN05QC = c(9, 30)), BetweenSillys = c("KKILL05", "KKILL06", "KFUNN05", "KFUNN06"), loci = LocusControl$locusnames, minnonmissing = 0.6, minproportion = 0.9, ncores = 4)
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
   start.time <- Sys.time() 
@@ -57,6 +58,13 @@ DupCheckBetweenSillys.GCL <- function(KeySillys, KeySillyIDs = NULL, BetweenSill
     
   }
   
+  if(sum(KeySillys %in% BetweenSillys) > 1){
+    
+    stop("One or more of the KeySillys are also included in BetweenSillys. This is not the intended use of this function. Use CheckDupWithinSilly.GCL() to find duplicates within a silly.")
+    
+    }
+    
+    
   if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse, doParallel, parallel, foreach, rubias)  # Install packages, if not in library and then load them.
   
   if(ncores > parallel::detectCores()) {
@@ -120,12 +128,13 @@ DupCheckBetweenSillys.GCL <- function(KeySillys, KeySillyIDs = NULL, BetweenSill
     
   }
   
-  # my.between
+  # my.between - this is a list for parallel loop
   my.between <- lapply(BetweenSillys, function(silly){
     
     get(paste0(silly, ".gcl"))
     
   }) %>% set_names(BetweenSillys)
+  
   
   # Added this if statement code for haploid markers, rubias::close_matching_samples() was counting them as missing loci because of the NAs in the allele2 column. 
   # This can be removed Eric Anderson fixes the function. 
@@ -167,142 +176,89 @@ DupCheckBetweenSillys.GCL <- function(KeySillys, KeySillyIDs = NULL, BetweenSill
                     indiv,
                     tidyselect::all_of(scores_cols))
     
-    dups <- rubias::close_matching_samples(D = new.gcl, gen_start_col = 5, min_frac_non_miss = minnonmissing, min_frac_matching = minproportion) %>% 
+    dups <- rubias::close_matching_samples(D = new.gcl, gen_start_col = 5, min_frac_non_miss = minnonmissing, min_frac_matching = 0) %>% 
       filter(collection_1 == silly, collection_2 %in% KeySillys)
     
-    dups %>% 
+     dups %>% 
       filter(collection_1 == silly, collection_2 %in% KeySillys) %>% 
       rename(Betweensillyvial = indiv_1, Keysillyvial = indiv_2, Betweensilly = collection_1, Keysilly = collection_2) %>% 
       mutate(DuplicateRate = num_match/num_non_miss) %>% 
       select(Keysillyvial, Betweensillyvial, DuplicateRate)
+   
     
   } %>% dplyr::bind_rows()  # End multicore loop
   
   parallel::stopCluster(cl) 
   
-  if(dim(dupcheck0)[1]>=1){
+  # Plots
+  sapply(dupcheck0$Keysillyvial %>% unique(), function(key){
     
-    lapply(dupcheck0 %>% pull(Keysillyvial), function(ind){
-      
-      
-      keygcls %>% 
-        filter(SillySource == KeySillyIDs)
-      
-    })
+    dc <- dupcheck0 %>% 
+      separate(Betweensillyvial, into = c("Betweensilly", NA), sep = "_", remove = FALSE) %>% 
+      filter(Keysillyvial == key)
     
+    max_dup <- dc %>% 
+      filter(DuplicateRate == max(DuplicateRate))
     
-  }
+    print(dc %>% 
+      ggplot(aes(x = DuplicateRate, fill = Betweensilly)) + 
+      geom_histogram(bins = 100) +
+      geom_vline(xintercept = minproportion, color = "red", size = 1.25)+
+      xlab("Duplicate Rate")+
+      ylab("Frequency") +
+      xlim(0, 1.02) +
+      ggtitle(label = key) +
+      geom_text(aes(x = max_dup$DuplicateRate %>% unique, y = length(max_dup$DuplicateRate)), label = paste0(max_dup$Betweensillyvial, collapse = "_"), angle = 90, hjust = 0, nudge_y = 0.25)
+    )
+    
+  }) # End plots
   
+  max_dups <- dupcheck0 %>% 
+    filter(DuplicateRate == max(DuplicateRate))
   
-
-  newKeySillys=paste0("new",KeySillys)
-
-  newname=paste0(newKeySillys,collapse=".")
-
-  EMPTY=PoolCollections.GCL(newKeySillys,loci,IDs=NULL,newname=newname)
-
-  newkeygcl=get(paste0(newname,".gcl")) 
-
-  newscores=newkeygcl$scores[,loci,,drop=FALSE]
-
-  newsillyvials=newkeygcl$attributes$SillySource
-
-  rownames(newscores)=newsillyvials
-
-  betweensillys=paste0("between",BetweenSillys)
+  threshold_dups <- dupcheck0 %>% 
+    filter(DuplicateRate >= minproportion)
    
-  betweenname=paste(betweensillys,collapse=".")
-
-  EMPTY=PoolCollections.GCL(BetweenSillys,loci,IDs=NULL,newname="betweenname")
-
-  betweengcl=get(paste0("betweenname",".gcl"))
-
-  betweenscores=betweengcl$scores[,loci,,drop=FALSE]
-
-  betweensillyvials=betweengcl$attributes$SillySource
-
-  rownames(betweenscores)=betweensillyvials
-
-  combs=expand.grid(Keysillyvial=newsillyvials,Betweensillyvial=betweensillyvials,stringsAsFactors=FALSE)
-
-  scores=abind(newscores,betweenscores,along=1)
-
-  scores[scores%in%c("0","Unk","XXX")]=NA
-
-  allsillyvials=rownames(scores)
-
-  scores.df=data.frame(t(sapply(allsillyvials,function(id){sapply(loci,function(locus){ifelse(is.na(scores[id,locus,1]),NA,paste(scores[id,locus,1:ploidy[locus]],collapse="."))})})),stringsAsFactors=FALSE)
-
-  duplicaterate=rowMeans(scores.df[combs[,1],]==scores.df[combs[,2],],na.rm=TRUE)
-
+  project_dups <- dupcheck0 %>% 
+    mutate(Keysillyvial = gsub(pattern = "QC_", replacement = "_", x = Keysillyvial)) %>% 
+    filter(Keysillyvial == Betweensillyvial)
   
+  dupcheck <- max_dups %>% 
+    left_join(threshold_dups) %>% 
+    left_join(project_dups)
   
-  duplicatesummary <- sapply(unique(combs$Keysillyvial), function(KeySillyID) {
+  if(dim(dupcheck)[1]>=1){
     
-    combs.log <- combs$Keysillyvial == KeySillyID
+    scores1 <- paste0(loci, ".1")
     
-    hist(duplicaterate[combs.log], breaks = seq(0, 1, 0.01), col = 8, xlab = "Duplicate Rate", main = KeySillyID)
+    Keymissing <- my.key %>% 
+      select(Keysillyvial = SillySource, all_of(scores1)) %>% 
+      mutate(across(all_of(scores1), is.na)) %>% 
+      group_by(Keysillyvial) %>% 
+      mutate(Keymissing = sum(!!!syms(scores1))) %>% 
+      select(Keysillyvial, Keymissing)
     
-    abline(v = 0.9, col = "red", lwd = 2)
+    Betweenmissing <- my.between %>% 
+      bind_rows() %>% 
+      filter(SillySource %in% dupcheck0$Betweensillyvial) %>% 
+      select(Betweensillyvial= SillySource, all_of(scores1)) %>% 
+      mutate(across(all_of(scores1), is.na)) %>%  
+      group_by(Betweensillyvial) %>% 
+      mutate(Betweenmissing = sum(!!!syms(scores1))) %>% 
+      select(Betweensillyvial, Betweenmissing)
     
-    maxduplicaterate.log <- duplicaterate[combs.log] == max(duplicaterate[combs.log])
+   duplicate_summary <- dupcheck %>% 
+     left_join(Keymissing, by = "Keysillyvial") %>% 
+     left_join(Betweenmissing, by = "Betweensillyvial") %>% 
+     select(Keysillyvial, Betweensillyvial, Keymissing, Betweenmissing, DuplicateRate)
     
-    maxduplicaterate <- setNames(object = duplicaterate[combs.log][maxduplicaterate.log], nm = combs[combs.log, "Betweensillyvial"][maxduplicaterate.log])
+  } else(
     
-    text(x = maxduplicaterate[1], y = 5, labels = paste(names(maxduplicaterate), collapse = "_"), srt = 90, adj = 0)
+    duplicate_summary <- tibble(Keysillyvial = Key, Betweensillyvial = NULL, Keymissing = NULL, Betweenmissing = NULL, DuplicateRate)
     
-    keymissing <- apply(is.na(scores[combs[combs.log, "Keysillyvial"][maxduplicaterate.log], , 1, drop = FALSE]), 1, sum)
-    
-    betweenmissing <- apply(is.na(scores[combs[combs.log, "Betweensillyvial"][maxduplicaterate.log], , 1, drop = FALSE]), 1, sum)
-    
-    maxdups <- cbind(combs[combs.log, ][maxduplicaterate.log, ], Keymissing = keymissing, Betweenmissing = betweenmissing, DuplicateRate = maxduplicaterate, stringsAsFactors=FALSE,row.names=seq(sum(maxduplicaterate.log)))
-    
-    
-    
-    thresholdduplicaterate.log <- duplicaterate[combs.log] > threshold
-    
-    thresholdduplicaterate <- setNames(object = duplicaterate[combs.log][thresholdduplicaterate.log], nm = combs[combs.log, "Betweensillyvial"][thresholdduplicaterate.log])
-    
-    keymissing <- apply(is.na(scores[combs[combs.log, "Keysillyvial"][thresholdduplicaterate.log], , 1, drop = FALSE]), 1, sum)
-    
-    betweenmissing <- apply(is.na(scores[combs[combs.log, "Betweensillyvial"][thresholdduplicaterate.log], , 1, drop = FALSE]), 1, sum)
-    
-    if(sum(thresholdduplicaterate.log) > 0) {
-    
-      thresholddups <- cbind(combs[combs.log, ][thresholdduplicaterate.log, ], Keymissing = keymissing, Betweenmissing = betweenmissing, DuplicateRate = thresholdduplicaterate, stringsAsFactors=FALSE,row.names=seq(sum(thresholdduplicaterate.log)))
-      
-    } else{
-      
-      thresholddups <- NULL #  paste("No Duplicates at a threshold of", threshold)
-      
-    }
-    
-    
-    
-    if(grep(pattern = "QC", x = combs[1, ]) == 1) {
-      projectduplicaterate.log <- combs$Keysillyvial == KeySillyID & combs$Betweensillyvial == gsub(pattern = "QC", replacement = "", x = KeySillyID)
-    } else {
-      projectduplicaterate.log <- combs$Keysillyvial == KeySillyID & combs$Betweensillyvial == gsub(pattern = "_", replacement = "QC_", x = KeySillyID)
-    }
-    
-    projectduplicaterate <- setNames(object = duplicaterate[projectduplicaterate.log], nm = combs[projectduplicaterate.log, "Betweensillyvial"])
+  )
+  
+  return(duplicate_summary)
+  
 
-    keymissing <- apply(is.na(scores[combs[projectduplicaterate.log, "Keysillyvial"], , 1, drop = FALSE]), 1, sum)
-    
-    betweenmissing <- apply(is.na(scores[combs[projectduplicaterate.log, "Betweensillyvial"], , 1, drop = FALSE]), 1, sum)
-    
-    projectdups <- cbind(combs[projectduplicaterate.log, ], Keymissing = keymissing, Betweenmissing = betweenmissing, DuplicateRate = projectduplicaterate, stringsAsFactors=FALSE,row.names=seq(sum(projectduplicaterate.log)))
-    
-    
-    
-    # list(Threshold = thresholddups, MostSimilar = maxdups, Project = projectdups)
-    dplyr::bind_rows(thresholddups, maxdups, projectdups) %>% 
-      dplyr::distinct(Keysillyvial, Betweensillyvial, .keep_all = TRUE)
-  
-  }, simplify = FALSE)
-  
-  duplicatesummary <- dplyr::bind_rows(duplicatesummary)
-  
-  return(duplicatesummary)
-    
 }
