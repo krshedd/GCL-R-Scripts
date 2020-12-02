@@ -18,7 +18,7 @@ GenepopTOgcl.GCL <- function(filename){
   # 
   # Example~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #
-  # GenepopTOgcl.GCL(filename = "CI67pops413loci.gen")
+  # sillyvec <- GenepopTOgcl.GCL(filename = "V:/Analysis/2_Central/Coho/Cook Inlet/2013/mSat/GenepopCICohoData.gen")
   #
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
@@ -168,15 +168,16 @@ GenepopTOgcl.GCL <- function(filename){
   # alleles
   alleles <- lapply(loci, function(locus){
     
-    tibble(allele = dat %>% 
+    tibble(call = dat %>% 
              dplyr::select(dplyr::starts_with(locus)) %>% 
              unlist() %>% 
              unique() %>% 
              na.omit() %>% 
              as.numeric() %>% 
              sort() %>% 
-             as.integer(), 
-           call = NA_character_)
+             as.character()) %>% 
+      mutate(allele = seq(length(call))) %>% 
+      select(allele, call)
   }) %>% purrr::set_names(loci) 
   
   # nalleles
