@@ -1,4 +1,4 @@
-GenepopTOgcl.GCL <- function(filename, CreateLocusControl = TRUE){
+GenepopTOgcl.GCL <- function(filename){
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # This function creates ".gcl" and LocusControl objects from a GENEPOP file. 
   #
@@ -6,15 +6,19 @@ GenepopTOgcl.GCL <- function(filename, CreateLocusControl = TRUE){
   #   
   #   filename - the full file path of the GENEPOP file.
   #
-  #   CreateLocusControl - logical; if TRUE (default) a LocusControl object will be created
+  #   Note: An allele conversion argument may be added in the future if there is a need (mainly for SNPs).
+  #         This would require an conversion input file from the user to define the corresponding
+  #         alleles are for each locus (e.g., 1 = A, 2 = C, 3 = G, 4 = T).
   #
   # Outputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #   
-  #  This function assigns the ".gcl" and LocusControl objects to the current workspace
+  #  This function assigns ".gcl" and LocusControl objects to the current workspace.
+  #
+  #  This function returns a vector of the ".gcl" objects created without the .gcl extenstion (i.e., sillyvec).
   # 
   # Example~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #
-  # GenepopTOgcl.GCL(filename = "example/CI67pops413loci.gen", CreateLocusControl = TRUE)
+  # GenepopTOgcl.GCL(filename = "CI67pops413loci.gen")
   #
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
@@ -24,13 +28,13 @@ GenepopTOgcl.GCL <- function(filename, CreateLocusControl = TRUE){
     
     }
 
-  if(!CreateLocusControl&!exists("LocusControl")){
+  if(exists("LocusControl")){
     
-    stop("LocusControl must exist if you don't create one!")
+    stop("LocusControl already exists! Run this function in a workspace where no LocusControl exists.")
     
   }
 
-  if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(adegenet, tidyverse)  # Install packages, if not in library and then load them.
+  if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse)  # Install packages, if not in library and then load them.
   
   rawdat <- scan(filename, what = "", sep = "\n")
 
@@ -51,17 +55,6 @@ GenepopTOgcl.GCL <- function(filename, CreateLocusControl = TRUE){
     strsplit(str, " ")[[1]][1]
     
     })
-
-  if(!CreateLocusControl){
-    
-    if(sum(is.na(match(loci, LocusControl$locusnames)))){
-      
-      stop("Loci in Genepop file are absent from LocusControl, hoser!!!")
-      
-    }
-    
-    loci <- LocusControl$locusnames
-  }
 
   nloc <- length(loci)
   
@@ -97,52 +90,73 @@ GenepopTOgcl.GCL <- function(filename, CreateLocusControl = TRUE){
   # Put data in .gcl object tibble format
   # create initial data tibble
   dat0 <- rawdat[-(1:(nloc+1))][rawdat[-(1:(nloc+1))]!="Pop"] %>%
-    as_tibble() %>% 
-    separate(col = value, sep = " ,  ", into = c("SillySource", "geno")) %>% 
-    separate(col = geno, sep = " ", into = loci) %>% 
-    separate(col = SillySource, sep = "_", into = c("SILLY_CODE", "FK_FISH_ID"), remove = FALSE) %>% 
-    mutate(COLLECTION_ID = NA, 
-           PLATE_ID = NA, 
-           PK_TISSUE_TYPE = NA, 
-           CAPTURE_LOCATION = NA, 
-           CAPTURE_DATE = NA, 
-           END_CAPTURE_DATE = NA, 
-           MESH_SIZE = NA, 
-           MESH_SIZE_COMMENT = NA,
-           LATITUDE = NA,
-           LONGITUDE = NA,
-           AGENCY = NA,
-           VIAL_BARCODE = NA,
-           DNA_TRAY_CODE = NA,
-           DNA_TRAY_WELL_CODE = NA,
-           DNA_TRAY_WELL_POS = NA,
-           CONTAINER_ARRAY_TYPE_ID = NA
+    tibble::as_tibble() %>% 
+    tidyr::separate(col = value, sep = " ,  ", into = c("SillySource", "geno")) %>% 
+    tidyr::separate(col = geno, sep = " ", into = loci) 
+  
+  if(length(grep(x = dat0$SillySource, pattern = "_[0-9]*$")) == length(dat0$SillySource)){
+    
+    dat0 <- dat0 %>% 
+      tidyr::separate(col = SillySource, sep = "_", into = c("SILLY_CODE", "FK_FISH_ID"), remove = FALSE) 
+    
+  }else{
+    
+    dat0 <- dat0 %>%
+      rename(SILLY_CODE = SillySource) %>% 
+      group_by(SILLY_CODE) %>% 
+      mutate(FK_FISH_ID = 1:length(SILLY_CODE)) %>% 
+      ungroup() %>% 
+      mutate(SillySource = paste0(SILLY_CODE, "_", FK_FISH_ID))
+    
+    message("New FK_FISH_ID's were created because none were supplied in the GENEPOP file.")
+
+  }
+  
+ dat0 <- dat0 %>% 
+    dplyr::mutate(COLLECTION_ID = NA_integer_, 
+           PLATE_ID = NA_character_, 
+           PK_TISSUE_TYPE = NA_character_, 
+           CAPTURE_LOCATION = NA_character_, 
+           CAPTURE_DATE = as.Date(NA_character_), 
+           END_CAPTURE_DATE = as.Date(NA_character_), 
+           MESH_SIZE = NA_character_, 
+           MESH_SIZE_COMMENT = NA_character_,
+           LATITUDE = NA_real_,
+           LONGITUDE = NA_real_,
+           AGENCY = NA_character_,
+           VIAL_BARCODE = NA_character_,
+           DNA_TRAY_CODE = NA_character_,
+           DNA_TRAY_WELL_CODE = NA_integer_,
+           DNA_TRAY_WELL_POS = NA_character_,
+           CONTAINER_ARRAY_TYPE_ID = NA_integer_
            )
   
   # Separate genotypes into two variables
   nchar <- dat0 %>% 
-    select(all_of(loci)) %>% 
-    summarize(across(everything(), nchar)) %>% 
+    dplyr::select(all_of(loci)) %>% 
+    dplyr::summarize(across(everything(), .fns = base::nchar)) %>% 
     max()
   
   for(locus in loci){
     
     dat0 <- dat0 %>%
-      separate(!!sym(locus), into = c(locus, paste0(locus, ".1")), sep = nchar/2, remove = FALSE) %>% 
-      mutate(across(all_of(c(locus, paste0(locus, ".1"))), .fns = as.numeric))
+      tidyr::separate(!!sym(locus), into = c(locus, paste0(locus, ".1")), sep = nchar/2, remove = FALSE) %>% 
+      dplyr::mutate(across(all_of(c(locus, paste0(locus, ".1"))), .fns = as.numeric)) %>% 
+      dplyr::mutate(across(all_of(c(locus, paste0(locus, ".1"))), .fns = as.character))
     
   }
   
   # Final data tibble
   dat <- dat0 %>% 
-    mutate(across(all_of(loc_vars), ~na_if(x = ., y=0)))
+    dplyr::mutate(dplyr::across(dplyr::all_of(loc_vars), ~dplyr::na_if(x = ., y = "0"))) %>% 
+    dplyr::select(dplyr::all_of(c(attr, loc_vars)))
   
   # Assign silly objects to workspace
   sillyvec <- dat$SILLY_CODE %>% unique()
   
   for(silly in sillyvec){
     
-    my.dat <-dat %>% filter(SILLY_CODE == silly)
+    my.dat <- dat %>% filter(SILLY_CODE == silly)
     
     assign(x = paste0(silly, ".gcl"), value = my.dat, pos = 1)
     
@@ -150,47 +164,45 @@ GenepopTOgcl.GCL <- function(filename, CreateLocusControl = TRUE){
   
   message(paste0("A total of ", length(sillyvec), " '.gcl' objects were created from the GENEPOP file and assgined to the current workspace."))
   
-  # Make LocusControl if none exists
-
-  if(!exists("LocusControl") & CreateLocusControl){
+  # Make LocusControl
+  # alleles
+  alleles <- lapply(loci, function(locus){
     
-    # alleles
-    alleles <- lapply(loci, function(locus){
-      
-     tibble(allele = dat %>% 
-              select(starts_with(locus)) %>% 
-              unlist() %>% 
-              unique() %>% 
-              na.omit() %>% 
-              as.numeric() %>% 
-              sort() %>% 
-              as.integer(), 
-            call = NA_character_)
-    }) %>% set_names(loci) 
-    
-    # nalleles
-    nalleles <- lapply(loci, function(locus){
-      
-      dim(alleles[[locus]])[[1]]
-      
-    }) %>% 
-      unlist %>% 
-      set_names(loci)
-    
-    # ploidy
-    ploidy <-  if_else (
-      condition = dat0[ ,paste0(loci, ".1")] %>%is.na() %>% apply(., 2, sum)  == 0, 
-      true = 2, 
-      false = 1) %>% set_names(loci)
-    
-    assign("LocusControl", tibble::tibble(MarkerSuite = "From GENEPOP", 
-                                          locusnames = loci,
-                                          Publishedlocusnames = NA_character_, 
-                                          nalleles = nalleles, 
-                                          ploidy = ploidy,
-                                          alleles = alleles), pos = 1)
-    
-    message("")
-    }# End LocusControl
+    tibble(allele = dat %>% 
+             dplyr::select(dplyr::starts_with(locus)) %>% 
+             unlist() %>% 
+             unique() %>% 
+             na.omit() %>% 
+             as.numeric() %>% 
+             sort() %>% 
+             as.integer(), 
+           call = NA_character_)
+  }) %>% purrr::set_names(loci) 
   
+  # nalleles
+  nalleles <- lapply(loci, function(locus){
+    
+    dim(alleles[[locus]])[[1]]
+    
+  }) %>% 
+    unlist %>% 
+    purrr::set_names(loci)
+  
+  # ploidy
+  ploidy <-  dplyr::if_else (
+    condition = dat0[ ,paste0(loci, ".1")] %>%is.na() %>% apply(., 2, sum)  == 0, 
+    true = 2, 
+    false = 1) %>% purrr::set_names(loci)
+  
+  assign("LocusControl", tibble::tibble(MarkerSuite = "From GENEPOP", 
+                                        locusnames = loci,
+                                        Publishedlocusnames = NA_character_, 
+                                        nalleles = nalleles, 
+                                        ploidy = ploidy,
+                                        alleles = alleles), pos = 1)
+  
+  message("LocusControl created from GENEPOP file")
+  
+  return(sillyvec)
+    
 }
