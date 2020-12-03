@@ -55,7 +55,9 @@ GenotypeReport.GCL <- function(project_name = NULL, sillyvec = NULL, loci = NULL
      is.null(sillyvec) & !is.null(loci) & !is.null(project_name)|
      is.null(sillyvec) & !is.null(loci) & is.null(project_name)){
     
-    stop("The user must supply one of the following argument combinations: sillyvec (for all loci and individuals for each silly), sillyvec and loci (all individuals for supplied locus list), or project_name (for all individuals and loci in a given project)")
+    stop("The user must supply one of the following argument combinations: sillyvec (for all loci and individuals for each silly), 
+         sillyvec and loci (all individuals for supplied locus list), or 
+         project_name (for all individuals and loci in a given project)")
     
     }
   
@@ -117,7 +119,7 @@ GenotypeReport.GCL <- function(project_name = NULL, sillyvec = NULL, loci = NULL
   # Creating java query when only sillyvec is supplied
   if(!is.null(sillyvec) & is.null(loci)){
     
-    gnoqry <- paste0("SELECT LAB_PROJECT_NAME, FK_COLLECTION_ID, SILLY_CODE, FK_FISH_ID, LOCUS, PLOIDY, ALLELE_1, ALLELE_2 ALLELE_1_FIXED, ALLELE_2_FIXED FROM AKFINADM.V_GEN_TEST_RESULTS_BOTHGENO WHERE SILLY_CODE IN", "(", paste0("'", sillyvec, "'", collapse = ","), ")")
+    gnoqry <- paste0("SELECT LAB_PROJECT_NAME, FK_COLLECTION_ID, SILLY_CODE, FK_FISH_ID, LOCUS, PLOIDY, ALLELE_1, ALLELE_2, ALLELE_1_FIXED, ALLELE_2_FIXED FROM AKFINADM.V_GEN_TEST_RESULTS_BOTHGENO WHERE SILLY_CODE IN", "(", paste0("'", sillyvec, "'", collapse = ","), ")")
   
     }
   
