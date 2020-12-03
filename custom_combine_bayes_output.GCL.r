@@ -6,7 +6,7 @@ custom_combine_bayes_output.GCL <- function(groupvec, group_names, maindir, mixv
   # Inputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #   
   #   groupvec - numeric vector indicating the reporting group affiliation
-  #              If summarizing for the original reporting goups using the RGN output, groupvec is seq(length(group_names))
+  #              If summarizing for the original reporting groups using the RGN output, groupvec is seq(length(group_names))
   #              If summarizing for new groups using the BOT output, groupvec is the length of the number of populations in the baseline. 
   #              
   #   group_names - character vector of group_names length(group_names) == max(groupvec)
@@ -22,7 +22,7 @@ custom_combine_bayes_output.GCL <- function(groupvec, group_names, maindir, mixv
   #
   #   nchains - the number of chain to summarize (there should be output files for each chain)
   # 
-  #   burn - the poportion of iterations to drop from the begining of each chain.  i.e. for 40,000 iterations setting burn = 0.5 will drop the first 20,000 iterations.
+  #   burn - the proportion of iterations to drop from the beginning of each chain.  i.e. for 40,000 iterations setting burn = 0.5 will drop the first 20,000 iterations.
   #
   #   alpha - numeric constant specifying credibility intervals, default is 0.1, which gives 90% CIs (i.e. 5% and 95%)
   #
