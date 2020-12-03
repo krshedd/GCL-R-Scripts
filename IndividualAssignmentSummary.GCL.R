@@ -1,30 +1,30 @@
-IndividualAssignmentSummary.GCL=function(GroupNames,groupvec,mixnames,BAYESoutputDir,nchains,nreps,burn=1/2,thin=100){
+IndividualAssignmentSummary.GCL <- function(group_names, groupvec, mixnames, maindir, nchains, nreps, burn = 0.5, thin = 100){
+  
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # This function will summarize BAYES individual assignment .CLS files.
   # 
-  # Input parameters~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Inputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # 
-  # GroupNames = reporting group names
-  #   ~ A character vector indicating group names.
-  # groupvec = reporting group affiliation for each baseline populations
-  #   ~ A numeric vector indicating reporting group affiliation for each
-  #     baseline population. Numbers correspond  to GroupNames.
-  # mixnames = mixtures names
-  #   ~ A character vector indicating mixtures names (i.e. name of folder where
-  #     BAYES output files exist.
-  # BAYESoutputDir = filepath to where BAYES output folders exist.
-  #   ~ A character vector of length one indicating where BAYES output folders
-  #     exist.
-  # nchians = number of BAYES chains
-  #   ~ A numeric vector indicating number of BAYES chains. Can be a vector of
-  #     length(mixnames) if there are a different number of chains per mixture.
-  # nreps = number of MCMC interations
-  #   ~ A numeric vector indicating number of MCMC reps.  Can be a vector of
-  #     length(mixnames) if there are a different number of reps per mixture.
-  # burn = proportion of MCMC iterations for burn-in
-  #   ~ Typically 0.5
-  # thin = factor BAYES MCMC reps were thinned by for Individual Assignment
-  #   ~ Number from the 3rd argument for thin in CreateControlFile.GCL.
+  # group_names - character vector of group_names length(group_names) == max(groupvec)
+  #
+  # groupvec = a numeric vector indicating reporting group affiliation for each baseline population, 
+  #            Numbers correspond  to group_names
+  #
+  # mixvec - a character vector indicating mixtures names (i.e. name of folder where
+  #          BAYES output files exist.
+  #
+  # maindir - a character vector indicating the directory where the mixture folders are located 
+  #             **Note: the results for each mixture must be in their own folder
+  #             with the same name as the mixture.**
+  #
+  # nchains - the number of chain to summarize (there should be output files for each chain)
+  #
+  # nreps - a numeric vector indicating number of MCMC reps.  Can be a vector of
+  #         length(mixnames) if there are a different number of reps per mixture.
+  #
+  # burn - the proportion of iterations to drop from the beginning of each chain.  i.e. for 40,000 iterations setting burn = 0.5 will drop the first 20,000 iterations.
+  #
+  # thin - number from the 3rd argument for thin in CreateControlFile.GCL.
   #     Recommend thin=c(1,1,100) for IA, so this argument is set to 100.
   # 
   # Output~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
