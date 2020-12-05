@@ -72,6 +72,12 @@ new2old.GCL <- function(sillyvec, save_new = FALSE, ncores = 4){
   alleles <- LocusControl$alleles %>% 
     bind_rows(.id = "locus")
   
+  ploidy <- LocusControl %>% 
+    select(locusnames, ploidy) %>% 
+    rename(locus = locusnames)
+  
+  all_ploid <- left_join(alleles, ploidy, by = "locus")
+  
   # Start parallel loop
   cl <- parallel::makePSOCKcluster(ncores)
   
@@ -118,7 +124,7 @@ new2old.GCL <- function(sillyvec, save_new = FALSE, ncores = 4){
     
     tab <- dplyr::bind_rows(dplyr::bind_cols(id = ids, dose1), dplyr::bind_cols(id = as.numeric(dimnames(dose1)[[1]]), dose2), .id = "dose") %>% 
       tidyr::pivot_longer(cols = c(-dose, -id), names_to = "locus", values_to = "call") %>% 
-      dplyr::left_join(alleles, by = c("locus", "call")) %>% 
+      dplyr::left_join(all_ploid, by = c("locus", "call")) %>% 
       janitor::tabyl(id, locus, allele, show_na = TRUE)
     
     for(a in 1:max_allele){
@@ -130,11 +136,32 @@ new2old.GCL <- function(sillyvec, save_new = FALSE, ncores = 4){
       
       dimnames(tmp)[[1]] <- ids
       
+      mt <- all_ploid %>% filter(ploidy == 1)
+      
+      mtloci <- mt$locus %>% 
+        unique()
+      
+      dploci <- setdiff(loci, mtloci)
+      
       if(!is.null(tab[["NA_"]])){
         
-        tmp[tab$NA_[ , -1] > 0] <- NA
-      
+        if(min(ploidy$ploidy) == 1){
+        
+          mt_na <- cbind(sapply(dploci, function(loc){rep(FALSE, length(ids))}), is.na(dose1[, mtloci]))[ , loci]
+          
+          tmp[mt_na] <- NA
+          
+        } 
+        
+        if(max(ploidy$ploidy) == 2){
+          
+          dp_na <- cbind(sapply(mtloci, function(loc){rep(FALSE, length(ids))}), tab$NA_[ , -1] > 0)[ , loci]
+          
+          tmp[dp_na] <- NA
+          
         }
+        
+      }
       
       counts[,,a] <- tmp
       
