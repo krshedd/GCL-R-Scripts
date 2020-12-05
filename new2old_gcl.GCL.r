@@ -18,7 +18,7 @@ new2old.GCL <- function(sillyvec, save_new = FALSE, ncores = 4){
   # new2old.GCL(sillyvec = sillyvec31, save_new = TRUE, ncores = 8)
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
-  if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse, janitor)  # Install packages, if not in library and then load them.
+  if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse, janitor, foreach, doParallel, parallel)  # Install packages, if not in library and then load them.
   
   # Do all sillys exist in the environment?
   if(!all(sillyvec %in% stringr::str_remove(string = objects(pattern = "\\.gcl", pos = -1, envir = .GlobalEnv), pattern = "\\.gcl"))) {  
