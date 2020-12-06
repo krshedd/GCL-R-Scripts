@@ -6,8 +6,9 @@ new2old.GCL <- function(sillyvec, save_new = FALSE, ncores = 4){
   #
   # Inputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #   sillyvec - A character vector of silly codes with associated *.gcl objects that need to be converted.
-  #   overwrite - logical; whether you want the new objects overwritten without saving 
+  #   save_new - logical; whether you want the new objects overwritten without saving 
   #              (TRUE) or assign the new objects to *.gcl_new before overwriting (FALSE) 
+  #   ncores - a numeric vector of length one indicating the number of cores to use
   # 
   # Outputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #   This function assigns a converted *.gcl object to the current workspace.
@@ -36,12 +37,26 @@ new2old.GCL <- function(sillyvec, save_new = FALSE, ncores = 4){
     
   }
   
-  #Checking to make sure all loci in .gcl object are included in the LocusControl object.
+  # Is LocusControl in the "old" list form?
+  if(!tibble::is_tibble(LocusControl)) {
+    
+    stop("LocusControl is the 'old' style, list-form. This function requires the 'new' style, tibble.")
+    
+  }
+  
+  # Is uSAT?
+  if(max(LocusControl$nalleles) > 2) {
+    
+    stop("Sorry, this function can only handle up to 2 alleles at the moment...")
+    
+  }
+  
+  # Checking to make sure all loci in .gcl object are included in the LocusControl object.
   locuscheck <-  sapply(sillyvec, function(silly){
     
     locvars <- names(get(paste0(silly, ".gcl")))[-c(1:19)]
     
-    loc <- locvars[-grep(pattern = "\\.1$", x = locvars)]# Need to run this regular expression by Chase to make sure it will always work.
+    loc <- locvars[-grep(pattern = "\\.1$", x = locvars)]  # Need to run this regular expression by Chase to make sure it will always work.
     
     setdiff(loc, LocusControl$locusnames)
     
@@ -109,7 +124,7 @@ new2old.GCL <- function(sillyvec, save_new = FALSE, ncores = 4){
     s_dims <- c(lapply(dimnames(dose1), FUN = length), 2) %>% 
       unlist()
     
-    scores <- array(c(dose1, dose2), dim = s_dims, dimnames = list(ids, dimnames(dose1)[[2]], c("Dose_1", "Dose_2")))
+    scores <- array(c(dose1, dose2), dim = s_dims, dimnames = list(ids, dimnames(dose1)[[2]], c("Dose1", "Dose2")))
     
     # Counts array
     max_allele <- LocusControl$alleles %>% 
@@ -199,5 +214,3 @@ new2old.GCL <- function(sillyvec, save_new = FALSE, ncores = 4){
   message(paste0("The following *.gcl objects have been converted to old-style lists:\n", paste0(sillyvec_, collapse = ", ")))
   
 }
-  
-
