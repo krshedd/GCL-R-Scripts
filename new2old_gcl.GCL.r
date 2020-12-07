@@ -14,9 +14,15 @@ new2old.GCL <- function(sillyvec, save_new = FALSE, ncores = 4){
   #   This function assigns a converted *.gcl object to the current workspace.
   #
   # Example~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # load("V:/Analysis/2_Central/Chinook/Susitna River/Susitna_Chinook_baseline_2020/Susitna_Chinook_baseline_2020.Rdata")
+  # .password <- "************"
+  # CreateLocusControl.GCL(markersuite = "Sockeye2011_96SNPs", username = "awbarclay", password = .password) # make new Locus control
   #
-  # new2old.GCL(sillyvec = sillyvec31, save_new = TRUE, ncores = 8)
+  # sillyvec <- c("SGILL20D11", "SGILL20D6", "SGILL20D8")
+  # LOKI2R.GCL(sillyvec = sillyvec, username = "awbarclay", password = .password)
+  #
+  # CombineLoci.GCL(sillyvec = sillyvec, markerset = c("One_CO1","One_Cytb_17","One_Cytb_26"), update = TRUE)
+  #
+  # new2old.GCL(sillyvec = sillyvec, save_new = TRUE, ncores = 8)
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
   if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse, janitor, foreach, doParallel, parallel)  # Install packages, if not in library and then load them.
@@ -44,10 +50,10 @@ new2old.GCL <- function(sillyvec, save_new = FALSE, ncores = 4){
     
   }
   
-  # Is uSAT?
-  if(max(LocusControl$nalleles) > 2) {
+  # Is ploidy > 2 
+  if(max(LocusControl$ploidy) > 2){
     
-    stop("Sorry, this function can only handle up to 2 alleles at the moment...")
+    stop("Sorry, this function cannot handle polyploid loci (ploidy > 2) at the moment...")
     
   }
   
@@ -105,6 +111,14 @@ new2old.GCL <- function(sillyvec, save_new = FALSE, ncores = 4){
     locvars <- names(my.gcl[-c(1:19)])
     
     loci <- locvars[-grep(pattern = "\\.1$", x = locvars)]# Need to run this regular expression by Chase to make sure it will always work.
+    
+    mt <- all_ploid %>% 
+      dplyr::filter(ploidy == 1)
+    
+    mtloci <- mt$locus %>% 
+      unique()
+    
+    dploci <- base::setdiff(loci, mtloci)
   
     ids <- my.gcl$FK_FISH_ID
     
@@ -142,22 +156,23 @@ new2old.GCL <- function(sillyvec, save_new = FALSE, ncores = 4){
       dplyr::left_join(all_ploid, by = c("locus", "call")) %>% 
       janitor::tabyl(id, locus, allele, show_na = TRUE)
     
-    for(a in 1:max_allele){
+    for(a in as.character(1:max_allele)){
       
-      nms <- names(tab[[a]][ ,-1])
-      
-      tmp <- tab[[a]][ ,-1] %>% 
-        as.matrix()
-      
-      dimnames(tmp)[[1]] <- ids
-      
-      mt <- all_ploid %>% filter(ploidy == 1)
-      
-      mtloci <- mt$locus %>% 
-        unique()
-      
-      dploci <- setdiff(loci, mtloci)
-      
+      if(!a %in% names(tab)){
+        
+        tmp <- matrix(data = 0, nrow = length(ids), ncol = length(loci), dimnames = list(ids, loci))
+        
+      }else{
+        
+        loc_order <- match(loci, names(tab[[a]]))
+        
+        tmp <- tab[[a]][ , loc_order] %>% 
+          as.matrix()
+        
+        dimnames(tmp)[[1]] <- ids
+        
+      }
+    
       if(!is.null(tab[["NA_"]])){
         
         if(min(ploidy$ploidy) == 1){
@@ -170,7 +185,7 @@ new2old.GCL <- function(sillyvec, save_new = FALSE, ncores = 4){
         
         if(max(ploidy$ploidy) == 2){
           
-          dp_na <- cbind(sapply(mtloci, function(loc){rep(FALSE, length(ids))}), tab$NA_[ , -1] > 0)[ , loci]
+          dp_na <- cbind(sapply(mtloci, function(loc){rep(FALSE, length(ids))}), tab$NA_[ , loc_order] > 0)[ , loci]
           
           tmp[dp_na] <- NA
           
@@ -178,18 +193,18 @@ new2old.GCL <- function(sillyvec, save_new = FALSE, ncores = 4){
         
       }
       
-      counts[,,a] <- tmp
+      counts[,, paste0("Allele ", a)] <- tmp
       
     }
     
     # Attributes
     attributes <- my.gcl[ , 1:19] %>% 
-      mutate(CAPTURE_DATE = CAPTURE_DATE %>% as.character() %>%  as.POSIXct(format = "%Y-%m-%d"), END_CAPTURE_DATE = END_CAPTURE_DATE %>% as.character() %>%  as.POSIXct(format = "%Y-%m-%d")) %>% 
+      dplyr::mutate(CAPTURE_DATE = CAPTURE_DATE %>% as.character() %>%  as.POSIXct(format = "%Y-%m-%d"), END_CAPTURE_DATE = END_CAPTURE_DATE %>% as.character() %>%  as.POSIXct(format = "%Y-%m-%d")) %>% 
       as.data.frame()
     
    list(counts = counts, scores = scores, n = length(ids), attributes = attributes)
   
-  } %>% set_names(sillyvec_)
+  } %>% purrr::set_names(sillyvec_)
   
   parallel::stopCluster(cl)  # End parallel loop
   
@@ -201,6 +216,8 @@ new2old.GCL <- function(sillyvec, save_new = FALSE, ncores = 4){
       assign(x = paste0(silly, ".gcl_new"), value = get(paste0(silly, ".gcl")), pos = 1)
       
     }
+    
+    message(paste0("The new-style *.gcl objects have been reassigned to the workspace with an extension:\n", paste0(sillyvec_, ".gcl_new", collapse = ", ")))
     
   }
   
