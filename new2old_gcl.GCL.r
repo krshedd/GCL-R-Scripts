@@ -202,7 +202,7 @@ new2old.GCL <- function(sillyvec, save_new = FALSE, ncores = 4){
       dplyr::mutate(CAPTURE_DATE = CAPTURE_DATE %>% as.character() %>%  as.POSIXct(format = "%Y-%m-%d"), END_CAPTURE_DATE = END_CAPTURE_DATE %>% as.character() %>%  as.POSIXct(format = "%Y-%m-%d")) %>% 
       as.data.frame()
     
-   list(counts = counts, scores = scores, n = length(ids), attributes = attributes)
+   list(counts = counts[, LocusControl$locusnames, ], scores = scores[, LocusControl$locusnames, ], n = length(ids), attributes = attributes)
   
   } %>% purrr::set_names(sillyvec_)
   
