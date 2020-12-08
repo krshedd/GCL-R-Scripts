@@ -39,6 +39,7 @@ create_bayes_baseline.GCL <- function(sillyvec, loci, dir, baseline_name, ncores
     dplyr::select(silly, locus, allele_no, n, freq) %>% 
     tidyr::pivot_wider(names_from = allele_no, values_from = freq, values_fill = 0) %>% 
     dplyr::mutate(silly = as.numeric(silly), locus = as.numeric(locus)) %>% 
+    dplyr::arrange(silly, locus) %>% 
     dplyr::ungroup() 
   
   max_allele <- LocusControl$nalleles[loci] %>% 
