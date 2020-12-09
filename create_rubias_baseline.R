@@ -43,7 +43,7 @@ create_rubias_baseline <- function(sillyvec, loci, group_names, groupvec, path =
         sample_type = "reference",
         repunit = group_names[groupvec[s]],
         collection = silly,
-        indiv = SillySource
+        indiv = as.character(SillySource)
       ) %>%
       dplyr::select(sample_type,
                     repunit,
