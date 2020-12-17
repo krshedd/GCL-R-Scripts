@@ -177,7 +177,7 @@ new2old.GCL <- function(sillyvec, save_new = FALSE, ncores = 4){
         
         if(min(ploidy$ploidy) == 1){
         
-          mt_na <- cbind(sapply(dploci, function(loc){rep(FALSE, length(ids))}), is.na(dose1[, mtloci]))[ , loci]
+          mt_na <- cbind(sapply(dploci, function(loc){rep(FALSE, length(ids))}), is.na(dose1[, mtloci, drop = FALSE]))[ , loci]
           
           tmp[mt_na] <- NA
           
