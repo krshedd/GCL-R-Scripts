@@ -47,8 +47,8 @@ BAYES_IndividualAssignmentSummary.GCL <- function(group_names, groupvec, mixname
   #  groupvec <- c(1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 4, 4, 4, 4, 4, 4, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 3, 
   #               4, 3, 6, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 8, 8, 8, 8)
   #  mixnames <- c("SUCICD16", "SUCICD16corr", "SUCIND16")
-  #  maindir <- "C:/Users/awbarclay/Documents/Analysis/Sockeye/2016 UCIfisheryMixtures/BAYES/Output"
-  #  source("C:/Users/awbarclay/Documents/Analysis/Sockeye/2016 UCIfisheryMixtures/Output/2016mixturegcls.R")#Get .gcl objects
+  #  maindir <- "V:/Analysis/2_Central/Sockeye/Cook Inlet/2012 Baseline/Mixture/2016 UCIfisheryMixtures/BAYES/Output"
+  #  source("V:/Analysis/2_Central/Sockeye/Cook Inlet/2012 Baseline/Mixture/2016 UCIfisheryMixtures/Output/2016mixturegcls.R")#Get .gcl objects
   #  nchains <- 5
   #  nreps <- 40000
   #  burn <- 0.5
@@ -106,9 +106,11 @@ BAYES_IndividualAssignmentSummary.GCL <- function(group_names, groupvec, mixname
         
         indnames <- my.gcl$attributes$FK_FISH_ID
          
+      } else{
+        
+        indnames <- my.gcl$FK_FISH_ID
+        
       }
-      
-      indnames <- my.gcl$FK_FISH_ID
       
     } else {
       
