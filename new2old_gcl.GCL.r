@@ -30,7 +30,7 @@ new2old.GCL <- function(sillyvec, save_new = FALSE, ncores = 4){
   # Do all sillys exist in the environment?
   if(!all(sillyvec %in% stringr::str_remove(string = objects(pattern = "\\.gcl", pos = -1, envir = .GlobalEnv), pattern = "\\.gcl"))) {  
     
-    missing_sillys <- setdiff(sillyvec, stringr::str_remove(string = objects(pattern = "\\.gcl", pos = -1, envir = .GlobalEnv), pattern = "\\.gcl"))
+    missing_sillys <- dplyr::setdiff(sillyvec, stringr::str_remove(string = objects(pattern = "\\.gcl", pos = -1, envir = .GlobalEnv), pattern = "\\.gcl"))
     
     stop(paste0("The following sillys are not in your environment:\n", paste0(missing_sillys, collapse = ", ")))
     
