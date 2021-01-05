@@ -15,25 +15,25 @@ rubias_IndividualAssignmentSummary.GCL <- function(rubias_output = NULL, mixname
   #   A tibble with the following variables:
   #     mixture_collection - the name of the mixture;
   #     indiv - the individual (aka SillySource);
-  #     and a variable for each group in group_names containing the proportion of MCMC iterations
-  #     in which an individual was assigned to a specific reporting group.
+  #     and a variable for each group in group_names containing the posterior means of group membership for each individual.
   #
   # Examples~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # 
-  # path <- "C:/Users/awbarclay/Documents/Analysis/Sockeye/UCI_sockeye_2020_postseason/rubias/output"
+  #   path <- "C:/Users/awbarclay/Documents/Analysis/Sockeye/UCI_sockeye_2020_postseason/rubias/output"
   # 
-  # rubias_output <- readRDS(file = "C:/Users/awbarclay/Documents/Analysis/Sockeye/UCI_sockeye_2020_postseason/output/rubias_output.rds")
+  #   rubias_output <- readRDS(file = "C:/Users/awbarclay/Documents/Analysis/Sockeye/UCI_sockeye_2020_postseason/output/rubias_output.rds")
   # 
-  # mixnames <- c("DriftDW_20", "DriftCorr_20", "UpperSub_20", "Kasilof600ft_20", "WestKalgin_20", "Eastern_20", "General_North_20", "General_South_20")
+  #   mixnames <- c("DriftDW_20", "DriftCorr_20", "UpperSub_20", "Kasilof600ft_20", "WestKalgin_20", "Eastern_20", "General_North_20", "General_South_20")
   # 
-  # rubias_IndividualAssignmentSummary.GCL(rubias_output = rubias_output, mixnames = mixnames)
-  #  
-  # rubias_IndividualAssignmentSummary.GCL(rubias_output = NULL, mixnames = mixnames, path = path)
+  #   rubias_IndividualAssignmentSummary.GCL(rubias_output = rubias_output, mixnames = mixnames)
+  # 
+  #   rubias_IndividualAssignmentSummary.GCL(rubias_output = NULL, mixnames = mixnames, path = path)
   #     
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
   if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse) #Install packages, if not in library and then load them.
   
+  # Summarize rubias output files
   if(is.null(rubias_output)){
     
     if(is.null(mixnames)){
@@ -58,33 +58,36 @@ rubias_IndividualAssignmentSummary.GCL <- function(rubias_output = NULL, mixname
       
      indiv_post <- lapply(mixnames, function(mix){
         
-        read_csv(file = paste0(path, "/", mix, "_indiv_posteriors.csv"), col_types = cols(
-          mixture_collection = col_character(),
-          indiv = col_character(),
-          repunit = col_character(),
-          collection = col_character(),
-          PofZ = col_double(),
-          log_likelihood = col_double(),
-          z_score = col_double(),
-          n_non_miss_loci = col_double(),
-          n_miss_loci = col_double()
+        readr::read_csv(file = paste0(path, "/", mix, "_indiv_posteriors.csv"), col_types = cols(
+          mixture_collection = readr::col_character(),
+          indiv = readr::col_character(),
+          repunit = readr::col_character(),
+          collection = readr::col_character(),
+          PofZ = readr::col_double(),
+          log_likelihood = readr::col_double(),
+          z_score = readr::col_double(),
+          n_non_miss_loci = readr::col_double(),
+          n_miss_loci = readr::col_double()
         ))
         
-      }) %>% bind_rows()
+      }) %>% dplyr::bind_rows()
       
       results <- indiv_post%>% 
-        mutate(repunit = factor(repunit, levels = unique(repunit))) %>% 
-        group_by(mixture_collection, indiv, repunit) %>% 
-        summarize(prob = sum(PofZ), .groups = "drop") %>% 
-        pivot_wider(names_from = repunit, values_from = prob)
+        dplyr::mutate(repunit = factor(repunit, levels = unique(repunit))) %>% 
+        dplyr::group_by(mixture_collection, indiv, repunit) %>% 
+        dplyr::summarize(prob = sum(PofZ), .groups = "drop") %>% 
+        tidyr::pivot_wider(names_from = repunit, values_from = prob)
       
-    }
+    } 
     
+    # Summarize rubias_output object
   } else{
     
     indiv_post <- rubias_output$indiv_posteriors
     
-    mix_check <- !mixnames == indiv_post$mixture_collection %>% unique() %>% set_names(mixnames)
+    mix_check <- !mixnames == indiv_post$mixture_collection %>% 
+      unique() %>% 
+      purrr::set_names(mixnames)
     
    if(sum(mix_check) > 0){
      
@@ -93,11 +96,11 @@ rubias_IndividualAssignmentSummary.GCL <- function(rubias_output = NULL, mixname
    }
     
     results <- rubias_output$indiv_posteriors %>% 
-      filter(mixture_collection %in% mixnames) %>% 
-      mutate(repunit = factor(repunit, levels = unique(repunit))) %>% 
-      group_by(mixture_collection, indiv, repunit) %>% 
-      summarize(prob = sum(PofZ), .groups = "drop") %>% 
-      pivot_wider(names_from = repunit, values_from = prob)
+      dplyr::filter(mixture_collection %in% mixnames) %>% 
+      dplyr::mutate(repunit = factor(repunit, levels = unique(repunit))) %>% 
+      dplyr::group_by(mixture_collection, indiv, repunit) %>% 
+      dplyr::summarize(prob = sum(PofZ), .groups = "drop") %>% 
+      tidyr::pivot_wider(names_from = repunit, values_from = prob)
     
   }
   
