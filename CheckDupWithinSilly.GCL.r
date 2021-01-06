@@ -17,7 +17,7 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci = LocusControl$locusnames, qu
   #
   #   minproportion - the proportion of shared non-missing loci that must be shared between the indivdiuals to be reported as a matching pair, this is passed through to rubias as well 
   #
-  #   ncores - the number of cores to use in a foreach %dopar% loop. If the nubmer of core exceeds the number on your device, then ncores defaults to detectCores()
+  #   ncores - the number of cores to use in a foreach %dopar% loop. If the number of core exceeds the number on your device, then ncores defaults to detectCores()
   # 
   # Outputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #    When quantile is set to NULL, returns a tibble of duplicate pairs of individuals by silly.
@@ -53,8 +53,11 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci = LocusControl$locusnames, qu
   
   
   if(ncores > parallel::detectCores()) {
-    stop("'ncores' is greater than the number of cores available on machine\nUse 'detectCores()' to determine the number of cores on your machine")
-  }
+    
+    ncores <- parallel::detectCores()  
+    
+    }
+  
   
   nsilly <- length(sillyvec)
   

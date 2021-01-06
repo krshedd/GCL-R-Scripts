@@ -110,6 +110,8 @@ LOKI2R.GCL <- function(sillyvec, username, password){
   
   ploidy <- LocusControl$ploidy
   
+  hap_loci <- ploidy[ploidy==1] %>% names()
+  
   alleles <- LocusControl$alleles
   
   nalleles <- LocusControl$nalleles 
@@ -224,6 +226,13 @@ LOKI2R.GCL <- function(sillyvec, username, password){
         tidyselect::all_of(names(silly_df_cols))
       ) %>%
       dplyr::arrange(FK_FISH_ID)
+    
+    #Make sure all haploid loci have NA's for allele 2
+    if(length(hap_loci) > 0){
+      
+      silly_df[ paste0(hap_loci, ".1")] <- NA_character_
+       
+    }
     
     message(message0)
     

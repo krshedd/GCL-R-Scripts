@@ -43,7 +43,7 @@ create_rubias_baseline <- function(sillyvec, loci, group_names, groupvec, path =
         sample_type = "reference",
         repunit = group_names[groupvec[s]],
         collection = silly,
-        indiv = SillySource
+        indiv = as.character(SillySource)
       ) %>%
       dplyr::select(sample_type,
                     repunit,
@@ -55,7 +55,7 @@ create_rubias_baseline <- function(sillyvec, loci, group_names, groupvec, path =
     dplyr::bind_rows() %>% 
     dplyr::na_if(0)  # I think this can be removed now that we convert all zeros to NAs when using LOKI2R.GCL
   
-  readr::write_csv(x = baseline, path = paste0(path, "/", baseline_name, "_base.csv"))
+  readr::write_csv(x = baseline, file = paste0(path, "/", baseline_name, "_base.csv"))
   
   return(baseline)
   
