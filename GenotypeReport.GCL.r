@@ -30,7 +30,6 @@ GenotypeReport.GCL <- function(project_name = NULL, sillyvec = NULL, loci = NULL
   # username <- "awbarclay"
   # sillyvec <- c("SCHIG09s","SCHIG09j","SCHIG11s","SCHIGL11s","SCHIG11j")
   # loci <- c("One_E2","One_MHC2_251","One_Cytb_17")
-  # path <- "TestGenotypesReport.csv"
   # project_name <- c("P014","P015","P016")
   #
   # Geno_locisilly <- GenotypeReport.GCL(sillyvec = sillyvec, loci = loci, path = "TestGenotypesReport_sillyloci.csv", username = username, password = password, project_name = NULL)
@@ -43,6 +42,7 @@ GenotypeReport.GCL <- function(project_name = NULL, sillyvec = NULL, loci = NULL
   # 
   # Geno_olddata <- GenotypeReport.GCL(sillyvec = sillyvec, loci = NULL, path = "TestGenotypesReport_olddata.csv", username = username, password = password, project_name = NULL, open.file = TRUE)
   #
+  # Geno_loci <- GenotypeReport.GCL(sillyvec = NULL, loci = loci, path = "TestGenotypesReport_allsillys.csv", username = username, password = password, project_name = NULL, open.file = TRUE)
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   # Recording function start time
@@ -52,8 +52,7 @@ GenotypeReport.GCL <- function(project_name = NULL, sillyvec = NULL, loci = NULL
   if(is.null(sillyvec) & is.null(loci) & is.null(project_name)|
      !is.null(sillyvec) & !is.null(loci) & !is.null(project_name)|
      !is.null(sillyvec) & is.null(loci) & !is.null(project_name)|
-     is.null(sillyvec) & !is.null(loci) & !is.null(project_name)|
-     is.null(sillyvec) & !is.null(loci) & is.null(project_name)){
+     is.null(sillyvec) & !is.null(loci) & !is.null(project_name)){ 
     
     stop("The user must supply one of the following argument combinations: sillyvec (for all loci and individuals for each silly), 
          sillyvec and loci (all individuals for supplied locus list), or 
@@ -128,7 +127,14 @@ GenotypeReport.GCL <- function(project_name = NULL, sillyvec = NULL, loci = NULL
     
     gnoqry <- paste0("SELECT * FROM AKFINADM.V_GEN_TEST_RESULTS_BOTHGENO GENO WHERE EXISTS (SELECT * FROM AKFINADM.V_LAB_PROJECT_WELL LPW WHERE LPW.LAB_PROJECT_NAME IN (", paste0("'", project_name, "'", collapse = ","), ") AND LPW.SILLY_CODE = GENO.SILLY_CODE AND LPW.FISH_NO = GENO.FK_FISH_ID)")
   
-    }
+  }
+  
+  # Creating java query when only loci is supplied.
+  if(is.null(sillyvec) & !is.null(loci)){
+    
+    gnoqry <- paste0("SELECT LAB_PROJECT_NAME, FK_COLLECTION_ID, SILLY_CODE, FK_FISH_ID, LOCUS, PLOIDY, ALLELE_1, ALLELE_2, ALLELE_1_FIXED, ALLELE_2_FIXED FROM AKFINADM.V_GEN_TEST_RESULTS_BOTHGENO WHERE LOCUS IN (", paste0("'", loci, "'", collapse = ","), ")")
+    
+  } 
   
   # Pull genotypes and concatenate alleles into one column with "/" separator
   dataAll <- RJDBC::dbGetQuery(con, gnoqry) %>% 
