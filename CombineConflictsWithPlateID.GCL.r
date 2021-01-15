@@ -18,6 +18,8 @@ CombineConflictsWithPlateID.GCL= function(files){
   #  Bugfix by Kyle Shedd 10/05/18 to add forward/backward compatability for concordance file header name changes
   ################################################################################################################
   
+  if(!all(sapply(files, file.exists))) {stop("One or more of the file[s] found by 'QCConcordanceReportfile' doesn't exist\nPlease make sure that the previous line of code is finding the correct Concordance .csv file[s]")}
+  
   # Read in concordance files
   suppressMessages(
     concordance <- files %>% 

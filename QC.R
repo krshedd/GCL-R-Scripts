@@ -128,7 +128,9 @@ if(FALSE){##
   #### Read in Conflict Report ####
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
-  QCConcordanceReportfile <- list.files (path = "Conflict Reports", pattern = "ConcordanceReport", full.names = TRUE)
+  (QCConcordanceReportfile <- list.files (path = "Conflict Reports", pattern = "Concordance", full.names = TRUE))
+  
+  # verify that `QCConcordanceReportfile` is finding the correct files
   
   CombineConflictsWithPlateID.GCL(files = QCConcordanceReportfile)
   
