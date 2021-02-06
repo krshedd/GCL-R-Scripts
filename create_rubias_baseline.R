@@ -1,4 +1,4 @@
-create_rubias_baseline <- function(sillyvec, loci, group_names, groupvec, path = "rubias/baseline", baseline_name) {
+create_rubias_baseline <- function(sillyvec, loci, group_names, groupvec, file = "rubias/baseline", baseline_name) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # This function creates the baseline dataframe needed for `rubias`.
   #
@@ -29,7 +29,7 @@ create_rubias_baseline <- function(sillyvec, loci, group_names, groupvec, path =
   
   if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse)  # Install packages, if not in library and then load them.
   
-  if(!dir.exists(path)) {stop("`path` to save baseline does not exist!!!")}
+  if(!dir.exists(file)) {stop("`file` to save baseline does not exist!!!")}
   
   scores_cols <- sapply(loci, function(locus) {c(locus, paste0(locus, ".1"))}) %>% 
     as.vector() 
@@ -55,7 +55,7 @@ create_rubias_baseline <- function(sillyvec, loci, group_names, groupvec, path =
     dplyr::bind_rows() %>% 
     dplyr::na_if(0)  # I think this can be removed now that we convert all zeros to NAs when using LOKI2R.GCL
   
-  readr::write_csv(x = baseline, file = paste0(path, "/", baseline_name, "_base.csv"))
+  readr::write_csv(x = baseline, file = paste0(file, "/", baseline_name, "_base.csv"))
   
   return(baseline)
   
