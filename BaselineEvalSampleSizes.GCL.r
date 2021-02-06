@@ -1,4 +1,4 @@
-BaselineEvalSampleSizes.GCL <- function(sillyvec, group_names, groupvec, mixsize, scenarios = round(seq(.01, 1, .01), 2), maxprop = 0.5){
+BaselineEvalSampleSizes.GCL <- function(sillyvec, group_names, groupvec, mixsize, scenarios = round(seq(.01, 1, .01), 2), maxprop = 0.5, seed = 56){
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #
@@ -22,6 +22,8 @@ BaselineEvalSampleSizes.GCL <- function(sillyvec, group_names, groupvec, mixsize
   #   maxprop - a numberic vector of length 1. The sets the maximum proportion of baseline individuals that can be 
   #             selected from each reporting group. For example, if maxprop = 0.5, the output tibble will only contain scenarios
   #             where sample sizes for the test_group do no exceed 50% of the fish in the baseline for that group.
+  #
+  #   seed - integer to set the seed for rmultinom(), so sample sizes are reproducible
   #
   # Outputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #
@@ -64,6 +66,8 @@ BaselineEvalSampleSizes.GCL <- function(sillyvec, group_names, groupvec, mixsize
     purrr::set_names(group_names)
   
   ngroups <- length(group_names) 
+  
+  set.seed(seed)
   
   lapply(group_names, function(g){
     
