@@ -1,4 +1,4 @@
-CreateRubiasBaselineEval.GCL <- function(sillyvec, group_names, loci, groupvec, sample_sizes, test_groups = group_names, prprtnl = FALSE, base.path = "rubias/baseline", mix.path = "rubias/mixture", ncores = 4){
+CreateRubiasBaselineEval.GCL <- function(sillyvec, group_names, loci, groupvec, sample_sizes, test_groups = group_names, prprtnl = FALSE, base.path = "rubias/baseline", mix.path = "rubias/mixture", seed = 123, ncores = 4){
   
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # This function creates rubias mixture and baseline files for different proof test scenarios.  
@@ -34,6 +34,8 @@ CreateRubiasBaselineEval.GCL <- function(sillyvec, group_names, loci, groupvec, 
   #
   #    mix.path - the file path where the mixture .csv files will be written
   #
+  #    seed - integer to set the seed for the random sampler function sample()
+  #
   #    ncores - a numeric vector of length one indicating the number of cores to use
   #
   # Output~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -45,12 +47,12 @@ CreateRubiasBaselineEval.GCL <- function(sillyvec, group_names, loci, groupvec, 
   # Example~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #  attach("V:/Analysis/2_Central/Chinook/Susitna River/Susitna_Chinook_baseline_2020/Susitna_Chinook_baseline_2020.Rdata")
   #  Final_Pops <- Final_Pops %>% mutate(group = factor(group, levels = unique(group)))
-  #  BaselineEvalSampleSizes.GCL(sillyvec = Final_Pops$silly, group_names = Final_Pops$group %>% levels(), groupvec = Final_Pops$group %>% as.numeric(), scenarios = round(seq(.01, 1, .01), 2), mixsize = 200, maxprop = 0.5)
+  #  sample_sizes <- BaselineEvalSampleSizes.GCL(sillyvec = Final_Pops$silly, group_names = Final_Pops$group %>% levels(), groupvec = Final_Pops$group %>% as.numeric(), scenarios = round(seq(.01, 1, .01), 2), mixsize = 200, maxprop = 0.5)
   # 
-  #  CreateRubiasBaselineEval.GCL(sillyvec = Final_Pops$silly, group_names = Final_Pops$group %>% levels(), test_groups = Final_Pops$group %>% levels(), loci = loci80, groupvec = Final_Pops$group %>% as.numeric(), sample_sizes = sample_sizes, prprtnl = TRUE, ncores = 8)
+  #  CreateRubiasBaselineEval.GCL(sillyvec = Final_Pops$silly, group_names = Final_Pops$group %>% levels(), test_groups = (Final_Pops$group %>% levels())[1:2], loci = loci80, groupvec = Final_Pops$group %>% as.numeric(), sample_sizes = sample_sizes, prprtnl = TRUE, seed = 123, ncores = 8)
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
-  if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse, parallel, doParallel, foreach) #Install packages, if not in library and then load them.
+  if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse, parallel, doParallel, foreach, doRNG) #Install packages, if not in library and then load them.
   
   if(sum(is.na(match(loci, LocusControl$locusnames)))){
     
@@ -95,14 +97,16 @@ CreateRubiasBaselineEval.GCL <- function(sillyvec, group_names, loci, groupvec, 
  
   #Write out baseline and mixture files for each test_group scenario in sample_sizes
   
-  full_base <- create_rubias_baseline(sillyvec = sillyvec, loci = loci, group_names = group_names, groupvec = groupvec, path = base.path, baseline_name = "full_base")
+  full_base <- create_rubias_baseline(sillyvec = sillyvec, loci = loci, group_names = group_names, groupvec = groupvec, file = base.path, baseline_name = "full_base")
     
   # Multicore loop
   cl <- parallel::makePSOCKcluster(ncores)
     
   doParallel::registerDoParallel(cl, cores = ncores)  
+  
+  doRNG::registerDoRNG(seed = seed, once = TRUE) # This sets the seed for the %dorng% loop.
     
-  foreach::foreach(g = test_groups, .packages = c("tidyverse", "rubias")) %dopar% {
+  foreach::foreach(g = test_groups, .packages = c("tidyverse", "rubias")) %dorng% {
     
     #Test group scenarios
     tgscn <- sample_sizes %>% 
