@@ -132,8 +132,8 @@ FindAlternateSpecies.GCL <- function(sillyvec, species = "chum"){
   # Create tibble of all fish in sillyvec, containing just alternate and failed loci
   gclobjectsAll <- sapply(sillyvec, function(silly){
     
-    get( paste0(silly, ".gcl")) %>% # Grab gcl objects
-      dplyr::select(SILLY_CODE, FK_FISH_ID, all_of(c(alternate_vars, failed_vars))) %>% # Select fish ids and subset by markers of intrest
+    get(paste0(silly, ".gcl")) %>% # Grab gcl objects
+      dplyr::select(SILLY_CODE, FK_FISH_ID, dplyr::all_of(c(alternate_vars, failed_vars))) %>% # Select fish ids and subset by markers of intrest
       tidyr::unite(silly_fish, SILLY_CODE, FK_FISH_ID) # Make fish_ID col for convenience
     
   }, simplify = FALSE) %>% # Keep nested
@@ -143,7 +143,7 @@ FindAlternateSpecies.GCL <- function(sillyvec, species = "chum"){
   Failure <- gclobjectsAll %>%
     dplyr::select(c(silly_fish, dplyr::all_of(MyFailedMarkers))) %>%  # Filter by just failed markers
     dplyr::mutate(failure = 
-                    rowSums( is.na( dplyr::select(., -silly_fish))) / FailedCount) %>% # Calculate fail
+                    rowSums(is.na(dplyr::select(., -silly_fish))) / FailedCount) %>% # Calculate fail
     dplyr::select(silly_fish, failure) # Grab important columns
 
  # Create tibble of alternates
@@ -158,8 +158,8 @@ FindAlternateSpecies.GCL <- function(sillyvec, species = "chum"){
   }) %>% 
     dplyr::bind_cols() %>% # Adding locus from apply into tibble cols
     dplyr::mutate(silly_fish = gclobjectsAll$silly_fish) %>% # Pull in ID column
-    dplyr::select(silly_fish, everything()) %>% # Sort, IDs first followed by loci
-    dplyr::mutate(dplyr::across(all_of(AlternateGenotypes$AlternateMarker), 
+    dplyr::select(silly_fish, dplyr::everything()) %>% # Sort, IDs first followed by loci
+    dplyr::mutate(dplyr::across(dplyr::all_of(AlternateGenotypes$AlternateMarker), 
                                 .fns = gsub, 
                                 pattern = "NANA", 
                                 replacement = NA) # Replace any NANA which were created by joining locus+locus.1 containing NAs
@@ -174,8 +174,8 @@ FindAlternateSpecies.GCL <- function(sillyvec, species = "chum"){
                       is.na(call)               ~ NA_real_, # If genotype is NA then assign NA
                       call == AlternateGenotype ~ 1, # Does genotype equal alternate genotype?
                       TRUE                      ~ 0)) %>% # Otherwise, genotype is not the alternate
-    group_by(silly_fish) %>% 
-    summarize(alternate = sum(GenoMatch, na.rm = TRUE)/AlternateCount, # Calculate prop. alternates
+    dplyr::group_by(silly_fish) %>% 
+    dplyr::summarize(alternate = sum(GenoMatch, na.rm = TRUE)/AlternateCount, # Calculate prop. alternates
               non_missing_alt = sum(!is.na(call)), # Calculate number of non-NA alternate markers (i.e., # out of total available for ea. fish)
               .groups = "drop_last") 
 
@@ -185,8 +185,8 @@ FindAlternateSpecies.GCL <- function(sillyvec, species = "chum"){
      Results %>% 
        dplyr::filter(!is.na(alternate)) %>%
        ggplot2::ggplot(aes(x = failure, y = alternate)) +
-       geom_count(alpha = 0.5) +
-       labs(title = "Number of failed vs alternate markers",
+       ggplot2::geom_count(alpha = 0.5) +
+       ggplot2::labs(title = "Number of failed vs alternate markers",
             x = "Failed", 
             y = "Alternate", 
             size = 12)
