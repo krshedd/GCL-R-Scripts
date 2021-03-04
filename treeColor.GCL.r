@@ -4,7 +4,7 @@ treeColor.GCL <- function(tree, currentnames, treenames, groupvec, regioncol, re
   # Additionally, this function can used to modified the tip labels with new name and optional symbols.
   #
   # Inputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  #   tree - a tree object created with ape::nj()
+  #   tree - a phylogenetic tree object (class = "phylo") produced by the ape package
   #
   #   currentnames - a character vector of the tip labels (pop names) in the tree object
   #   treenames - a character vector of new tip labels (pop names) to replace current names
