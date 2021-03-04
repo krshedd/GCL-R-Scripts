@@ -7,7 +7,7 @@ create_rubias_baseline <- function(sillyvec, loci, group_names, groupvec, file =
   #   loci - character vector of the loci you wish to include
   #   group_names - character vector of group names (length = number of groups)
   #   groupvec - numeric vector indicating the group affiliation of each pop in sillyvec (length = length(sillyvec))
-  #   path - character vector of where to save each mixture as a .csv
+  #   file - character vector of where to save each mixture as a .csv
   #   baseline_name - character vector of what to name the baseline.csv
   #
   # Outputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -24,7 +24,7 @@ create_rubias_baseline <- function(sillyvec, loci, group_names, groupvec, file =
   # old2new_gcl.GCL(sillyvec)
   # group_names <- dat$groups_10 %>% unique()
   # groupvec <- dat$groups_10 %>% factor(levels = group_names) %>% as.numeric()
-  # UCIcoho104pops_96loci.rubias_base <- create_rubias_baseline(sillyvec = sillyvec, loci = loci, group_names = group_names, groupvec = groupvec, path = "rubias/baseline", baseline_name = "UCIcoho104pops_96loci")
+  # UCIcoho104pops_96loci.rubias_base <- create_rubias_baseline(sillyvec = sillyvec, loci = loci, group_names = group_names, groupvec = groupvec, file = "rubias/baseline", baseline_name = "UCIcoho104pops_96loci")
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
   if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse)  # Install packages, if not in library and then load them.
