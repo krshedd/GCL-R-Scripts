@@ -10,7 +10,7 @@ LOKI_URL.GCL <- function(){
   #  Written by Andy Barclay 4/15/19
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
-host <- "db-dfgcfresp.dfg.alaska.local"
+host <- "soaora7-scan.us1.ocm.s7134325.oraclecloudatcustomer.com"
 
 port <- "1521"
 
