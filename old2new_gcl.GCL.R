@@ -70,6 +70,42 @@ old2new_gcl.GCL <- function (sillyvec, save_old = FALSE){
         
       }
       
+      if(!"LATITUDE" %in% my_attr){
+        
+        my.gcl$attributes$LATITUDE <- NA_real_
+        
+      }
+      
+      if(!"LONGITUDE" %in% my_attr){
+        
+        my.gcl$attributes$LONGITUDE <- NA_real_
+        
+      }
+      
+      if(!"AGENCY" %in% my_attr){
+        
+        my.gcl$attributes$AGENCY <- NA_character_
+        
+      }
+      
+      if(!"DNA_TRAY_CODE" %in% my_attr){
+        
+        my.gcl$attributes$DNA_TRAY_CODE <- NA_character_
+        
+      }
+      
+      if(!"DNA_TRAY_WELL_CODE" %in% my_attr){
+        
+        my.gcl$attributes$DNA_TRAY_WELL_CODE <- NA_character_
+        
+      }
+      
+      if(!"DNA_TRAY_WELL_POS" %in% my_attr){
+        
+        my.gcl$attributes$DNA_TRAY_WELL_POS <- NA_character_
+        
+      }
+      
     }
     
     attr <- my.gcl$attributes %>% 
