@@ -106,6 +106,12 @@ old2new_gcl.GCL <- function (sillyvec, save_old = FALSE){
         
       }
       
+      if(!"MESH_SIZE_COMMENT" %in% my_attr){
+        
+        my.gcl$attributes$MESH_SIZE_COMMENT <- NA_character_
+        
+      }
+      
     }
     
     attr <- my.gcl$attributes %>% 
