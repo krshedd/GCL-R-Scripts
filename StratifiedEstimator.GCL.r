@@ -47,6 +47,8 @@ StratifiedEstimator.GCL=function(groupvec, groupnames, maindir, mixvec, catchvec
 nstrata=length(mixvec)
 
 if(nstrata==1){stop("This function is for multiple strata!!!")}
+  
+if(length(mixvec) != length(catchvec){stop("mixvec and catchvec must be the same length")}
 
 if(xlxs){
   while(!require(xlsx)){install.packages("xlsx")}
