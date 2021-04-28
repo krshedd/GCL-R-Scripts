@@ -7,7 +7,8 @@ load_objects <- function(path, pattern = NULL, rds = FALSE) {
   # Inputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #   path - character vector of where the objects you wish to load reside
   #
-  #   pattern - optinal argument so you can manually specify a pattern (i.e., specific object)
+  #   pattern - optional argument so you can manually specify a pattern (i.e., specific object)
+  #             accepts a list of patterns if you want multiple objects: c("pattern1", "pattern2")
   #
   #   rds - logical; if set to TRUE the function will load files in rds format.
   #                  if set to FALSE the function will load test files produced by 'dput'
@@ -19,6 +20,7 @@ load_objects <- function(path, pattern = NULL, rds = FALSE) {
   # Example~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # setwd("V:/Analysis/1_SEAK/Sockeye/Mixture/Lynn Canal Inseason/2018/")
   # load_objects(path = "Objects", pattern = "^loci") - just loads loci objects from "Objects" dir
+  # load_objects(path = "Objects", pattern = c("^loci", "sample_size") - loads loci and sample size objects from "Objects" dir
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
   if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse)  # Install packages, if not in library and then load them
@@ -35,7 +37,8 @@ load_objects <- function(path, pattern = NULL, rds = FALSE) {
     
     files_to_load <-  list.files(path = path, pattern = paste0("*", extension), full.names = FALSE)
   
-    files_to_load <-  stringr::str_subset(files_to_load, pattern = pattern)
+    #files_to_load <-  stringr::str_subset(files_to_load, pattern = pattern)
+    files_to_load <-  stringr::str_subset(files_to_load, pattern = paste(pattern, collapse = "|")) # multiple pattern matches
     
     if(length(files_to_load)==0){stop(paste0("There are no '", extension, "'files containing the pattern ", "'", pattern, "' in the path provided"))}
     
