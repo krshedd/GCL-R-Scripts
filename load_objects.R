@@ -23,40 +23,71 @@ load_objects <- function(path, pattern = NULL, rds = FALSE) {
   # load_objects(path = "Objects", pattern = c("^loci", "sample_size") - loads loci and sample size objects from "Objects" dir
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
-  if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse)  # Install packages, if not in library and then load them
+  if (!require("pacman")) {install.packages("pacman")}
+  library(pacman)
+  pacman::p_load(tidyverse)  #  Install packages, if not in library and then load them
   
-  if(rds){extension <- ".rds"}else{extension <- ".txt"} 
+  if (rds) {
+    extension <- ".rds"
+  } else {
+    extension <- ".txt"
+  }
   
-  if(is.null(pattern)){
+  if (is.null(pattern)) {
+    files_to_load <-
+      list.files(
+        path = path,
+        pattern = paste0("*", extension),
+        full.names = FALSE
+      )
     
-    files_to_load <-  list.files(path = path, pattern = paste0("*", extension), full.names = FALSE)
+    if (length(files_to_load) == 0) {
+      stop(paste0("There are no '", extension, "'files in the path provided"))
+    }
     
-    if(length(files_to_load)==0){stop(paste0("There are no '", extension, "'files in the path provided"))}
+  } else {
+    files_to_load <-
+      list.files(
+        path = path,
+        pattern = paste0("*", extension),
+        full.names = FALSE
+      )
     
-  } else{
+    # files_to_load <-  stringr::str_subset(files_to_load, pattern = pattern)
+    files_to_load <-
+      stringr::str_subset(files_to_load, pattern = paste(pattern, collapse = "|")) #  multiple pattern matches
     
-    files_to_load <-  list.files(path = path, pattern = paste0("*", extension), full.names = FALSE)
-  
-    #files_to_load <-  stringr::str_subset(files_to_load, pattern = pattern)
-    files_to_load <-  stringr::str_subset(files_to_load, pattern = paste(pattern, collapse = "|")) # multiple pattern matches
-    
-    if(length(files_to_load)==0){stop(paste0("There are no '", extension, "'files containing the pattern ", "'", pattern, "' in the path provided"))}
+    if (length(files_to_load) == 0) {
+      stop(
+        paste0(
+          "There are no '",
+          extension,
+          "'files containing the pattern ",
+          "'",
+          pattern,
+          "' in the path provided"
+        )
+      )
+    }
     
   }
   
-  if(length(files_to_load)==0){stop(paste0("No files contain the pattern ", "'", pattern, "'"))}
-    
+  if (length(files_to_load) == 0) {
+    stop(paste0("No files contain the pattern ", "'", pattern, "'"))
+  }
+  
   objects <- invisible(sapply(files_to_load, function(file) {
-    
     obj <- unlist(strsplit(x = file, split = extension))
     
-    if(rds){
+    if (rds) {
+      assign(x = obj,
+             value = readRDS(file = paste(path, file, sep = "/")),
+             pos = 1)
       
-      assign(x = obj, value = readRDS(file = paste(path, file, sep = "/")), pos = 1)
-      
-    }else{
-      
-      assign(x = obj, value = dget(file = paste(path, file, sep = "/")), pos = 1)
+    } else {
+      assign(x = obj,
+             value = dget(file = paste(path, file, sep = "/")),
+             pos = 1)
       
     }
     

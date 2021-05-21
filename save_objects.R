@@ -22,17 +22,21 @@ save_objects <- function(objects, path, rds = FALSE) {
   # save_objects(objects = "iris", path = "Objects", rds = TRUE)
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
-  if(!all(objects %in% ls(pos = 1))) {
-    
-    stop(paste0("These objects:\n", paste(setdiff(objects, ls(pos = 1)), collapse = "\n"), "\nare not in your workspace, hoser!!!"))
+  if (!all(objects %in% ls(pos = 1))) {
+    stop(paste0(
+      "These objects:\n",
+      paste(setdiff(objects, ls(pos = 1)), collapse = "\n"),
+      "\nare not in your workspace, hoser!!!"
+    ))
     
   }
   
- empty <- sapply(objects, function(obj){
-    
-    if(rds == FALSE){dput(get(obj), paste0(path, "/", obj, ".txt"))}else{
-      
-      saveRDS(get(obj), paste0(path, "/", obj, ".rds"))}
+  empty <- sapply(objects, function(obj) {
+    if (rds == FALSE) {
+      dput(get(obj), paste0(path, "/", obj, ".txt"))
+    } else {
+      saveRDS(get(obj), paste0(path, "/", obj, ".rds"))
+    }
     
   })
   
