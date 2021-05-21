@@ -261,15 +261,15 @@ LOKI2R.GCL <- function(sillyvec, username, password){
       dplyr::mutate(silly_n_miss = paste0(SILLY_CODE, " (", n_indv, " individuals missing ", n_loci_missing, " loci)")) %>% 
       dplyr::pull(silly_n_miss)
     
-    warning(paste0("The following sillys had individuals that were missing data for one or more loci:\n", paste(n_missing, collapse = "\n")), call. = FALSE)
+    warning(paste0("The following sillys had individuals that were removed due to missing data for one or more loci:\n", paste(n_missing, collapse = "\n"), "\n"), call. = FALSE)
     
-    warning(paste0("A table of loci missing data for each individual has been assigned to the object 'missing_indvs_loci'"), call. = FALSE)
+    warning(paste0("A table of loci missing data for each individual has been assigned to the object 'missing_indvs_loci'\n"), call. = FALSE)
     
     assign(x = "missing_indvs_loci", value = missing_indvs_loci, pos = 1, .GlobalEnv)
     
   } else { 
     
-    print("The *.gcl objects created have data for all loci in LocusControl")
+    print("The *.gcl objects created have data for all loci in LocusControl\n")
     
   }
   
