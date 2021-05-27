@@ -174,6 +174,27 @@ read_project_genotypes.GCL <- function(project_name = NULL, sillyvec = NULL, loc
     
     sillyloci <- sort(unique(data_silly$LOCUS))  # These are the loci available for the current silly, this is needed to subset the tapply
     
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    #Checking for and removing duplicate genotypes from more than one extraction
+    
+    distinct_check <- data_silly %>% 
+      dplyr::distinct(FK_FISH_ID, COLLECTION_ID, SILLY_CODE, SillySource, LOCUS, ALLELE_1, ALLELE_2, ALLELES, .keep_all = TRUE)
+    
+    if(nrow(data_silly) > nrow(distinct_check)){
+      
+      nrm <- nrow(data_silly) - nrow(distinct_check)
+                  
+      message(paste0(nrm, " rows of duplicated data were removed from the project data for ", silly,".",
+                     "\nThis may indicate that some samples were rextracted and both plate IDs 
+                     were used in the project."))
+      
+      data_silly <- distinct_check
+      
+    }
+  
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    
+    
     scores_allele_1 <- data_silly %>% 
       dplyr::filter(LOCUS %in% sillyloci) %>% 
       dplyr::select(FK_FISH_ID, LOCUS, ALLELE_1) %>% 
