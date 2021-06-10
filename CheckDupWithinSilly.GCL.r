@@ -124,6 +124,8 @@ CheckDupWithinSilly.GCL=function(sillyvec,loci,quantile=0.99,minproportion=0.95)
         resultlist[[silly]]=list(report=report,DupDist=duplication)  
     }
 
+    detach("package:reshape", unload = TRUE)
+    
     return(resultlist)
   }#end if
 }
