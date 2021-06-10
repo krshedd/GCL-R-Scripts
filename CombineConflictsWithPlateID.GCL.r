@@ -77,7 +77,7 @@ CombineConflictsWithPlateID.GCL= function(files){
     dplyr::mutate(plate_id = factor(x = plate_id, levels = sort(unique(plate_id))))
   
   # Write copy
-  readr::write_csv(concordance_join, path = "Conflict Reports/CombinedConflictsWithPlateID.csv")
+  readr::write_csv(concordance_join, file = "Conflict Reports/CombinedConflictsWithPlateID.csv")
   
   # Assign to global environment
   assign(x = "combined_conflicts", value = concordance_join, pos = 1)
