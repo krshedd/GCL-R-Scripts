@@ -141,24 +141,21 @@ if(FALSE){##
   
   conflicts_by_plate <- combined_conflicts %>% 
     dplyr::group_by(plate_id, concordance_type) %>%
-    dplyr::summarise(n = n()) %>% 
+    dplyr::summarise(n = n(), .groups = "drop") %>% 
     tidyr::spread(concordance_type, n, fill = 0, drop = FALSE) %>% 
-    dplyr::mutate(Conflict = sum(`Het-Het`, `Het-Homo`, `Homo-Het`, `Homo-Homo`)) %>% 
-    dplyr::ungroup()
+    dplyr::mutate(Conflict = sum(`Het-Het`, `Het-Homo`, `Homo-Het`, `Homo-Homo`))
   
   conflicts_by_silly <- combined_conflicts %>% 
     dplyr::group_by(silly, concordance_type) %>% 
-    dplyr::summarise(n = n()) %>% 
+    dplyr::summarise(n = n(), .groups = "drop") %>% 
     tidyr::spread(concordance_type, n, fill = 0, drop = FALSE) %>% 
-    dplyr::mutate(Conflict = sum(`Het-Het`, `Het-Homo`, `Homo-Het`, `Homo-Homo`)) %>% 
-    dplyr::ungroup()
+    dplyr::mutate(Conflict = sum(`Het-Het`, `Het-Homo`, `Homo-Het`, `Homo-Homo`))
   
   conflicts_by_locus <- combined_conflicts %>% 
     dplyr::group_by(locus, concordance_type) %>% 
-    dplyr::summarise(n = n()) %>% 
+    dplyr::summarise(n = n(), .groups = "drop") %>% 
     tidyr::spread(concordance_type, n, fill = 0, drop = FALSE) %>% 
-    dplyr::mutate(Conflict = sum(`Het-Het`, `Het-Homo`, `Homo-Het`, `Homo-Homo`)) %>% 
-    dplyr::ungroup()
+    dplyr::mutate(Conflict = sum(`Het-Het`, `Het-Homo`, `Homo-Het`, `Homo-Homo`))
   
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #### Sample Size by Locus for Project Genotypes ####
