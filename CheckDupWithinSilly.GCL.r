@@ -18,6 +18,8 @@ CheckDupWithinSilly.GCL=function(sillyvec,loci,quantile=0.99,minproportion=0.95)
 #  Updated to skip the calculation of the duplication distribution.  JJ 12/19/2011
 ######################################################################################################################################################################################
  
+  while(!require(reshape)){install.packages("reshape")}
+  
   if(sum(is.na(match(loci,LocusControl$locusnames)))){stop(paste("'",loci[is.na(match(loci,LocusControl$locusnames))],"' from argument 'loci' not found in 'LocusControl' object!!!",sep=""))}
 
   nsilly=length(sillyvec)
@@ -42,7 +44,7 @@ CheckDupWithinSilly.GCL=function(sillyvec,loci,quantile=0.99,minproportion=0.95)
         next()
       }
       scores.df=data.frame(t(sapply(ID,function(id){sapply(loci,function(locus){ifelse(is.na(scores[id,locus,1]),NA,paste(scores[id,locus,1:ploidy[locus]],collapse="."))})})))  
-      sort.scores.df=sort_df(scores.df)
+      sort.scores.df=reshape::sort_df(scores.df)
       sortIDs=dimnames(sort.scores.df)[[1]]
       duplication=t(sapply(1:(n-1),function(id){ 
                     vec=sapply(1:nloci,function(locus){ 
