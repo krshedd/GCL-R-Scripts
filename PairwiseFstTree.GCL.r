@@ -125,7 +125,17 @@ PairwiseFstTree.GCL <- function(sillyvec, loci, dir, nboots = 1000, ncores = 4, 
         
         mydata = data.frame(levels, mydat[,locus])
         
-        hierfstat::varcomp(data = data.matrix(mydata), diploid = TRUE)$overall
+        mydata_no_na <- dplyr::filter(.data = mydata, !is.na(mydat...locus.))
+        
+        if (dplyr::n_distinct(mydata_no_na$levels) == 2) {
+          
+          hierfstat::varcomp(data = data.matrix(mydata), diploid = TRUE)$overall
+          
+        } else {
+          
+          c(NA, NA, NA)
+          
+        }
         
       }))
       
@@ -135,8 +145,19 @@ PairwiseFstTree.GCL <- function(sillyvec, loci, dir, nboots = 1000, ncores = 4, 
       vc.pair <- rbind(t(sapply(loci[-mito.loci], function(locus){
         
         mydata = data.frame(levels,mydat[,locus])
-        hierfstat::varcomp(data = data.matrix(mydata), diploid=TRUE)$overall
+
+        mydata_no_na <- dplyr::filter(.data = mydata, !is.na(mydat...locus.))
         
+        if (dplyr::n_distinct(mydata_no_na$levels) == 2) {
+          
+          hierfstat::varcomp(data = data.matrix(mydata), diploid = TRUE)$overall
+          
+        } else {
+          
+          c(NA, NA, NA)
+          
+        }
+                
       })),
       
       # Haploid loci
@@ -144,7 +165,17 @@ PairwiseFstTree.GCL <- function(sillyvec, loci, dir, nboots = 1000, ncores = 4, 
         
         mydata <- data.frame(levels,mydat[,locus])
         
-        c(hierfstat::varcomp(data = data.matrix(mydata), diploid = FALSE)$overall,0)
+        mydata_no_na <- dplyr::filter(.data = mydata, !is.na(mydat...locus.))
+        
+        if (dplyr::n_distinct(mydata_no_na$levels) == 2) {
+          
+          c(hierfstat::varcomp(data = data.matrix(mydata), diploid = FALSE)$overall,0)
+          
+        } else {
+          
+          c(NA, NA, NA)
+          
+        }
         
       } ))
       
