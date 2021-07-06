@@ -129,6 +129,7 @@ plot_baseline_eval_summary.GCL <- function(summary, file, method = c("MCMC", "PB
         ggplot2::geom_text(aes(x = .3, y = .88, label = paste0("90% Within: ", round(100*`90%_within`, 1), "%")), color = "black", size = 3)+
         ggplot2::geom_text(aes(x = .3, y = .82, label = paste0("Within Interval: ", round(100*Within_Interval, 1), "%")), color = "black", size = 3)+
         ggplot2::facet_wrap(~ test_group) +
+        ggplot2::theme_bw() +
         ggplot2::theme(legend.position = "none", strip.text.x = element_text(size = 16), panel.spacing.y = unit(3, "lines"))+
         ggplot2::xlab("True Proportion") +
         ggplot2::ylab("Posterior Mean Reporting Group Proportion") +
@@ -159,6 +160,7 @@ plot_baseline_eval_summary.GCL <- function(summary, file, method = c("MCMC", "PB
       ggplot2::geom_text(aes(x = .3, y = .88, label = paste0("90% Within: ", round(100*`90%_within`, 1), "%")), color = "black", size = 3)+
       ggplot2::geom_text(aes(x = .3, y = .82, label = paste0("Within Interval: ", round(100*Within_Interval, 1), "%")), color = "black", size = 3)+
       ggplot2::facet_wrap(~ test_group) +
+      ggplot2::theme_bw() +
       ggplot2::theme(legend.position = "none", strip.text.x = element_text(size = 16), panel.spacing.y = unit(3, "lines"))+
       ggplot2::xlab("True Proportion") +
       ggplot2::ylab("Posterior Mean Reporting Group Proportion") +

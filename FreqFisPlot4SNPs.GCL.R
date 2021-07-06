@@ -184,6 +184,7 @@ FreqFisPlot4SNPs.GCL <- function(sillyvec, loci, groupvec, alpha = 0.05, groupco
       ggplot2::geom_line(color = "black", linetype = "dashed", size = line.width) +
       ggplot2::ylim(0,1)+
       ggplot2::ylab("Frequency") +
+      ggplot2::theme_bw() +
       ggplot2::theme(axis.text.x = ggplot2::element_blank(), axis.title.x = ggplot2::element_blank()) + 
       ggplot2::ggtitle(label = unique(locus))
     
@@ -204,7 +205,8 @@ FreqFisPlot4SNPs.GCL <- function(sillyvec, loci, groupvec, alpha = 0.05, groupco
       ggplot2::ylim(fisylim)+
       ggplot2::ylab(expression(italic(F)[IS]))+
       ggplot2::xlab("Population")+
-      ggplot2::geom_text(aes(y = fis+lab_adjust*sign(fis), label = labels), color = PopCol, size = pval.cex)
+      ggplot2::geom_text(aes(y = fis+lab_adjust*sign(fis), label = labels), color = PopCol, size = pval.cex) +
+      ggplot2::theme_bw()
     
     grid::grid.newpage()
     grid::grid.draw(rbind(ggplot2::ggplotGrob(freqplot), ggplot2::ggplotGrob(fisplot), size = "last"))
