@@ -57,7 +57,7 @@ LOKI2R_GAPS.GCL = function(sillyvec, username, password){
   
   drv <- JDBC("oracle.jdbc.OracleDriver", classPath = "~/R/ojdbc8.jar", " ")#https://blogs.oracle.com/R/entry/r_to_oracle_database_connectivity    C:/app/awbarclay/product/11.1.0/db_1/jdbc/lib
   
-  url <-LOKI_URL.GCL()
+  url <-LOKI_URL.GCL() #  can change from @soaora7 to @soaora6 for the test database, 7 is prod
   
   con <- dbConnect(drv,url=url,user=username,password=password)
   
