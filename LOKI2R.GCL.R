@@ -32,9 +32,9 @@ LOKI2R.GCL <- function(sillyvec, username, password){
   #                     VIAL_BARCODE <character>: the barcode on the collection vial
   #                     DNA_TRAY_CODE <character>: the barcode on the collection tray/card
   #                     DNA_TRAY_WELL_CODE <double>: the unique number assigned to each postion in the collection tray/card for each individual(e.g postions A1-A10 = codes 1-10, )
-  #                     DNA_TRAY_WELL_POS <double>: the postion in the collection tray/card (e.g. A1, A2, B1, B2, etc.)
-  #                     CONTAINER_ARRAY_TYPE_ID <doupble>: the number code for the collection container (e.g. tray or card)    
-  #                     SillySource <doupble>: the original silly code and fish ID for each individual (e.g. KQUART06_1). When pulled from loki this will be the SILLY_CODE and FK_FISH_ID
+  #                     DNA_TRAY_WELL_POS <character>: the postion in the collection tray/card (e.g. A1, A2, B1, B2, etc.)
+  #                     CONTAINER_ARRAY_TYPE_ID <double>: the number code for the collection container (e.g. tray or card)    
+  #                     SillySource <double>: the original silly code and fish ID for each individual (e.g. KQUART06_1). When pulled from loki this will be the SILLY_CODE and FK_FISH_ID
   #                               
   #               Columns 20+
   #                     The remaining columns in the object will be the scores for all loci in the LocusControl object. 

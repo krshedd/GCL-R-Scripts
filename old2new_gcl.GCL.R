@@ -66,7 +66,7 @@ old2new_gcl.GCL <- function (sillyvec, save_old = FALSE){
       
       if(!"CONTAINER_ARRAY_TYPE_ID" %in% my_attr){
        
-        my.gcl$attributes$CONTAINER_ARRAY_TYPE_ID <- NA_integer_
+        my.gcl$attributes$CONTAINER_ARRAY_TYPE_ID <- NA_real_
         
       }
       
@@ -96,7 +96,7 @@ old2new_gcl.GCL <- function (sillyvec, save_old = FALSE){
       
       if(!"DNA_TRAY_WELL_CODE" %in% my_attr){
         
-        my.gcl$attributes$DNA_TRAY_WELL_CODE <- NA_character_
+        my.gcl$attributes$DNA_TRAY_WELL_CODE <- NA_real_
         
       }
       
@@ -131,10 +131,10 @@ old2new_gcl.GCL <- function (sillyvec, save_old = FALSE){
                     AGENCY = as.character(AGENCY),
                     VIAL_BARCODE = as.character(VIAL_BARCODE),
                     DNA_TRAY_CODE = as.character(DNA_TRAY_CODE),
-                    DNA_TRAY_WELL_CODE = as.character(DNA_TRAY_WELL_CODE),
+                    DNA_TRAY_WELL_CODE = as.double(DNA_TRAY_WELL_CODE),
                     DNA_TRAY_WELL_POS = as.character(DNA_TRAY_WELL_POS),
                     CONTAINER_ARRAY_TYPE_ID = as.double(CONTAINER_ARRAY_TYPE_ID),
-                    SillySource = as.character(SillySource)) %>% # make date
+                    SillySource = as.character(SillySource)) %>% 
       dplyr::select(all_of(attr_sel)) # Select the 19 attribute columns
     
     scores <- lapply(seq(dim(my.gcl$scores)[[3]]), function(dim){
