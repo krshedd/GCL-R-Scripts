@@ -52,13 +52,13 @@ run_rubias_baseline_eval.GCL <- function(tests,
   #     4) straight dump of the `bootstrapped_proportions`
   #
   # Example~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  #  attach("V:/Analysis/2_Central/Chinook/Susitna River/Susitna_Chinook_baseline_2020/Susitna_Chinook_baseline_2020.Rdata")
-  #  Final_Pops <- Final_Pops %>% mutate(group = factor(group, levels = unique(group)))
-  #  sample_sizes <- BaselineEvalSampleSizes.GCL(sillyvec = Final_Pops$silly, group_names = Final_Pops$group %>% levels(), groupvec = Final_Pops$group %>% as.numeric(), scenarios = round(seq(.01, 1, .01), 2), mixsize = 200, maxprop = 0.5)
-  #  CreateRubiasBaselineEval.GCL(sillyvec = Final_Pops$silly, group_names = Final_Pops$group %>% levels(), test_groups = Final_Pops$group %>% levels(), loci = loci80, groupvec = Final_Pops$group %>% as.numeric(), sample_sizes = sample_sizes, prprtnl = TRUE, ncores = 8)
-  #
-  #  tests <- sample_sizes %>% group_by(test_group, scenario) %>% summarize(test_group = test_group %>% unique(), scenario = scenario %>% unique(), .groups = "drop_last")#Total of 510 tests
-  #  run_rubias_baseline_eval.GCL(tests = tests, group_names = Final_Pops$group %>% levels(), gen_start_col = 5, base.path = "rubias/baseline",mix.path = "rubias/mixture", out.path = "rubias/output", ncores = 8)
+  #   attach("C:/Users/awbarclay/Documents/Analysis/Chinook/Susitna_Chinook_baseline_2020/run baseline eval tests/Susitna_Chinook_baseline_2020_noGTseq.Rdata")
+  #   Final_Pops <- Final_Pops %>% mutate(group = factor(group, levels = unique(group)))
+  #   sample_sizes <- BaselineEvalSampleSizes.GCL(sillyvec = Final_Pops$silly, group_names = Final_Pops$group %>% levels(), groupvec = Final_Pops$group %>% as.numeric(), scenarios = round(seq(.01, 1, .01), 2), mixsize = 200, maxprop = 0.5, seed = 123)
+  #   CreateRubiasBaselineEval.GCL(sillyvec = Final_Pops$silly, group_names = Final_Pops$group %>% levels(), test_groups = Final_Pops$group %>% levels(), loci = loci80, groupvec = Final_Pops$group %>% as.numeric(), sample_sizes = sample_sizes, prprtnl = TRUE, seed = 123, ncores = 8)
+  # 
+  #   tests <- sample_sizes %>% group_by(test_group, scenario) %>% summarize(test_group = test_group %>% unique(), scenario = scenario %>% unique(), .groups = "drop_last")#Total of 510 tests
+  #   run_rubias_baseline_eval.GCL(tests = tests, group_names = Final_Pops$group %>% levels(), gen_start_col = 5, base.path = "rubias/baseline",mix.path = "rubias/mixture", out.path = "rubias/output", seed = 56, ncores = 8)
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     
   start_time <- Sys.time()

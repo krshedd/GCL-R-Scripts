@@ -124,8 +124,8 @@ stratified_estimator_rubias <- function(rubias_output = NULL, mixvec = NULL, gro
         dplyr::left_join(repunit_new.df, by = "collection") %>%  # join with new repunit
         dplyr::rename(repunit = repunit_new) %>%  # rename new repunit
         dplyr::group_by(mixture_collection, sweep, repunit) %>%  # group and order
-        dplyr::summarise(rho = sum(pi)) %>%  # summarise pi (collection) to rho (repunit)
-        dplyr::ungroup()
+        dplyr::summarise(rho = sum(pi), .groups = "drop") # summarise pi (collection) to rho (repunit)
+      
     }  # build repunit_trace from "collection_trace.csv", `groupvec`, and `group_names`
     
     # Build `bootstrapped_proportions` if `bias_corr = TRUE`
@@ -155,10 +155,11 @@ stratified_estimator_rubias <- function(rubias_output = NULL, mixvec = NULL, gro
     
     # Build repunit_trace from `rubias_output` if `groupvec` is NULL
     if(is.null(groupvec)) {
+      
       repunit_trace <- rubias_output$mix_prop_traces %>% 
         dplyr::group_by(mixture_collection, sweep, repunit) %>%  # group to summarize across collections
-        dplyr::summarise(rho = sum(pi)) %>%  # summarize collections to repunits
-        dplyr::ungroup()
+        dplyr::summarise(rho = sum(pi), .groups = "drop") # summarize collections to repunits
+  
       if(is.null(group_names)) {group_names <- unique(repunit_trace$repunit) }  # assign `group_names` from `rubias_output`, if NULL, order may be wrong
       
     } else {
@@ -171,8 +172,8 @@ stratified_estimator_rubias <- function(rubias_output = NULL, mixvec = NULL, gro
         dplyr::select(-repunit) %>%  # drop old repunit
         dplyr::rename(repunit = repunit_new) %>%  # rename new repunit
         dplyr::group_by(mixture_collection, sweep, repunit) %>%  # group and order
-        dplyr::summarise(rho = sum(pi)) %>%  # summarise pi (collection) to rho (repunit)
-        dplyr::ungroup()
+        dplyr::summarise(rho = sum(pi), .groups = "drop")  # summarise pi (collection) to rho (repunit)
+
     }  # build repunit_trace from `rubias_output`, `groupvec`, and `group_names`
     
     # Build `bootstrapped_proportions` if `bias_corr = TRUE`
@@ -197,8 +198,7 @@ stratified_estimator_rubias <- function(rubias_output = NULL, mixvec = NULL, gro
     mixing_proportions_rho <- repunit_trace %>% 
       dplyr::filter(sweep >= burn_in) %>%   # remove burn_in
       dplyr::group_by(mixture_collection, repunit) %>%  # group by mixture and repunit across sweeps
-      dplyr::summarise(rho = mean(rho)) %>% 
-      dplyr::ungroup()
+      dplyr::summarise(rho = mean(rho), .groups = "drop") 
     
     d_rho <- mixing_proportions_rho %>% 
       dplyr::left_join(bootstrapped_proportions, by = c("mixture_collection", "repunit")) %>%  # join with `bootstrapped_proportions`
@@ -225,8 +225,7 @@ stratified_estimator_rubias <- function(rubias_output = NULL, mixvec = NULL, gro
     repunit_trace <- repunit_trace %>% 
       dplyr::mutate(repunit = recode(repunit, !!!level_key)) %>% 
       dplyr::group_by(mixture_collection, sweep, repunit) %>% 
-      dplyr::summarise(rho = sum(rho)) %>% 
-      dplyr::ungroup()  
+      dplyr::summarise(rho = sum(rho), .groups = "drop") 
   }  
   
    #~~~~~~~~~~~~~~~~
@@ -245,7 +244,7 @@ stratified_estimator_rubias <- function(rubias_output = NULL, mixvec = NULL, gro
     dplyr::left_join(harvest, by = "mixture_collection") %>%  # join harvest data from `catchvec`
     dplyr::mutate(rho_stratified = rho * harvest / sum(catchvec)) %>%  # multiply each strata by strata harvest and divide by total harvest
     dplyr::group_by(sweep, repunit) %>%  # summarise mixtures by sweep and repunit
-    dplyr::summarise(rho = sum(rho_stratified)) %>% 
+    dplyr::summarise(rho = sum(rho_stratified), .groups = "keep") %>% 
     dplyr::mutate(stratified = newname) %>%  # define newname
     dplyr::select(stratified, sweep, repunit, rho) %>% 
     dplyr::group_by(stratified, repunit) %>%  # calculate summary statistics
@@ -254,8 +253,7 @@ stratified_estimator_rubias <- function(rubias_output = NULL, mixvec = NULL, gro
                      median = median(rho),
                      loCI = quantile(rho, probs = loCI),
                      hiCI = quantile(rho, probs = hiCI),
-                     `P=0` = sum(rho < threshold) / length(rho)) %>%  # summary statistics to return
-    dplyr::ungroup() %>% 
+                     `P=0` = sum(rho < threshold) / length(rho), .groups = "drop") %>%  # summary statistics to return
     dplyr::mutate(loCI = replace(loCI, which(loCI < 0), 0),
                   hiCI = replace(hiCI, which(hiCI < 0), 0),
                   median = replace(median, which(median < 0), 0),
@@ -292,7 +290,7 @@ stratified_estimator_rubias <- function(rubias_output = NULL, mixvec = NULL, gro
     tidyr::gather(key = repunit, value = r_h0, -mixture_collection, -sweep, -harvest) %>% 
     dplyr::mutate(repunit = factor(x = repunit, levels = group_names)) %>% 
     dplyr::group_by(sweep, repunit) %>% 
-    dplyr::summarise(rho = sum(r_h0)/sum(catchvec)) %>% 
+    dplyr::summarise(rho = sum(r_h0)/sum(catchvec), .groups = "keep") %>% 
     dplyr::mutate(stratified = newname) %>%  # define newname
     dplyr::group_by(stratified, repunit) %>% # calculate summary statistics
     dplyr::summarise(mean = mean(rho),
@@ -300,8 +298,7 @@ stratified_estimator_rubias <- function(rubias_output = NULL, mixvec = NULL, gro
                      median = median(rho),
                      loCI = quantile(rho, probs = loCI),
                      hiCI = quantile(rho, probs = hiCI),
-                     `P=0` = sum(rho < threshold) / length(rho)) %>%  # summary statistics to return
-    dplyr::ungroup() %>% 
+                     `P=0` = sum(rho < threshold) / length(rho), .groups = "drop") %>%  # summary statistics to return
     dplyr::mutate(loCI = replace(loCI, which(loCI < 0), 0),
                   hiCI = replace(hiCI, which(hiCI < 0), 0),
                   median = replace(median, which(median < 0), 0),

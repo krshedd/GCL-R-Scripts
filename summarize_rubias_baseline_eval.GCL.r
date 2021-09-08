@@ -24,18 +24,18 @@ summarize_rubias_baseline_eval.GCL <- function(mixvec, sample_sizes, method = c(
   #  
   #  estimates - a tibble containing the following variables: test_group, scenario, repunit, mean, sd, lo5CI (5% CI), hi95CI (95% CI), P=0, true_proportion (actual proportion in mixture), total_samples (mixture size), and method (PB or MCMC)
   #  
-  #  summary_stats - a tibble containing mixture summary statistics for each group tested: method (PB or MCMC), test_group, RMSE (root mean squared error), Mean_Bias (average bias among all test mixtures for a given test_group), and 
-  #                  90%_within (the maximum proportion from the true proportion where 90% of point estimates occurred)
+  #  summary_stats - a tibble containing mixture summary statistics for each group tested: method (PB or MCMC), test_group, RMSE (root mean squared error), Mean_Bias (average bias among all test mixtures for a given test_group),
+  #                  90%_within (the maximum distance from the true proportion where 90% of point estimates occurred), and Within_Interval (the proportion of tests where the credibility interval contained the true proportion).
   #
   # Example~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #  load("V:/Analysis/2_Central/Chinook/Susitna River/Susitna_Chinook_baseline_2020/Susitna_Chinook_baseline_2020.Rdata")
   #  require(tidyverse)
-  #  tests <- sample_sizes %>% group_by(test_group, scenario) %>% summarize(test_group = test_group %>% unique(), scenario = scenario %>% unique(), .groups = "drop_last")#Total of 510 tests  # 
+  #  tests <- sample_sizes %>% group_by(test_group, scenario) %>% summarize(test_group = test_group %>% unique(), scenario = scenario %>% unique(), .groups = "drop_last")#Total of 510 tests  #
   #  mixvec <- tests %>% unite(col = "mixvec", test_group, scenario, sep ="_" ) %>% pull()
-  #  path <-  "V:/Analysis/2_Central/Chinook/Susitna River/Susitna_Chinook_baseline_2020/rubias/output"
-  #
-  #  summarize_rubias_baseline_eval.GCL (mixvec = mixvec, sample_sizes = sample_sizes, method = "both", group_names = NULL, group_names_new = NULL, groupvec = NULL, groupvec_new = NULL, path = path, alpha = 0.1, 
-  #                                  burn_in = 5000, threshold = 5e-7, ncores = 8) 
+  #  path <-  "V:/Analysis/2_Central/Chinook/Susitna River/Susitna_Chinook_baseline_2020/rubias/output/3groups"
+  # 
+  #  summarize_rubias_baseline_eval.GCL (mixvec = mixvec, sample_sizes = sample_sizes, method = "both", group_names = NULL, group_names_new = NULL, groupvec = NULL, groupvec_new = NULL, path = path, alpha = 0.1,
+  #                                  burn_in = 5000, threshold = 5e-7, ncores = 8)
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   start_time <- Sys.time()
@@ -88,7 +88,7 @@ summarize_rubias_baseline_eval.GCL <- function(mixvec, sample_sizes, method = c(
   
   # Create estimates output summary
   estimates_out <- estimates %>% 
-    tidyr::separate(mixture_collection, into = c("test_group", "scenario"), sep = "@|\\_(?=[^\\_]+$)", remove = TRUE) %>%#The regular expression means the last instance of "_", just in case someone has a group name with an underscore.
+    tidyr::separate(mixture_collection, into = c("test_group", "scenario"), sep = "\\_(?=[^\\_]+$)", remove = TRUE) %>% #The regular expression means the last instance of "_", just in case someone has a group name with an underscore.
     dplyr::mutate(scenario = as.numeric(scenario)) %>% 
     dplyr::left_join(sample_sizes, by = c("repunit" = "repunit", "scenario" = "scenario", "test_group" = "test_group")) %>% 
     dplyr::group_by(test_group, scenario, method) %>% 
@@ -99,11 +99,11 @@ summarize_rubias_baseline_eval.GCL <- function(mixvec, sample_sizes, method = c(
   
   # Calculate the baseline eval summary statistics RMSE =  root mean squared error, 'Within_10%' =  proportion of estimates within 10% of true
   summary_stats <- estimates_out %>% 
-    dplyr::filter(test_group==repunit)%>% 
-    dplyr::group_by(method, test_group)%>%
+    dplyr::filter(test_group==repunit) %>% 
+    dplyr::group_by(method, test_group) %>%
     dplyr::mutate(Bias = mean-true_proportion, Abs_Bias = abs(mean-true_proportion), Bias_squared = (mean-true_proportion)^2, CI_width = hi95CI-lo5CI,
-           lo5CI_within = true_proportion-lo5CI, hi95CI_within = hi95CI-true_proportion) %>%
-    dplyr::summarise(RMSE = sqrt(mean(Bias_squared)), Mean_Bias = mean(Bias), `90%_within` = quantile(Abs_Bias, probs = 0.9), .groups = "drop_last")
+           lo5CI_within = true_proportion-lo5CI, hi95CI_within = hi95CI-true_proportion, Within_CI = dplyr::case_when(true_proportion >= lo5CI & true_proportion <= hi95CI ~ TRUE, TRUE~FALSE)) %>%
+    dplyr::summarise(RMSE = sqrt(mean(Bias_squared)), Mean_Bias = mean(Bias), `90%_within` = quantile(Abs_Bias, probs = 0.9), Within_Interval = sum(Within_CI)/dplyr::n(), .groups = "drop_last") 
   
   return(list(estimates = estimates_out, summary_stats = summary_stats))
     

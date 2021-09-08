@@ -7,7 +7,7 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci = LocusControl$locusnames, qu
   #   
   #   sillyvec - a vector of silly codes without the ".gcl" extention (e.g. sillyvec <- c("KQUART06","KQUART08","KQUART10")). 
   #
-  #   loci - vector of locus names; if set to NULL all loci in the ".gcl" obejects will be used.
+  #   loci - vector of locus names; if set to NULL all loci in the ".gcl" objects will be used.
   #
   #   quantile - this argument along with minproportion are used together to determine the cut-off proportion at which a pair of duplicates 
   #                                is defined: i.e. proportion = max(quantile(duplication, quantile), minproportion. 
@@ -17,23 +17,26 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci = LocusControl$locusnames, qu
   #
   #   minproportion - the proportion of shared non-missing loci that must be shared between the indivdiuals to be reported as a matching pair, this is passed through to rubias as well 
   #
-  #   ncores - the number of cores to use in a foreach %dopar% loop. If the nubmer of core exceeds the number on your device, then ncores defaults to detectCores()
+  #   ncores - the number of cores to use in a foreach %dopar% loop. If the number of core exceeds the number on your device, then ncores defaults to detectCores()
   # 
   # Outputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #    When quantile is set to NULL, returns a tibble of duplicate pairs of individuals by silly.
   #    When quantile is a number, a list containing a tibble of duplicate pairs of individuals by silly and tibble the porportion of duplication for each pair of individuals.
   #
+  #
   # Examples~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  #  CreateLocusControl.GCL(markersuite = "Sockeye2011_96SNPs", username = "awbarclay", password = password)
-  #  sillyvec = c("SMCDO03", "SNEVA13")
-  #  password = "************"
-  #  LOKI2R.GCL(sillyvec = sillyvec, username = "awbarclay", password = password)
-  #  RemoveIndMissLoci.GCL(sillyvec = sillyvec)
   #
-  #  dupcheck <- CheckDupWithinSilly.GCL(sillyvec = sillyvec, loci = LocusControl$locusnames, quantile = 0.99, minproportion = 0.95, ncores = 8)
-  #  dupcheckNULLQantile <- CheckDupWithinSilly.GCL(sillyvec = sillyvec, loci = LocusControl$locusnames, quantile = NULL, minproportion = 0.95, ncores = 8)
-  #
-  #
+  # password <- "************"
+  # username <- "******"
+  # CreateLocusControl.GCL(markersuite = "Sockeye2011_96SNPs", username = username, password = password)
+  # sillyvec <- c("SMCDO03", "SNEVA13")
+  # LOKI2R.GCL(sillyvec = sillyvec, username = username, password = password)
+  # RemoveIndMissLoci.GCL(sillyvec = sillyvec)
+  # PoolCollections.GCL(c("SMCDO03", "SNEVA13"))
+  # 
+  # dupcheck <- CheckDupWithinSilly.GCL(sillyvec = "SMCDO03.SNEVA13", loci = LocusControl$locusnames, quantile = 0.99, minproportion = 0.95, ncores = 4)
+  # dupcheckNULLQantile <- CheckDupWithinSilly.GCL(sillyvec = "SMCDO03.SNEVA13", loci = LocusControl$locusnames, quantile = NULL, minnonmissing = 0.6, minproportion = 0.95, ncores = 4)
+  # 
   # Note~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #   When quantile is set to NULL this function utilizes rubias::close_matching_samples() to perform the duplicate check and it much faster than when you set a quantile.
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -50,8 +53,11 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci = LocusControl$locusnames, qu
   
   
   if(ncores > parallel::detectCores()) {
-    stop("'ncores' is greater than the number of cores available on machine\nUse 'detectCores()' to determine the number of cores on your machine")
-  }
+    
+    ncores <- parallel::detectCores()  
+    
+    }
+  
   
   nsilly <- length(sillyvec)
   
@@ -137,9 +143,9 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci = LocusControl$locusnames, qu
         dplyr::mutate(
           sample_type = "reference",
           repunit = NA_character_,
-          collection = SILLY_CODE,
-          indiv = SillySource
+          collection = SILLY_CODE
         ) %>%
+        tidyr::unite(col = "indiv", SILLY_CODE, FK_FISH_ID, sep = "_") %>% 
         dplyr::select(sample_type,
                       repunit,
                       collection,
@@ -153,8 +159,8 @@ CheckDupWithinSilly.GCL <- function(sillyvec, loci = LocusControl$locusnames, qu
     parallel::stopCluster(cl)
     
     dupcheck <- dupcheck0 %>% 
-      tidyr::separate(indiv_1, into = c(NA, "ID1")) %>% 
-      tidyr::separate(indiv_2, into = c(NA, "ID2")) %>% 
+      tidyr::separate(indiv_1, into = c(NA, "ID1"), sep = "\\_(?=[^\\_]+$)", extra = "drop") %>% 
+      tidyr::separate(indiv_2, into = c(NA, "ID2"), sep = "\\_(?=[^\\_]+$)", extra = "drop") %>%
       dplyr::mutate(silly = collection_1, 
                     proportion = num_match/num_non_miss) %>% 
       dplyr::select(silly, ID1, ID2, proportion)

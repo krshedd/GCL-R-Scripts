@@ -1,4 +1,4 @@
-PoolCollections.GCL <- function(collections, loci = LocusControl$locusnames, IDs = NULL, newname = paste(collections,collapse=".")){
+PoolCollections.GCL <- function(collections, loci = LocusControl$locusnames, IDs = NULL, newname = paste(collections, collapse = ".")){
   
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #   This function combines "*.gcl" objects into a new one called "newname.gcl".
@@ -10,7 +10,7 @@ PoolCollections.GCL <- function(collections, loci = LocusControl$locusnames, IDs
   #
   #   loci - a character vector of locus names
   # 
-  #   IDs - a named list of fish ID vectors (either character or numeric), each vector is associated with and named after a member of "collections".
+  #   IDs - a named list of FK_FISH_ID vectors (either character or numeric), each vector is associated with and named after a member of "collections".
   #         These will be used to subset each collection before pooling. If no IDs are supplied all individuals from each collection are used.
   #
   #   newname - is the name of the new "*.gcl" created. Do not provide ".gcl" extention. If no name supplied then the newname defaults to
@@ -89,7 +89,7 @@ PoolCollections.GCL <- function(collections, loci = LocusControl$locusnames, IDs
     
   }) %>% 
     dplyr::bind_rows() %>% 
-    dplyr::mutate(FK_FISH_ID = seq(length(unlist(IDs))))
+    dplyr::mutate(FK_FISH_ID = seq(length(unlist(IDs))), SILLY_CODE = newname)
   
   assign(paste0(newname, ".gcl"), output, pos = 1, envir = .GlobalEnv)  
   
