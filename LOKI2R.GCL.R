@@ -32,9 +32,9 @@ LOKI2R.GCL <- function(sillyvec, username, password){
   #                     VIAL_BARCODE <character>: the barcode on the collection vial
   #                     DNA_TRAY_CODE <character>: the barcode on the collection tray/card
   #                     DNA_TRAY_WELL_CODE <double>: the unique number assigned to each postion in the collection tray/card for each individual(e.g postions A1-A10 = codes 1-10, )
-  #                     DNA_TRAY_WELL_POS <double>: the postion in the collection tray/card (e.g. A1, A2, B1, B2, etc.)
-  #                     CONTAINER_ARRAY_TYPE_ID <doupble>: the number code for the collection container (e.g. tray or card)    
-  #                     SillySource <doupble>: the original silly code and fish ID for each individual (e.g. KQUART06_1). When pulled from loki this will be the SILLY_CODE and FK_FISH_ID
+  #                     DNA_TRAY_WELL_POS <character>: the postion in the collection tray/card (e.g. A1, A2, B1, B2, etc.)
+  #                     CONTAINER_ARRAY_TYPE_ID <double>: the number code for the collection container (e.g. tray or card)    
+  #                     SillySource <double>: the original silly code and fish ID for each individual (e.g. KQUART06_1). When pulled from loki this will be the SILLY_CODE and FK_FISH_ID
   #                               
   #               Columns 20+
   #                     The remaining columns in the object will be the scores for all loci in the LocusControl object. 
@@ -261,15 +261,15 @@ LOKI2R.GCL <- function(sillyvec, username, password){
       dplyr::mutate(silly_n_miss = paste0(SILLY_CODE, " (", n_indv, " individuals missing ", n_loci_missing, " loci)")) %>% 
       dplyr::pull(silly_n_miss)
     
-    warning(paste0("The following sillys had individuals that were missing data for one or more loci:\n", paste(n_missing, collapse = "\n")), call. = FALSE)
+    warning(paste0("The following sillys had individuals that were removed due to missing data for one or more loci:\n", paste(n_missing, collapse = "\n"), "\n"), call. = FALSE)
     
-    warning(paste0("A table of loci missing data for each individual has been assigned to the object 'missing_indvs_loci'"), call. = FALSE)
+    warning(paste0("A table of loci missing data for each individual has been assigned to the object 'missing_indvs_loci'\n"), call. = FALSE)
     
     assign(x = "missing_indvs_loci", value = missing_indvs_loci, pos = 1, .GlobalEnv)
     
   } else { 
     
-    print("The *.gcl objects created have data for all loci in LocusControl")
+    print("The *.gcl objects created have data for all loci in LocusControl\n")
     
   }
   

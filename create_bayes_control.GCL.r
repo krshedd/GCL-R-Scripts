@@ -65,7 +65,7 @@ create_bayes_control.GCL <- function(sillyvec, loci, mixvec, baseline_name, nrep
     
     chains <- paste("Chain", 1:nchains, sep = "")
     
-    dirs <- paste(dir, "/", mix, "_Chain", 1:nchains, ".ctl", sep = "") %>% setNames(chains)
+    dirs <- paste(dir, "/", mix, "Chain", 1:nchains, ".ctl", sep = "") %>% setNames(chains)
 
     priorvec <- cbind(substring(format(round(priorvec, 6), nsmall = 6), first = 2))
     
@@ -88,23 +88,23 @@ create_bayes_control.GCL <- function(sillyvec, loci, mixvec, baseline_name, nrep
     seeds <- cbind(seeds)
     dimnames(seeds) <- list(1:3, chains)
     
-    files <- lapply(chains, function(chain){paste0(mix, "_", chain)}) %>% setNames(chains)
+    files <- lapply(chains, function(chain){paste0(mix, chain)}) %>% setNames(chains)
       
     files <- lapply(files, function(file){rbind(file, paste0(baseline_name, ".bse"))}) %>% setNames(chains)
   
     files <- lapply(files, function(file){rbind(file, paste0(mix, ".mix"))}) %>% setNames(chains)
     
-    files <- lapply(chains, function(chain){rbind(files[[chain]], paste0(mix, "_", chain, "SUM.SUM"))}) %>% setNames(chains)
+    files <- lapply(chains, function(chain){rbind(files[[chain]], paste0(mix, chain, "SUM.SUM"))}) %>% setNames(chains)
     
-    files <- lapply(chains, function(chain){rbind(files[[chain]], paste0(mix, "_", chain, "BOT.BOT"))}) %>% setNames(chains)
+    files <- lapply(chains, function(chain){rbind(files[[chain]], paste0(mix, chain, "BOT.BOT"))}) %>% setNames(chains)
  
-    files <- lapply(chains, function(chain){rbind(files[[chain]], paste0(mix, "_", chain, "FRQ.FRQ"))})%>% setNames(chains)
+    files <- lapply(chains, function(chain){rbind(files[[chain]], paste0(mix, chain, "FRQ.FRQ"))})%>% setNames(chains)
     
-    files <- lapply(chains, function(chain){rbind(files[[chain]], paste0(mix, "_", chain,"BO1.BO1"))}) %>% setNames(chains)
+    files <- lapply(chains, function(chain){rbind(files[[chain]], paste0(mix, chain,"BO1.BO1"))}) %>% setNames(chains)
     
-    files <- lapply(chains, function(chain){rbind(files[[chain]], paste0(mix, "_", chain, "CLS.CLS"))}) %>% setNames(chains)
+    files <- lapply(chains, function(chain){rbind(files[[chain]], paste0(mix, chain, "CLS.CLS"))}) %>% setNames(chains)
     
-    files <- lapply(chains, function(chain){rbind(files[[chain]], paste0(mix, "_", chain, "RGN.RGN"))}) %>% setNames(chains)
+    files <- lapply(chains, function(chain){rbind(files[[chain]], paste0(mix, chain, "RGN.RGN"))}) %>% setNames(chains)
      
     files <- lapply(chains, function(chain){rbind(files[[chain]], nreps)}) %>% setNames(chains)
     
