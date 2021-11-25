@@ -45,7 +45,7 @@ run_rubias_mixture <- function(reference, mixture, group_names, gen_start_col, m
     
   }
   
-  if(!is.na(pi_prior)){
+  if(!is.na(pi_prior) %>% as.vector() %>% unique()){
     
     if(!is.data.frame(pi_prior)|sum(names(pi_prior)%in% c("collection", "pi_param")) < 2 ){
       
