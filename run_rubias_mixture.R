@@ -105,7 +105,7 @@ run_rubias_mixture <- function(reference, mixture, group_names, gen_start_col, m
         dplyr::filter(mixture_collection == mixture) %>%  # filter to mixture
         dplyr::mutate(repunit = factor(x = repunit, levels = group_names)) %>%  # use factor to order repunit same as group_names
         dplyr::group_by(sweep, repunit) %>% 
-        dplyr:: summarise(rho = sum(pi)) %>% 
+        dplyr:: summarise(rho = sum(pi), .groups = "drop") %>% 
         dplyr::select(sweep, repunit, rho) %>%  # select only sweep, collection, pi
         tidyr::spread(repunit, rho)  # make wide
       readr:: write_csv(x = mix_prop_trace_wide_rho, file = paste0(file, "/", mixture, "_repunit_trace.csv"))
