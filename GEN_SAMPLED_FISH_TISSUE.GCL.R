@@ -36,9 +36,7 @@ GEN_SAMPLED_FISH_TISSUE.GCL <- function(sillyvec, username, password, file = NUL
   #  
   #   password = "************"
   #
-  #   tissue_table <- GEN_SAMPLED_FISH_TISSUE.GCL(sillyvec = c("KCDVF18", "KCDVF19", "KCDVF20"), username = "awbarclay", password = password, import.vars = TRUE)
-  #  
-  #   write_csv(tissue_table, "tissue_import_file.csv", na = "") 
+  #   GEN_SAMPLED_FISH_TISSUE.GCL(sillyvec = c("KCDVF18", "KCDVF19", "KCDVF20"), username = "awbarclay", password = "uci_genetics", file = "C:/Users/awbarclay/Documents/R/test_tissue_table.csv", import.vars = FALSE)
   #
   # Note~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #
