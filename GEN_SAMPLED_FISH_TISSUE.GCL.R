@@ -1,7 +1,7 @@
-GEN_SAMPLED_FISH_TISSUE.GCL <- function(sillyvec, username, password, import.vars = TRUE){
+GEN_SAMPLED_FISH_TISSUE.GCL <- function(sillyvec, username, password, file = NULL, import.vars = TRUE){
   
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  #  This function connects to LOKI and pulls the fish and tissue information for each silly in sillyvec.
+  #  This function connects to LOKI and pulls the tissue information for each silly in sillyvec.
   #
   # Inputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #
@@ -10,6 +10,8 @@ GEN_SAMPLED_FISH_TISSUE.GCL <- function(sillyvec, username, password, import.var
   #   username - your state user name
   #
   #   password - your password used to access LOKI - see Eric Lardizabal if you don't have a passord for LOKI
+  #
+  #   file - the file path, including .csv extension, for writing out a csv file of the output. 
   #
   #   import.vars - if TRUE (default), the output will only contain the 31 fields used by the Loki tissue importer (same as OceanAK report)
   #                 if FALSE, the output will include 7 additional collection information fields
@@ -27,6 +29,8 @@ GEN_SAMPLED_FISH_TISSUE.GCL <- function(sillyvec, username, password, import.var
   #   Here are the collection information variables:
   #
   #   SILLY_CODE, REGION_CODE, QUADRANT, LOCATION_CODE, LOCATION_DESCRIPTOR, LIFE_STAGE, COLLECTION_TYPE
+  #
+  #   If file is supplied, the tibble is written to a csv file with NAs removed.
   #   
   # Example~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #  
@@ -116,6 +120,12 @@ GEN_SAMPLED_FISH_TISSUE.GCL <- function(sillyvec, username, password, import.var
              MESH_SIZE_COMMENT, IS_MISSING_PAIRED_DATA_EXISTS, WELL_HAS_MORE_THAN_ONE_SAMPLE, IS_PRESENT_IN_DATASHEET, IS_PRESENT_BUT_NOT_IN_DS, 
              VIAL_BARCODE, CONTAINER_ARRAY_TYPE_ID, DNA_TRAY_WORKBENCH_ID, DNA_TRAY_CODE, DNA_TRAY_WELL_POS, DNA_TRAY_WELL_CODE, STORAGE_ID, 
              UNIT, SHELF_RACK, SLOT, EXHAUSTED_HOW, EXHAUSTED_BY, EXHAUSTED_DATE, AGENCY, OTHER_AGENCY_KEY, NUM_OTOLITHS_MISSING, OTO_INVENTORY_COMMENT)
+    
+  }
+  
+  if(!is.null(file)){
+    
+    write_csv(output, file, na = "") # Write out a csv file without NAs
     
   }
   
