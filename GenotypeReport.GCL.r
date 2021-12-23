@@ -143,19 +143,29 @@ GenotypeReport.GCL <- function(project_name = NULL, sillyvec = NULL, loci = NULL
   if(!is.null(project_name)) {
     
     dataAll <- dataAll %>% 
-      dplyr::filter(LAB_PROJECT_NAME == project_name)
+      dplyr::filter(LAB_PROJECT_NAME == project_name) %>% 
+      dplyr::select(-ALLELE_1, -ALLELE_2) %>%
+      dplyr::rename(ALLELE_1 = ALLELE_1_FIXED, ALLELE_2 = ALLELE_2_FIXED) %>% 
+      tidyr::unite(GENO, ALLELE_1, ALLELE_2, sep = "/", remove = FALSE) %>% 
+      dplyr::mutate(ALLELES = dplyr::case_when(PLOIDY == "D" ~ GENO,
+                                               PLOIDY == "H" ~ ALLELE_1)) %>% 
+      dplyr::select(LAB_PROJECT_NAME, FK_COLLECTION_ID, SILLY_CODE, FK_FISH_ID, DNA_PLATE_ID, LOCUS, ALLELES) %>%
+      tidyr::pivot_wider(names_from = LOCUS, values_from = ALLELES)
      
+  }else{
+      
+    dataAll <- dataAll %>% 
+      dplyr::select(-ALLELE_1, -ALLELE_2) %>%
+      dplyr::rename(ALLELE_1 = ALLELE_1_FIXED, ALLELE_2 = ALLELE_2_FIXED) %>% 
+      tidyr::unite(GENO, ALLELE_1, ALLELE_2, sep = "/", remove = FALSE) %>% 
+      dplyr::mutate(ALLELES = dplyr::case_when(PLOIDY == "D" ~ GENO,
+                                               PLOIDY == "H" ~ ALLELE_1)) %>% 
+      dplyr::select(LAB_PROJECT_NAME, FK_COLLECTION_ID, SILLY_CODE, FK_FISH_ID, LOCUS, ALLELES) %>%
+      tidyr::pivot_wider(names_from = LOCUS, values_from = ALLELES)
+    
     }
   
-  dataAll <- dataAll %>% 
-    dplyr::select(-ALLELE_1, -ALLELE_2) %>%
-    dplyr::rename(ALLELE_1 = ALLELE_1_FIXED, ALLELE_2 = ALLELE_2_FIXED) %>% 
-    tidyr::unite(GENO, ALLELE_1, ALLELE_2, sep = "/", remove = FALSE) %>% 
-    dplyr::mutate(ALLELES = dplyr::case_when(PLOIDY == "D" ~ GENO,
-                                             PLOIDY == "H" ~ ALLELE_1)) %>% 
-    dplyr::select(LAB_PROJECT_NAME, FK_COLLECTION_ID, SILLY_CODE, FK_FISH_ID, LOCUS, ALLELES) %>%
-    tidyr::pivot_wider(names_from = LOCUS, values_from = ALLELES)
-  
+   
   # Disconnect from LOKI
   discon <- DBI::dbDisconnect(con)
   
