@@ -43,6 +43,11 @@ GenotypeReport.GCL <- function(project_name = NULL, sillyvec = NULL, loci = NULL
   # Geno_olddata <- GenotypeReport.GCL(sillyvec = sillyvec, loci = NULL, path = "TestGenotypesReport_olddata.csv", username = username, password = password, project_name = NULL, open.file = TRUE)
   #
   # Geno_loci <- GenotypeReport.GCL(sillyvec = NULL, loci = loci, path = "TestGenotypesReport_allsillys.csv", username = username, password = password, project_name = NULL, open.file = TRUE)
+  # 
+  # Notes~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # 
+  # The genotypes report will only contain DNA plate IDs if project_name is supplied.
+  #
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   # Recording function start time
@@ -127,6 +132,8 @@ GenotypeReport.GCL <- function(project_name = NULL, sillyvec = NULL, loci = NULL
     
     gnoqry <- paste0("SELECT * FROM AKFINADM.V_GEN_TEST_RESULTS_BOTHGENO GENO WHERE EXISTS (SELECT * FROM AKFINADM.V_LAB_PROJECT_WELL LPW WHERE LPW.LAB_PROJECT_NAME IN (", paste0("'", project_name, "'", collapse = ","), ") AND LPW.SILLY_CODE = GENO.SILLY_CODE AND LPW.FISH_NO = GENO.FK_FISH_ID)")
   
+    projqry <- paste0("SELECT * FROM AKFINADM.V_LAB_PROJECT_WELL WHERE LAB_PROJECT_NAME IN (", paste0("'", project_name, "'", collapse = ","), ")")
+    
   }
   
   # Creating java query when only loci is supplied.
@@ -137,12 +144,19 @@ GenotypeReport.GCL <- function(project_name = NULL, sillyvec = NULL, loci = NULL
   } 
   
   # Pull genotypes and concatenate alleles into one column with "/" separator
-  dataAll <- RJDBC::dbGetQuery(con, gnoqry) %>% 
-    tibble::as_tibble() 
-  
+   
   if(!is.null(project_name)) {
     
+    geno <- RJDBC::dbGetQuery(con, gnoqry) %>% 
+      tibble::as_tibble() 
+    
+    proj <- RJDBC::dbGetQuery(con, projqry) %>% 
+      tibble::as_tibble() 
+    
+    dataAll <- left_join(geno, proj, by = c("LAB_PROJECT_NAME", "SILLY_CODE", "FK_FISH_ID" = "FISH_NO"))
+    
     dataAll <- dataAll %>% 
+      dplyr::mutate(DNA_PLATE_ID = PLATE_ID) %>% 
       dplyr::filter(LAB_PROJECT_NAME == project_name) %>% 
       dplyr::select(-ALLELE_1, -ALLELE_2) %>%
       dplyr::rename(ALLELE_1 = ALLELE_1_FIXED, ALLELE_2 = ALLELE_2_FIXED) %>% 
@@ -153,6 +167,9 @@ GenotypeReport.GCL <- function(project_name = NULL, sillyvec = NULL, loci = NULL
       tidyr::pivot_wider(names_from = LOCUS, values_from = ALLELES)
      
   }else{
+    
+    dataAll <- RJDBC::dbGetQuery(con, gnoqry) %>% 
+      tibble::as_tibble() 
       
     dataAll <- dataAll %>% 
       dplyr::select(-ALLELE_1, -ALLELE_2) %>%
