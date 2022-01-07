@@ -1,7 +1,8 @@
 ProjectGenotypeReportStats.GCL <- function(report = NULL, in.file = NULL, out.file = "GenotypeReportQC.xlsx"){  
   
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  #  This function pulls a genotypes report from LOKI and writes the data to aUTF-8 coded csv file.
+  #  This function takes an unmodified genotypes report object or file produced by GenotypeReport.GCL and
+  #  calculates statistics using by GCL lab staff for checking project genotypes, then writes out a formatted .xlsx file of the stats.
   #
   # Inputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #   
@@ -88,7 +89,7 @@ ProjectGenotypeReportStats.GCL <- function(report = NULL, in.file = NULL, out.fi
   loc_vars <- names(report)[-c(1:5)]# This is for selecting columns in the correct order
  
   report_out <- report %>%  
-    tidyr::pivot_longer(loc_vars, names_to = "locus", values_to = "geno") %>% 
+    tidyr::pivot_longer(dplyr::all_of(loc_vars), names_to = "locus", values_to = "geno") %>% 
     dplyr::group_by(LAB_PROJECT_NAME, FK_COLLECTION_ID, SILLY_CODE, FK_FISH_ID, DNA_PLATE_ID) %>% 
     dplyr::mutate(`Count of 0/0` = stringr::str_count(geno,"0/0") %>% sum()) %>% 
     tidyr::pivot_wider(names_from = locus, values_from = geno) %>% 
@@ -132,9 +133,9 @@ ProjectGenotypeReportStats.GCL <- function(report = NULL, in.file = NULL, out.fi
   
   openxlsx::addStyle(wb, sheet = sheet1_name, style = head_style, rows = 1, cols = 1:ncol(report_out))
   
-  openxlsx::addStyle(wb, sheet = sheet1_name, style = hallign, rows = 2:nrow(report_out), cols = 10:ncol(report_out), gridExpand = TRUE) 
+  openxlsx::addStyle(wb, sheet = sheet1_name, style = hallign, rows = 2:(nrow(report_out)+1), cols = 10:ncol(report_out), gridExpand = TRUE) 
   
-  openxlsx::addStyle(wb, sheet = sheet1_name, style = blankcol, rows = 1:nrow(report_out), cols = 9, gridExpand = TRUE) 
+  openxlsx::addStyle(wb, sheet = sheet1_name, style = blankcol, rows = 1:(nrow(report_out)+1), cols = 9, gridExpand = TRUE) 
   
   # Add sheet 2
   
@@ -144,7 +145,9 @@ ProjectGenotypeReportStats.GCL <- function(report = NULL, in.file = NULL, out.fi
   
   openxlsx::conditionalFormatting(wb, sheet = sheet1_name, cols = 8, rows = 1:total_fish, rule = "< .8", style =  openxlsx::createStyle(fontColour = "#806000", bgFill = "#FFE699"))
   
-  openxlsx::conditionalFormatting(wb, sheet = sheet1_name, cols = 1:length(loc_vars)+8, rows = 1:total_fish, type = 'contains', rule = "0/0")
+  openxlsx::conditionalFormatting(wb, sheet = sheet1_name, cols = 1:length(loc_vars)+9, rows = 1:(total_fish+1), type = 'contains', rule = "0/0") # conditional formatting for 0/0s in red - catches markers that get 0's
+  
+  openxlsx::conditionalFormatting(wb, sheet = sheet1_name, cols = 1:length(loc_vars)+9, rows = 1:(total_fish+1), type = 'contains', rule = "0") # conditional formatting for 0s in red - this catches mt markers that are 0
   
   # Add sheet 3
   
