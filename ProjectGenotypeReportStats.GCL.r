@@ -145,9 +145,9 @@ ProjectGenotypeReportStats.GCL <- function(report = NULL, in.file = NULL, out.fi
   
   openxlsx::conditionalFormatting(wb, sheet = sheet1_name, cols = 8, rows = 1:total_fish, rule = "< .8", style =  openxlsx::createStyle(fontColour = "#806000", bgFill = "#FFE699"))
   
-  openxlsx::conditionalFormatting(wb, sheet = sheet1_name, cols = 1:length(loc_vars)+9, rows = 1:(total_fish+1), type = 'contains', rule = "0/0") # conditional formatting for 0/0s in red - catches markers that get 0's
+  openxlsx::conditionalFormatting(wb, sheet = sheet1_name, cols = 1:length(loc_vars)+9, rows = 2:(total_fish+1), type = 'contains', rule = "0/0") # conditional formatting for 0/0s in red - catches markers that get 0's
   
-  openxlsx::conditionalFormatting(wb, sheet = sheet1_name, cols = 1:length(loc_vars)+9, rows = 1:(total_fish+1), type = 'contains', rule = "0") # conditional formatting for 0s in red - this catches mt markers that are 0
+  openxlsx::conditionalFormatting(wb, sheet = sheet1_name, cols = 1:length(loc_vars)+9, rows = 2:(total_fish+1), type = 'contains', rule = "0") # conditional formatting for 0s in red - this catches mt markers that are 0
   
   # Add sheet 3
   
