@@ -68,7 +68,7 @@ PlotColorTree.GCL <- function(color.tree, rm.neg.branch = TRUE, type = "phylogra
   
   if(rm.neg.branch == TRUE){
     
-    color.tree$tree$edge.length = pmax(0, FstTree$edge.length) #Get rid of negative branches  
+    color.tree$tree$edge.length = pmax(0, color.tree$tree$edge.length) #Get rid of negative branches  
     
   }
   
