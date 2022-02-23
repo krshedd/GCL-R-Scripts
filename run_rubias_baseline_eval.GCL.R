@@ -102,7 +102,7 @@ run_rubias_baseline_eval.GCL <- function(tests,
                          sample_int_Pi = 10, 
                          sample_theta = sample_int_Pi, 
                          pi_prior_sum = pi_prior_sum, 
-                         path = out.path, 
+                         file = out.path, 
                          seed = seed)
       
     }
