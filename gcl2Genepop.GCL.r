@@ -158,6 +158,8 @@ gcl2Genepop.GCL <- function(sillyvec, loci, path, VialNums = TRUE, usat = FALSE,
       
       pop_scores <- lapply(loci, function(loc){
         
+        print(loc)
+        
         variables <- c(loc, paste(loc, 1, sep = "."))
         
         my.alleles <- alleles %>% 
@@ -168,7 +170,7 @@ gcl2Genepop.GCL <- function(sillyvec, loci, path, VialNums = TRUE, usat = FALSE,
           dplyr::mutate_all(.funs = factor, levels = my.alleles$call) %>% 
           dplyr::mutate_all(.funs = as.numeric) %>% 
           dplyr::mutate_all(.funs = as.character) %>%
-          tidyr::replace_na(replace = list(0, 0) %>% 
+          tidyr::replace_na(replace = list("0", "0") %>%
                               set_names(variables)) %>%
           dplyr::mutate_all(.funs = stringr::str_pad, width = maxchar, pad = "0", side = "left") %>% 
           tidyr::unite(col = !!rlang::as_name(loc), tidyselect::all_of(variables), sep = "")
