@@ -1,7 +1,8 @@
-stratified_estimator_rubias <- function(rubias_output = NULL, mixvec = NULL, group_names = NULL, 
-                                        catchvec, newname = NULL, group_names_new = NULL, 
-                                        groupvec = NULL, groupvec_new = NULL, path = "rubias/output", alpha = 0.1, 
-                                        burn_in = 5000, bias_corr = FALSE, threshold = 5e-7, cv = NULL) {
+stratified_estimator_rubias<-
+  function(rubias_output = NULL, mixvec = NULL, group_names = NULL, 
+         catchvec, newname = NULL, group_names_new = NULL, 
+         groupvec = NULL, groupvec_new = NULL, path = "rubias/output", alpha = 0.1, 
+         burn_in = 5000, bias_corr = FALSE, threshold = 5e-7, cv = NULL) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # This function computes summary statistics from a stratified estimate of `rubias` output, similar to `StratifiedEstiamteor`.
   # However, output is a tibble with `stratified_mixture` as a column, instead of a single matrix.
@@ -16,7 +17,11 @@ stratified_estimator_rubias <- function(rubias_output = NULL, mixvec = NULL, gro
   # To use this functionality, specify `group_names` as the original, fine-scale groups, `groupvec_new` as 
   # the groupvec to go from fine-scale to broad-scale groups, and `group_names_new` as the broad-scale groups
   # (i.e. length(groupvec_new) = length(group_names), and max(groupvec_new) == length(group_names_new))
-  #
+  # 3/18/2022 corrected some errors in calculations (only when catch numbers had cv's)
+  # new output format now includes both catch numbers and stock props
+  # columns with '_backcalc' are the stock props back-calculated using simulated harvest
+  # stock props are cut off at 1
+    
   # Inputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #   rubias_output - output list object from `run_rubias_mixture` or `infer_mixture`
   #   mixvec - character vector of mixture sillys, used to read in output .csv files if `rubias_output = NULL`
@@ -36,22 +41,45 @@ stratified_estimator_rubias <- function(rubias_output = NULL, mixvec = NULL, gro
   #   cv - numeric vector of harvest estiamte coeffients of variation for each stratum, must be the same order as `mixvec` 
   #
   # Outputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  #   Returns a tibble with 8 fields for each repunit (reporting group)
+  #   Returns a tibble with 13 fields (18 if with cv's) for each repunit (reporting group)
   #   stratified_mixture - character of stratified mixture
   #   repunit - factor of reporting groups (only a factor for ordering, plotting purposes)
+  #   mean_harv - mean stock catch number
+  #   sd_harv - standard deviation for catch
+  #   median_harv - median stock catch number
+  #   `5%_harv` (depends on alpha level) - lower bound of credibility interval for catch number
+  #   `95%_harv` - upper bound of credibility interval for catch number
   #   mean - mean stock composition
   #   sd - standard deviation
   #   median - median stock composition
-  #   loCI - lower bound of credibility interval
-  #   hiCI - upper bound of credibility interval
+  #   `5%` - lower bound of credibility interval
+  #   `95%` - upper bound of credibility interval
   #   P=0 - the proportion of the stock comp distribution that was below `threshold` (i.e posterior probability that stock comp = 0)
+  #   (for catch numbers with cv's)
+  #   mean_backcalc - mean_harv/sum(mean_harv); mean stock composition
+  #   sd_backcalc - sd_harv/sum(mean_harv); standard deviation
+  #   median_backcalc - median_harv/sum(mean_harv); median stock composition
+  #   `5%_backcalc` - `5%_harv`/sum(mean_harv); lower bound of credibility interval
+  #   `95%_backcalc` - `95%_harv`/sum(mean_harv); upper bound of credibility interval
   #
   # Example~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # load("V:/Analysis/1_SEAK/Sockeye/Mixture/Lynn Canal Inseason/2018/OLD rubias/output/test/custom_combine_rubias_output_test.RData")
-  # lynncanal_2015_SW26_27.sum <- custom_combine_rubias_output(rubias_output = lynncanal_test.out, group_names = LynnCanal_groups7, bias_corr = TRUE)
+  # data can be found at V:\Analysis\1_SEAK\Sockeye\Mixture\D101to103 Seine
+  # stratified_estimator_rubias(path = "rubias/output_PB",
+  #                             mixvec = c("D101__28293031", "D101__323334", "D101__3536"),
+  #                             group_names = c("Alaska", "Nass", "Skeena", "Other", "McDonald", "Hugh Smith", "Klawock"),
+  #                             catchvec = c(34860, 38169, 21562),
+  #                             newname = "D101_21_stratified_NBDomestic",
+  #                             group_names_new = c("Alaska", "Nass", "Skeena", "Other", "McDonald", "Hugh Smith"),
+  #                             groupvec_new = c(1, 2, 3, 4, 5, 6, 1),
+  #                             alpha = 0.1, 
+  #                             burn_in = 5000,
+  #                             bias_corr = TRUE,
+  #                             cv = c(0.2, 0.5, 0.4))
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  while(!require(tidyverse)){install.packages("tidyverse")}
-  
+    if(!require("pacman")) install.packages("pacman")
+    if(!require("BiocManager")) install.packages("BiocManager")
+    pacman::p_load(tidyverse, HDInterval) # load required packages
+    
   #~~~~~~~~~~~~~~~~
   ## Error catching
   if(is.null(rubias_output) & !dir.exists(path)) {
@@ -79,7 +107,7 @@ stratified_estimator_rubias <- function(rubias_output = NULL, mixvec = NULL, gro
   if(is.null(newname)) {
     stop("Need to provide a `newname` for this stratified estiamte, hoser!!!")
   }
-  
+    
   #~~~~~~~~~~~~~~~~
   ## If no rubias_output, make from .csv files
   if(is.null(rubias_output)) {
@@ -104,7 +132,7 @@ stratified_estimator_rubias <- function(rubias_output = NULL, mixvec = NULL, gro
       }  # assign `group_names` from "repunit_trace.csv", if NULL
       repunit_trace <- repunit_trace %>% 
         dplyr::mutate(repunit = factor(x = repunit, levels = group_names))  # order repunit
-        
+      
     } else {  # groupvec
       
       if(!all(file.exists(paste0(path, "/", mixvec, "_collection_trace.csv")))) {
@@ -159,7 +187,7 @@ stratified_estimator_rubias <- function(rubias_output = NULL, mixvec = NULL, gro
       repunit_trace <- rubias_output$mix_prop_traces %>% 
         dplyr::group_by(mixture_collection, sweep, repunit) %>%  # group to summarize across collections
         dplyr::summarise(rho = sum(pi), .groups = "drop") # summarize collections to repunits
-  
+      
       if(is.null(group_names)) {group_names <- unique(repunit_trace$repunit) }  # assign `group_names` from `rubias_output`, if NULL, order may be wrong
       
     } else {
@@ -173,7 +201,7 @@ stratified_estimator_rubias <- function(rubias_output = NULL, mixvec = NULL, gro
         dplyr::rename(repunit = repunit_new) %>%  # rename new repunit
         dplyr::group_by(mixture_collection, sweep, repunit) %>%  # group and order
         dplyr::summarise(rho = sum(pi), .groups = "drop")  # summarise pi (collection) to rho (repunit)
-
+      
     }  # build repunit_trace from `rubias_output`, `groupvec`, and `group_names`
     
     # Build `bootstrapped_proportions` if `bias_corr = TRUE`
@@ -228,89 +256,125 @@ stratified_estimator_rubias <- function(rubias_output = NULL, mixvec = NULL, gro
       dplyr::summarise(rho = sum(rho), .groups = "drop") 
   }  
   
-   #~~~~~~~~~~~~~~~~
+  #~~~~~~~~~~~~~~~~
   ## Summary statistics for stratified estimate
   
   harvest <- dplyr::tibble(mixture_collection = mixvec, harvest = catchvec)
   
   if(is.null(cv)){
     
-  loCI = alpha / 2
-  hiCI = 1 - (alpha / 2)
-  
-  out_sum <- repunit_trace %>% 
-    dplyr::filter(mixture_collection %in% mixvec) %>%  # only stratify over mixvec
-    dplyr::filter(sweep >= burn_in) %>%  # remove burn_in
-    dplyr::left_join(harvest, by = "mixture_collection") %>%  # join harvest data from `catchvec`
-    dplyr::mutate(rho_stratified = rho * harvest / sum(catchvec)) %>%  # multiply each strata by strata harvest and divide by total harvest
-    dplyr::group_by(sweep, repunit) %>%  # summarise mixtures by sweep and repunit
-    dplyr::summarise(rho = sum(rho_stratified), .groups = "keep") %>% 
-    dplyr::mutate(stratified = newname) %>%  # define newname
-    dplyr::select(stratified, sweep, repunit, rho) %>% 
-    dplyr::group_by(stratified, repunit) %>%  # calculate summary statistics
-    dplyr::summarise(mean = mean(rho),
-                     sd = sd(rho),
-                     median = median(rho),
-                     loCI = quantile(rho, probs = loCI),
-                     hiCI = quantile(rho, probs = hiCI),
-                     `P=0` = sum(rho < threshold) / length(rho), .groups = "drop") %>%  # summary statistics to return
-    dplyr::mutate(loCI = replace(loCI, which(loCI < 0), 0),
-                  hiCI = replace(hiCI, which(hiCI < 0), 0),
-                  median = replace(median, which(median < 0), 0),
-                  mean = replace(mean, which(mean < 0), 0)) %>% 
-    dplyr::mutate(loCI = replace(loCI, which(loCI > 1), 1),
-                  hiCI = replace(hiCI, which(hiCI > 1), 1),
-                  median = replace(median, which(median > 1), 1),
-                  mean = replace(mean, which(mean > 1), 1)) %>% 
-    magrittr::set_colnames(c("stratified_mixture", "repunit", "mean", "sd", "median", 
-                             paste0(loCI * 100, "%"), paste0(hiCI * 100, "%"), "P=0"))
+    lo_CI = alpha / 2
+    hi_CI = 1 - (alpha / 2)
+    
+    out_sum <- repunit_trace %>% 
+      dplyr::filter(mixture_collection %in% mixvec) %>%  # only stratify over mixvec
+      dplyr::filter(sweep >= burn_in) %>%  # remove burn_in
+      dplyr::left_join(harvest, by = "mixture_collection") %>%  # join harvest data from `catchvec`
+      dplyr::mutate(rho_stratified = rho * harvest) %>%  # multiply each strata by strata harvest
+      dplyr::group_by(sweep, repunit) %>%  # summarise mixtures by sweep and repunit
+      dplyr::summarise(rho = sum(rho_stratified),
+                       rho_pi = sum(rho_stratified)/ sum(harvest),
+                       .groups = "keep") %>% # sum up harvest numbers in a stratum by repunit (3/18/22)
+      dplyr::mutate(stratified = newname) %>%  # define newname
+      dplyr::select(stratified, sweep, repunit, rho, rho_pi) %>% 
+      dplyr::group_by(stratified, repunit) %>%  # calculate summary statistics
+      dplyr::summarise(mean_harv = mean(rho),
+                       sd_harv = sd(rho),
+                       median_harv = median(rho),
+                       loCI_harv = quantile(rho, probs = lo_CI),
+                       hiCI_harv = quantile(rho, probs = hi_CI),
+                       mean = mean(rho_pi),
+                       sd = sd(rho_pi),
+                       median = median(rho_pi),
+                       loCI = quantile(rho_pi, probs = lo_CI),
+                       hiCI = quantile(rho_pi, probs = hi_CI),
+                       `P=0` = mean(rho_pi < threshold), .groups = "drop") %>% # summary statistics to return
+      magrittr::set_colnames(c("stratified_mixture", "repunit",
+                               "mean_harv", "sd_harv", "median_harv", 
+                               paste0(lo_CI * 100, "%_harv"), paste0(hi_CI * 100, "%_harv"),
+                               "mean", "sd", "median", 
+                               paste0(lo_CI * 100, "%"), paste0(hi_CI * 100, "%"), "P=0"))
   }else{
-  
-  harvest <- harvest %>% 
-    mutate(cv = cv)
-  
-  if(length(mixvec) != length(cv)) {
-    stop("`mixvec` and `cv` are not the same length, hoser!!!")
-  }
-  
-  loCI = alpha / 2
-  hiCI = 1 - (alpha / 2)
-  
-  out_sum <- repunit_trace %>% 
-    dplyr::filter(mixture_collection %in% mixvec) %>%  # only stratify over mixvec
-    dplyr::filter(sweep >= burn_in) %>%  # remove burn_in
-    dplyr::full_join(harvest, by = "mixture_collection") %>%
-    dplyr::mutate(lnvar = log(cv^2 + 1), lnmean = log(harvest)-log(cv^2 + 1)/2) %>%
-    tidyr::spread(key = repunit, value = rho) %>%
-    dplyr::group_by(mixture_collection) %>%
-    dplyr::mutate(h0 = rlnorm(length(unique(sweep)), lnmean, sqrt(lnvar))) %>%
-    dplyr::ungroup() %>% 
-    dplyr::mutate_at(.var = group_names, .funs = ~.*h0) %>% 
-    dplyr::select(-cv, -lnvar, -lnmean, -h0) %>% 
-    tidyr::gather(key = repunit, value = r_h0, -mixture_collection, -sweep, -harvest) %>% 
-    dplyr::mutate(repunit = factor(x = repunit, levels = group_names)) %>% 
-    dplyr::group_by(sweep, repunit) %>% 
-    dplyr::summarise(rho = sum(r_h0)/sum(catchvec), .groups = "keep") %>% 
-    dplyr::mutate(stratified = newname) %>%  # define newname
-    dplyr::group_by(stratified, repunit) %>% # calculate summary statistics
-    dplyr::summarise(mean = mean(rho),
-                     sd = sd(rho),
-                     median = median(rho),
-                     loCI = quantile(rho, probs = loCI),
-                     hiCI = quantile(rho, probs = hiCI),
-                     `P=0` = sum(rho < threshold) / length(rho), .groups = "drop") %>%  # summary statistics to return
-    dplyr::mutate(loCI = replace(loCI, which(loCI < 0), 0),
-                  hiCI = replace(hiCI, which(hiCI < 0), 0),
-                  median = replace(median, which(median < 0), 0),
-                  mean = replace(mean, which(mean < 0), 0)) %>% 
-    dplyr::mutate(loCI = replace(loCI, which(loCI > 1), 1),
-                  hiCI = replace(hiCI, which(hiCI > 1), 1),
-                  median = replace(median, which(median > 1), 1),
-                  mean = replace(mean, which(mean > 1), 1)) %>% 
-    magrittr::set_colnames(c("stratified_mixture", "repunit", "mean", "sd", "median", 
-                             paste0(loCI * 100, "%"), paste0(hiCI * 100, "%"), "P=0"))
-  
+    
+    harvest <- harvest %>% 
+      mutate(cv = cv)
+    
+    if(length(mixvec) != length(cv)) {
+      stop("`mixvec` and `cv` are not the same length, hoser!!!")
+    }
+    
+    lo_CI = alpha / 2
+    hi_CI = 1 - (alpha / 2)
+    
+    if (is.null(group_names_new)) grp_names = group_names
+    else grp_names = group_names_new
+    
+    out_sum <- repunit_trace %>% 
+      dplyr::filter(mixture_collection %in% mixvec) %>%  # only stratify over mixvec
+      dplyr::filter(sweep >= burn_in) %>%  # remove burn_in
+      dplyr::full_join(harvest, by = "mixture_collection") %>%
+      dplyr::mutate(lnvar = log(cv^2 + 1), lnmean = log(harvest)-log(cv^2 + 1)/2) %>%
+      tidyr::spread(key = repunit, value = rho) %>%
+      dplyr::group_by(mixture_collection) %>%
+      dplyr::mutate(h0 = rlnorm(length(unique(sweep)), lnmean, sqrt(lnvar))) %>%
+      dplyr::ungroup() %>% 
+      dplyr::mutate_at(.var = grp_names, .funs = ~.*h0) %>% 
+      dplyr::select(-cv, -lnvar, -lnmean) %>% 
+      tidyr::gather(key = repunit, value = r_h0, -mixture_collection, -sweep, -harvest, -h0) %>% 
+      dplyr::mutate(repunit = factor(x = repunit, levels = grp_names)) %>% 
+      dplyr::group_by(sweep, repunit) %>% 
+      dplyr::summarise(rho = sum(r_h0),
+                       rho_pi = sum(r_h0)/sum(h0),
+                       tot_harv = sum(h0),
+                       .groups = "keep") %>% # sum up harvest numbers in a stratum by repunit (3/18/22)
+      dplyr::mutate(stratified = newname) %>%  # define newname
+      dplyr::group_by(stratified, repunit) %>% # calculate summary statistics
+      dplyr::summarise(mean_harv = mean(rho),
+                       sd_harv = sd(rho),
+                       median_harv = median(rho),
+                       # loCI_harv = hdi(rho, 1- alpha)[1],
+                       # hiCI_harv = hdi(rho, 1- alpha)[2],
+                       loCI_harv = quantile(rho, probs = lo_CI),
+                       hiCI_harv = quantile(rho, probs = hi_CI),
+                       mean = mean(rho_pi),
+                       sd = sd(rho_pi),
+                       median = median(rho_pi),
+                       loCI = quantile(rho_pi, probs = lo_CI),
+                       hiCI = quantile(rho_pi, probs = hi_CI),
+                       `P=0` = mean(rho_pi < threshold),
+                       mean_backcalc = mean_harv/mean(tot_harv),
+                       sd_backcalc = sd_harv/mean(tot_harv),
+                       median_backcalc = median_harv/mean(tot_harv),
+                       loCI_backcalc = loCI_harv/mean(tot_harv),
+                       hiCI_backcalc = hiCI_harv/mean(tot_harv),
+                       .groups = "drop") %>% # summary statistics to return
+      dplyr::mutate(hiCI_backcalc = replace(hiCI_backcalc, which(hiCI_backcalc > 1), 1),
+                    median_backcalc = replace(median_backcalc, which(median_backcalc > 1), 1),
+                    mean_backcalc = replace(mean_backcalc, which(mean_backcalc > 1), 1)) %>% 
+      
+      magrittr::set_colnames(c("stratified_mixture", "repunit",
+                               "mean_harv", "sd_harv", "median_harv", 
+                               paste0(lo_CI * 100, "%_harv"), paste0(hi_CI * 100, "%_harv"),
+                               "mean", "sd", "median", 
+                               paste0(lo_CI * 100, "%"), paste0(hi_CI * 100, "%"), "P=0",
+                               "mean_backcalc", "sd_backcalc", "median_backcalc", 
+                               paste0(lo_CI * 100, "%_backcalc"),
+                               paste0(hi_CI * 100, "%_backcalc")))
+    
   }
   
   return(out_sum)
-}  # end function
+  
+  }
+
+
+
+
+
+
+
+
+
+
+
+
