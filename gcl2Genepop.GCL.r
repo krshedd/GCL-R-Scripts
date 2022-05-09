@@ -138,7 +138,7 @@ gcl2Genepop.GCL <- function(sillyvec, loci, path, VialNums = TRUE, usat = FALSE,
           dplyr::select(tidyselect::all_of(variables)) %>%
           tidyr::replace_na(replace = list(0, 0) %>% 
                               purrr::set_names(variables)) %>%
-          dplyr::mutate_all(.funs = stringr::str_pad, width = maxchar, pad = "0", side = "left") %>% 
+          dplyr::mutate(across(dplyr::everything(), .fns = ~stringr::str_pad(., width = maxchar, pad = "0", side = "left"))) %>% 
           tidyr::unite(col = !!rlang::as_name(loc), tidyselect::all_of(variables), sep = "")
         
       }) %>% 
@@ -167,12 +167,12 @@ gcl2Genepop.GCL <- function(sillyvec, loci, path, VialNums = TRUE, usat = FALSE,
         
         scores %>%
           dplyr::select(tidyselect::all_of(variables)) %>% 
-          dplyr::mutate_all(.funs = factor, levels = my.alleles$call) %>% 
-          dplyr::mutate_all(.funs = as.numeric) %>% 
-          dplyr::mutate_all(.funs = as.character) %>%
+          dplyr::mutate(across(dplyr::everything(), .fns = ~factor(., levels = my.alleles$call))) %>% 
+          dplyr::mutate(across(dplyr::everything(), .fns = as.numeric)) %>% 
+          dplyr::mutate(across(dplyr::everything(), .fns = as.character)) %>%
           tidyr::replace_na(replace = list("0", "0") %>%
                               set_names(variables)) %>%
-          dplyr::mutate_all(.funs = stringr::str_pad, width = maxchar, pad = "0", side = "left") %>% 
+          dplyr::mutate(across(dplyr::everything(), .fns = ~stringr::str_pad(., width = maxchar, pad = "0", side = "left"))) %>% 
           tidyr::unite(col = !!rlang::as_name(loc), tidyselect::all_of(variables), sep = "")
         
       }) %>% 
