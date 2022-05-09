@@ -133,7 +133,7 @@ plot_baseline_eval_summary.GCL <- function(summary, file, method = c("MCMC", "PB
         ggplot2::theme(legend.position = "none", strip.text.x = element_text(size = 16), panel.spacing.y = unit(3, "lines"))+
         ggplot2::xlab("True Proportion") +
         ggplot2::ylab("Posterior Mean Reporting Group Proportion") +
-        ggplot2::ggtitle(paste0("Baseline evaluation test results: ", meth), subtitle = paste0(summary$estimates$total_samps %>% unique(), " sample mixtures")) 
+        ggplot2::ggtitle(paste0("Baseline evaluation test results: ", meth), subtitle = paste0(summary$estimates$total_samps %>% unique() %>% ceiling(), " sample mixtures")) 
       
       print(plot)
       
@@ -164,7 +164,7 @@ plot_baseline_eval_summary.GCL <- function(summary, file, method = c("MCMC", "PB
       ggplot2::theme(legend.position = "none", strip.text.x = element_text(size = 16), panel.spacing.y = unit(3, "lines"))+
       ggplot2::xlab("True Proportion") +
       ggplot2::ylab("Posterior Mean Reporting Group Proportion") +
-      ggtitle(paste0("Baseline evaluation test results: ", meth), subtitle = paste0(summary$estimates$total_samps %>% unique(), " sample mixtures"))
+      ggtitle(paste0("Baseline evaluation test results: ", meth), subtitle = paste0(summary$estimates$total_samps %>% unique() %>% ceiling(), " sample mixtures"))
     
     print(plot)
     
