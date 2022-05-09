@@ -99,13 +99,13 @@ gcl2FSTAT.GCL <- function(sillyvec, loci, path, ncores = 4){
       
       scores %>%
         dplyr::select(tidyselect::all_of(variables)) %>% 
-        dplyr::mutate_all(.funs = factor, levels = my.alleles$call) %>% 
-        dplyr::mutate_all(.funs = as.numeric) %>% 
-        dplyr::mutate_all(.funs = as.character) %>%
-        tidyr::replace_na(replace = list(0, 0) %>% 
+        dplyr::mutate(across(dplyr::everything(), .fns = ~factor(., levels = my.alleles$call))) %>% 
+        dplyr::mutate(across(dplyr::everything(), .fns = as.numeric)) %>% 
+        dplyr::mutate(across(dplyr::everything(), .fns = as.character)) %>%
+        tidyr::replace_na(replace = list("0", "0") %>%
                             set_names(variables)) %>%
-        dplyr::mutate_all(.funs = stringr::str_pad, width = maxchar, pad = "0", side = "left") %>% 
-        tidyr::unite(col = loc, c(loc, paste(loc, 1, sep = ".")), sep = "")
+        dplyr::mutate(across(dplyr::everything(), .fns = ~stringr::str_pad(., width = maxchar, pad = "0", side = "left"))) %>% 
+        tidyr::unite(col = !!rlang::as_name(loc), tidyselect::all_of(variables), sep = "")
       
     }) %>% 
       dplyr::bind_cols() %>% 
