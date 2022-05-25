@@ -56,7 +56,7 @@ HoFisFstTable.GCL <- function(sillyvec, loci, fstatdir = NULL, dir = NULL, ncore
   
   }
 
-  dat <- read.fstat.data(fstatdir) #Read in FSTAT file
+  dat <- hierfstat::read.fstat.data(fstatdir, na.s = "0000") #Read in FSTAT file
 
   cl <- parallel::makePSOCKcluster(ncores)
   
@@ -93,21 +93,21 @@ HoFisFstTable.GCL <- function(sillyvec, loci, fstatdir = NULL, dir = NULL, ncore
   #Summarize variance components
   MyTable0 <- MyVC %>% 
     dplyr::rowwise() %>%  
-    dplyr::mutate(total = sum(c(P,I,G))) %>% 
+    dplyr::mutate(total = sum(c(P,I,G), na.rm = TRUE)) %>% 
     dplyr::mutate(P = P/total, I = I/total) %>% 
     dplyr::select(locus, P, I, total) %>% 
     dplyr::ungroup()
   
   Overall <- MyVC %>% 
-    dplyr::summarize(P = sum(P), I = sum(I), total = sum(MyTable0$total)) %>% 
+    dplyr::summarize(P = sum(P, na.rm = TRUE), I = sum(I, na.rm = TRUE), total = sum(MyTable0$total, na.rm = TRUE)) %>% 
     dplyr::mutate(locus = "Overall", I = I/total, P = P/total)
   
   MyTable <- dplyr::bind_rows(MyTable0, Overall) 
   
   #Heterozygosities
-  Hovec <- apply(hierfstat::basic.stats(dat[, c("Pop", loci[ploidy==2])])$Ho, 1, mean)
+  Hovec <- apply(hierfstat::basic.stats(dat[, c("Pop", loci[ploidy==2])])$Ho, 1, mean, na.rm = TRUE)
   
-  Ho <- tibble::tibble(locus = c(loci[ploidy==2], "Overall"), Ho = c(Hovec, mean(Hovec)))
+  Ho <- tibble::tibble(locus = c(loci[ploidy==2], "Overall"), Ho = c(Hovec, mean(Hovec, na.rm = TRUE)))
   
   #Join varcomp summary with Ho  
   output <- MyTable %>% 
