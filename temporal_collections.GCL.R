@@ -69,7 +69,7 @@ temporal_collections.GCL <- function(sillyvec, region = NULL, min.samps = 50, se
   if(!is.null(region)){
     
     tc <- tc %>% 
-      dplyr::left_join(region, by = "pop") %>% 
+      dplyr::left_join(region, by = c("pop"="pop_no")) %>% 
       dplyr::mutate(region = factor(region, levels = unique(region)) %>% as.numeric())
     
   }
