@@ -30,6 +30,12 @@ read_project_genotypes.GCL <- function(project_name = NULL, sillyvec = NULL, loc
   # Recording function start time
   start.time <- Sys.time()
   
+  if(exists("LocusControl", where = 1)){
+    
+    stop("LocusControl already exists")
+    
+  }
+  
   # Checking to make sure the correct combination of arguments is being use. 
   # If wrong, the function will stop and print an error message to the console.
   if(is.null(sillyvec) & is.null(loci) & is.null(project_name) |
