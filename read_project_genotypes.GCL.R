@@ -139,7 +139,7 @@ read_project_genotypes.GCL <- function(project_name = NULL, sillyvec = NULL, loc
     tidyr::unite(GENO, ALLELE_1, ALLELE_2, sep = "/", remove = FALSE) %>% 
     dplyr::mutate(ALLELES = dplyr::case_when(PLOIDY == "D" ~ GENO,
                                              PLOIDY == "H" ~ ALLELE_1)) %>% 
-    dplyr::select(c(attnames, "LOCUS", "ALLELE_1", "ALLELE_2", "ALLELES")) #%>% 
+    dplyr::select(c(dplyr::all_of(attnames), "LOCUS", "ALLELE_1", "ALLELE_2", "ALLELES")) #%>% 
   # dplyr::select(-PLOIDY) %>% 
   # tidyr::spread(key = LOCUS, value = ALLELES)
   
@@ -224,7 +224,7 @@ read_project_genotypes.GCL <- function(project_name = NULL, sillyvec = NULL, loc
     # Build attributes data.frame
     
     attributes <- data_silly %>% 
-      dplyr::select(attnames) %>% 
+      dplyr::select(dplyr::all_of(attnames)) %>% 
       dplyr::distinct() %>% 
       dplyr::mutate(FISH_ID = as.character(FK_FISH_ID),
                     PLATE_ID = as.character(PLATE_ID)) %>% 
