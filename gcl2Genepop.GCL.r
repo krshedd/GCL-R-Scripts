@@ -166,6 +166,7 @@ gcl2Genepop.GCL <- function(sillyvec, loci, path, VialNums = TRUE, usat = FALSE,
           dplyr::filter(locus == loc)
         
         scores %>%
+          tibble::as.tibble() %>% 
           dplyr::select(tidyselect::all_of(variables)) %>% 
           dplyr::mutate(across(dplyr::everything(), .fns = ~factor(., levels = my.alleles$call))) %>% 
           dplyr::mutate(across(dplyr::everything(), .fns = as.numeric)) %>% 
