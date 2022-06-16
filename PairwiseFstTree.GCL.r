@@ -5,8 +5,10 @@ PairwiseFstTree.GCL <- function(sillyvec, loci, dir, nboots = 1000, ncores = 4, 
   #   tree, bootstrap values for tree nodes, and variance components. This
   #   function is able to multicore in order to speed up the calculation of 
   #   variance components, with the idea that this function can be run on the
-  #   servers to take advantage of 16 cores. As this function requires hierfstat
-  #   it generates a .dat file.
+  #   servers to take advantage of 16 cores. 
+  #
+  #   Note: As of 6/16/22 this function no longer writes out and reads in an FSTAT .dat file. 
+  #         The function now calls on create_hierfstat_data.GCL() to create a hierfstat data object.
   #
   # Inputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #   
@@ -14,7 +16,7 @@ PairwiseFstTree.GCL <- function(sillyvec, loci, dir, nboots = 1000, ncores = 4, 
   #
   #   loci - a character vector of locus names
   #   
-  #   dir - directory where the fstat .dat file is dumped.
+  #   dir - directory to dput PairwiseFstTree object (see outputs).
   #
   #   nboots -  a numeric vector of length one indicating the number of bootstraps
   #
@@ -24,6 +26,8 @@ PairwiseFstTree.GCL <- function(sillyvec, loci, dir, nboots = 1000, ncores = 4, 
   #     saved for each bootstrap iteration
   #
   # Outputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # 
+  #  Returns object:
   #   PairwiseFstTree: List of 4
   #    tree: List of 4
   #    edge: Numeric matrix
@@ -36,15 +40,15 @@ PairwiseFstTree.GCL <- function(sillyvec, loci, dir, nboots = 1000, ncores = 4, 
   #   vc: List of choose(n = length(sillyvec), k = 2) with variance components
   #       for each pair of sillys
   #
-  #  "fstatfile.dat" is put into "dir"
-  #
   #  PairwiseFstTree is 'dput' into "dir", named 
-  #  "paste(dir,"\\", length(sillyvec), "Pops", length(loci), "Loci_","PairwiseFstTree.txt",sep="")"
+  #  "paste(dir,"\\", length(sillyvec), "Pops", length(loci), "Loci_", "PairwiseFstTree.txt", sep = "")"
   #
   # Example~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #   source(paste0(path.expand("~/R/"), "Functions.R"))#GCL functions
+  #
   #   load("V:/Analysis/2_Central/Chinook/Susitna River/Susitna_Chinook_baseline_2020/Susitna_Chinook_baseline_2020.Rdata")
   #
-  #   PairwiseFstTree.GCL(sillyvec = sillyvec31, loci = loci82, dir = "FSTAT", nboots = 1000, ncores = 8, returnbootstrapFst = FALSE)
+  #   PWFSTtree <- PairwiseFstTree.GCL(sillyvec = sillyvec31, loci = loci82, dir = "output", nboots = 1000, ncores = 8, returnbootstrapFst = FALSE)
   # 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
@@ -62,13 +66,11 @@ PairwiseFstTree.GCL <- function(sillyvec, loci, dir, nboots = 1000, ncores = 4, 
   
   }
   
-  message("\n4 Main function tasks: \n1) Create fstat .dat file\n2) Calculate variance componenets for each pair of sillys\n3) Calculate bootstrap Fst values\n4) Bootstrap tree nodes\n")
+  message("\n4 Main function tasks: \n1) Create hierfstat data object\n2) Calculate variance componenets for each pair of sillys\n3) Calculate bootstrap Fst values\n4) Bootstrap tree nodes\n")
   
   if (.Platform$OS.type == "windows"){flush.console()}
   
   start.time <- Sys.time() 
-  
-  fstatdir <- paste0(dir,"/fstat.dat")
   
   n <- silly_n.GCL(sillyvec) %>% 
     pull(n) %>% 
@@ -78,9 +80,7 @@ PairwiseFstTree.GCL <- function(sillyvec, loci, dir, nboots = 1000, ncores = 4, 
   
   nloci <- length(loci)
   
-  gcl2FSTAT.GCL(sillyvec = sillyvec, loci = loci, path = fstatdir, ncores = ncores)
-  
-  dat <- hierfstat::read.fstat.data(fstatdir, na.s = c("0", "00", "000", "0000", "00000", "000000", "NA", "NANA"))
+  dat <- create_hierfstat_data.GCL(sillyvec = sillyvec, region = NULL, pop = 1:length(sillyvec), loci = loci, ncores = ncores)
 
   pairs <- combn(sillyvec,2)
 
@@ -189,6 +189,7 @@ PairwiseFstTree.GCL <- function(sillyvec, loci, dir, nboots = 1000, ncores = 4, 
   
   }
   
+  
   names(vc) <- pairnames
   
   # Calculate Fst from VC for each pair
@@ -243,6 +244,9 @@ PairwiseFstTree.GCL <- function(sillyvec, loci, dir, nboots = 1000, ncores = 4, 
     
   })
   
+  # Stop cluster
+  parallel::stopCluster(cl)
+  
   message("\nBootstrap tree nodes\n", sep = '')
   
   bootstrap <- ape::prop.clades(tree, trees)
@@ -257,9 +261,6 @@ PairwiseFstTree.GCL <- function(sillyvec, loci, dir, nboots = 1000, ncores = 4, 
     PairwiseFstTree <- list(tree = tree, bootstrap = bootstrap, PairwiseFst = Fst, vc = vc)
     
   }
-  
-  # Stop cluster
-  parallel::stopCluster(cl)
   
   # Save tree before exiting
   dput(x = PairwiseFstTree, file = paste(dir,"\\", length(sillyvec), "Pops", length(loci), "Loci_", "PairwiseFstTree.txt", sep = ""))
