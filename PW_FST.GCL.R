@@ -1,0 +1,52 @@
+PW_FST.GCL <- function(sillyvec, loci, inputfile, outputfile, popnames = NULL, ncores = 4){
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #
+  #   This function generates a matrix of pairwise Fst values using the genepop package.
+  #
+  # Inputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #   
+  #   sillyvec - a vector of silly codes without the ".gcl" extention (e.g. sillyvec <- c("KQUART06","KQUART08","KQUART10")). 
+  #
+  #   loci - a character vector of locus names
+  # 
+  #   inputfile - the file path of the genepop input file including .txt extension.
+  #
+  #   outputfile - the file path of the genepop output without an extension; the extension is added by genepop
+  #
+  #   popnames - optional vector of population names corresponding to sillys in sillyvec to add as the dimnames of the output maxtrix. e.g., dimnames(ouput.matrix) <- list(popnames, popnames)
+  #              If popnames is not supplied, sillyvec will be used as the dimnames e.g., dimnames(ouput.matrix) <- list(sillyvec, sillyvec)
+  #   
+  #   ncores - a numeric vector of length one indicating the number of cores to use
+  #
+  # Outputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # 
+  #  a matrix of pairwise fst values
+  #
+  # Example~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #   source(paste0(path.expand("~/R/"), "Functions.R"))#GCL functions
+  #
+  #   load("V:/Analysis/2_Central/Chinook/Susitna River/Susitna_Chinook_baseline_2020/Susitna_Chinook_baseline_2020.Rdata")
+  #
+  #   PWFST <- PW_FST.GCL(sillyvec = sillyvec31, loci = loci82, inputfile = "genepop/Susitna31pops82loci.txt", outputfile = "genepop/Susitna31pops82loci", ncores = 8)
+  #
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
+  if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(genepop) #Install packages, if not in library and then load them.
+
+  if(!file.exists(inputfile)){
+    
+    gcl2Genepop.GCL(sillyvec = sillyvec, loci = loci, path = inputfile, ncores = ncores)
+    
+  }
+  
+  genepop::Fst(inputFile = inputfile, pairs = TRUE, outputFile = outputfile)
+  
+  if(is.null(popnames)){
+    
+    popnames = sillyvec
+    
+  }
+  
+  ReadGenepopPWFST.GCL(file = paste0(outputfile, ".MIG"), popnames = popnames)
+  
+}
