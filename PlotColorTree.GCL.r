@@ -2,7 +2,7 @@ PlotColorTree.GCL <- function(color.tree, rm.neg.branch = TRUE, type = "phylogra
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #
   #   This function is a wrapper for ape::plot.phylo
-  #   The function takes a tree object created by treColor.GCL and plots it with an optional scale.
+  #   The function takes a tree object created by treeColor.GCL and plots it with an optional scale.
   #
   # Inputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #   
