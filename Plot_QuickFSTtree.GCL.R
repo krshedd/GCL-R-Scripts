@@ -1,4 +1,4 @@
-Plot_QuickFSTtree.GCL <- function(sillyvec, loci, inputfile, outputfile, popnames = NULL, ncores = 4, groupvec = NULL, regioncol = NULL, cex = 1){
+Plot_QuickFSTtree.GCL <- function(sillyvec, loci, inputfile, popnames = NULL, ncores = 4, groupvec = NULL, regioncol = NULL, cex = 1){
   
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #
@@ -11,8 +11,6 @@ Plot_QuickFSTtree.GCL <- function(sillyvec, loci, inputfile, outputfile, popname
   #   loci - a character vector of locus names
   # 
   #   inputfile - the file path of the genepop input file including .txt extension. If the file does not exist, then one will be created.
-  #
-  #   outputfile - the file path of the genepop output without an extension; the extension is added by genepop
   #
   #   popnames - optional vector of population names corresponding to sillys in sillyvec to add as the dimnames of the output maxtrix. e.g., dimnames(ouput.matrix) <- list(popnames, popnames)
   #              If popnames is not supplied, sillyvec will be used as the dimnames e.g., dimnames(ouput.matrix) <- list(sillyvec, sillyvec)
@@ -38,13 +36,13 @@ Plot_QuickFSTtree.GCL <- function(sillyvec, loci, inputfile, outputfile, popname
   #
   #   load("V:/Analysis/2_Central/Chinook/Susitna River/Susitna_Chinook_baseline_2020/Susitna_Chinook_baseline_2020.Rdata")
   #
-  #   Plot_QuickFSTtree.GCL(sillyvec = sillyvec31, loci = loci82, inputfile = "genepop/Susitna31pops82loci.txt", outputfile = "genepop/Susitna31pops82loci.txt", popnames = treenames31, ncores = 8, groupvec = groupvec4, regioncol = grcol4, cex = .75)
+  #   Plot_QuickFSTtree.GCL(sillyvec = sillyvec31, loci = loci82, inputfile = "genepop/Susitna31pops82loci.txt", popnames = treenames31, ncores = 8, groupvec = groupvec4, regioncol = grcol4, cex = .75)
   #
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
   if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(ape) #Install packages, if not in library and then load them.
   
-  pwfst <- PW_FST.GCL(sillyvec = sillyvec, loci = loci, inputfile = inputfile, outputfile = outputfile, popnames = popnames, ncores = ncores)
+  pwfst <- PW_FST.GCL(sillyvec = sillyvec, loci = loci, inputfile = inputfile, popnames = popnames, ncores = ncores)
   
   tree <- ape::nj(pwfst)
   
