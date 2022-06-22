@@ -1,4 +1,4 @@
-PW_FST.GCL <- function(sillyvec, loci, inputfile, outputfile, popnames = NULL, ncores = 4){
+PW_FST.GCL <- function(sillyvec, loci, inputfile, popnames = NULL, ncores = 4){
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #
   #   This function generates a matrix of pairwise Fst values using the genepop package.
@@ -10,8 +10,6 @@ PW_FST.GCL <- function(sillyvec, loci, inputfile, outputfile, popnames = NULL, n
   #   loci - a character vector of locus names
   # 
   #   inputfile - the file path of the genepop input file including .txt extension.
-  #
-  #   outputfile - the file path of the genepop output without an extension; the extension is added by genepop
   #
   #   popnames - optional vector of population names corresponding to sillys in sillyvec to add as the dimnames of the output maxtrix. e.g., dimnames(ouput.matrix) <- list(popnames, popnames)
   #              If popnames is not supplied, sillyvec will be used as the dimnames e.g., dimnames(ouput.matrix) <- list(sillyvec, sillyvec)
@@ -27,7 +25,7 @@ PW_FST.GCL <- function(sillyvec, loci, inputfile, outputfile, popnames = NULL, n
   #
   #   load("V:/Analysis/2_Central/Chinook/Susitna River/Susitna_Chinook_baseline_2020/Susitna_Chinook_baseline_2020.Rdata")
   #
-  #   PWFST <- PW_FST.GCL(sillyvec = sillyvec31, loci = loci82, inputfile = "genepop/Susitna31pops82loci.txt", outputfile = "genepop/Susitna31pops82loci", ncores = 8)
+  #   PWFST <- PW_FST.GCL(sillyvec = sillyvec31, loci = loci82, inputfile = "genepop/Susitna31pops82loci.txt", ncores = 8)
   #
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
@@ -39,7 +37,7 @@ PW_FST.GCL <- function(sillyvec, loci, inputfile, outputfile, popnames = NULL, n
     
   }
   
-  genepop::Fst(inputFile = inputfile, pairs = TRUE, outputFile = outputfile)
+  genepop::Fst(inputFile = inputfile, pairs = TRUE, outputFile = inputfile)
   
   if(is.null(popnames)){
     
@@ -47,6 +45,8 @@ PW_FST.GCL <- function(sillyvec, loci, inputfile, outputfile, popnames = NULL, n
     
   }
   
-  ReadGenepopPWFST.GCL(file = paste0(outputfile, ".MIG"), popnames = popnames)
+ output <- ReadGenepopPWFST.GCL(file = paste0(inputfile, ".MIG"), popnames = popnames)
+ 
+ return(output)
   
 }
