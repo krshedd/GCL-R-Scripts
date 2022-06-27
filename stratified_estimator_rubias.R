@@ -294,7 +294,7 @@ stratified_estimator_rubias<-
                                paste0(lo_CI * 100, "%_harv"), paste0(hi_CI * 100, "%_harv"),
                                "mean", "sd", "median", 
                                paste0(lo_CI * 100, "%"), paste0(hi_CI * 100, "%"), "P=0"))
-  }else{
+  } else {
     
     harvest <- harvest %>% 
       mutate(cv = cv)
@@ -365,16 +365,4 @@ stratified_estimator_rubias<-
   
   return(out_sum)
   
-  }
-
-
-
-
-
-
-
-
-
-
-
-
+  }  # end function
