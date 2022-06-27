@@ -253,14 +253,17 @@ custom_combine_rubias_output <- function(rubias_output = NULL, mixvec = NULL, gr
       dplyr::mutate(repunit = recode(repunit, !!!level_key)) %>% 
       dplyr::group_by(mixture_collection, sweep, repunit) %>% 
       dplyr::summarise(rho = sum(rho), .groups = "drop_last") 
-  }  
-  
+    grp_names <- group_names_new  # for factoring repunit
+  } else {
+    grp_names <- group_names  # for factoring repunit
+  } 
+
   #~~~~~~~~~~~~~~~~
   ## Plot repunit trace
   if(plot_trace) {
     trace_plot <- repunit_trace %>% 
       dplyr::mutate(mixture_collection = factor(x = mixture_collection, levels = mixvec)) %>%  # order mixture_collection
-      dplyr::mutate(repunit = factor(x = repunit, levels = group_names)) %>%  # order repunit
+      dplyr::mutate(repunit = factor(x = repunit, levels = grp_names)) %>%  # order repunit
       ggplot2::ggplot(aes(x = sweep, y = rho, colour = repunit)) +
       ggplot2::geom_line() +
       ggplot2::ylim(0, 1) +
@@ -279,7 +282,7 @@ custom_combine_rubias_output <- function(rubias_output = NULL, mixvec = NULL, gr
   out_sum <- repunit_trace %>% 
     dplyr::filter(sweep >= burn_in) %>%  # remove burn_in
     dplyr::mutate(mixture_collection = factor(x = mixture_collection, levels = mixvec)) %>%  # order mixture_collection
-    dplyr::mutate(repunit = factor(x = repunit, levels = group_names)) %>%  # order repunit
+    dplyr::mutate(repunit = factor(x = repunit, levels = grp_names)) %>%  # order repunit
     dplyr::group_by(mixture_collection, repunit) %>%  # group by mixture and repunit across sweeps
     dplyr::summarise(mean = mean(rho),
                      sd = sd(rho),
