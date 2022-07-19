@@ -13,6 +13,7 @@ treeColor.GCL <- function(tree, currentnames, treenames, groupvec, regioncol, re
   #
   #   regioncol - is a vector of colors the same length as max(groupvec) (i.e. the number of groups).
   #               The colors can be hexadecimal, R color names, or the number corresponding to an R color name in colors() 
+  #
   #   regionpch - is a vector with the same structure as "regioncol", but each element is an R pch (plot character) number. 
   #
   #   write_nexus - when TRUE the function calls on NexusColorTree.GCL() to write out a Nexus tree file that can be opened 
@@ -42,7 +43,7 @@ treeColor.GCL <- function(tree, currentnames, treenames, groupvec, regioncol, re
   #               currentnames = currentnames,
   #               treenames = treenames,
   #               groupvec = groupvec,
-  #               regioncol = hex_colors,
+  #               regioncol = r_color_numbers,
   #               regionpch = unique(groupvec),
   #               write_nexus = TRUE,
   #               file = "ColoredNexusTree.nex")
@@ -70,6 +71,8 @@ treeColor.GCL <- function(tree, currentnames, treenames, groupvec, regioncol, re
     regioncol <- colors()[regioncol]
     
   }
+  
+  regioncol <- as.character(regioncol)
   
   xx <- tree
   pops1 <- currentnames
