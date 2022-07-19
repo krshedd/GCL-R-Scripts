@@ -34,9 +34,9 @@ treeColor.GCL <- function(tree, currentnames, treenames, groupvec, regioncol, re
   # detach()
   # 
   # r_colors <- c("purple", "blue", "forestgreen","magenta", "red", "orange", "green", "yellow", "cyan", "gray", "brown") #R color names example
-  #   
+  # 
   # hex_colors <- c("#A020F0FF", "#0000FFFF", "#228B22FF", "#FF00FFFF", "#FF0000FF", "#FFA500FF", "#00FF00FF", "#FFFF00FF", "#00FFFFFF", "#BEBEBEFF", "#A52A2AFF") #Hexadecimal colors example
-  #   
+  # 
   # r_color_numbers <- match(r_colors, colors()) #R color numbers example
   # 
   # colortree <- treeColor.GCL(tree = tree,
@@ -73,6 +73,12 @@ treeColor.GCL <- function(tree, currentnames, treenames, groupvec, regioncol, re
   }
   
   regioncol <- as.character(regioncol)
+  
+  if(grepl(pattern = "black", x = regioncol) %>% sum() > 0){
+    
+    warning("If you didn't know this already, using black as a regioncol will make the population branches look the same as the rest of the tree segments.")
+    
+  }
   
   xx <- tree
   pops1 <- currentnames
