@@ -75,6 +75,12 @@ LOKI2R.GCL <- function(sillyvec, username, password, test_type = c("SNP", "GTSNP
     
   }
   
+  if(length(test_type)>1){
+    
+    stop("Only one test_type can be supplied at a time.")
+    
+  }
+  
   if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(RJDBC, tidyverse, lubridate) #Install packages, if not in library and then load them.
   
   # This copies the "odbc8.jar" file to the R folder on your computer if it doesn't exist there. This file contains the java odbc drivers needed for RJDBC
