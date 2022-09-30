@@ -1,4 +1,4 @@
-LOKI2R.GCL <- function(sillyvec, username, password){
+LOKI2R.GCL <- function(sillyvec, username, password, test_type = c("SNP", "GTSNP")[1]){
   
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #  This function connects to LOKI and creates a "*.gcl" object for each silly in sillyvec.  
@@ -11,6 +11,15 @@ LOKI2R.GCL <- function(sillyvec, username, password){
   #
   #   password - your password used to access LOKI - see Eric Lardizabal if you don't have a passord for LOKI
   #
+  #   test_type - the test type ("SNP" or "GTSNP") you would like to pull from Loki - default is test_type = "SNP"
+  #               Note: This argument is a workaround. Some sillys in Loki contain data for both SNP and GTSNP test types. 
+  #                     If genotypes for both test types were pulled at the same time for the same individuals and loci, 
+  #                     this would cause the function to stop and throw an error message. 
+  #                     If you want data for both test types in your workspace, you will need to run 
+  #                     this function separately for each test type. If you pull data for both test types for the same
+  #                     silly code, you will need to rename your '.GCL' object for the first test type before pulling data 
+  #                     for the second test type, otherwise the first '.GCL' object will be overwritten.
+  #         
   # Outputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #
   #   This function assigns a tibble with the following columns for each silly.
@@ -41,16 +50,18 @@ LOKI2R.GCL <- function(sillyvec, username, password){
   #                     Each locus will have a column for each dose. The columns will be named after the locus with a number added to the locus name after dose 1 (e.g. dose 1 = GTH2B-550; dose 2 = GTH2B-550.1) 
   #
   #
-  #   The tibbles will be named after the silly code with a .gcl extention (e.g. KQUART06.gcl)
+  #   The tibbles will be named after the silly code with a .gcl extension (e.g. KQUART06.gcl)
   #
   #   If one or more *.gcl objects have no data for one or more loci, the function returns a tibble of loci with missing data for each *.gcl object.
   # Example~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #  
   #   password = "************"
   #
-  #   CreateLocusControl.GCL(markersuite = "UCI_Chinook_GTSeq_557SNPs", username = "awbarclay", password = password)
-  # 
-  #   LOKI2R.GCL(sillyvec = c("KCURRY13", "KDEEP10", "CHDEC912", "KCHICK10", "KALEX16"), username = "awbarclay", password = password)
+  #   CreateLocusControl.GCL(markersuite = "Sockeye2011_96SNPs", username ="awbarclay", password = .password)#Locus control
+  #
+  #   sillyvec <- c("SKAMC98E", "STANK05", "SKAMC98L","STIGIL02")
+  #
+  #   LOKI2R.GCL(sillyvec = sillyvec, username = "awbarclay", password = password, test_type = "SNP")
   #
   # Note~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #
@@ -130,10 +141,41 @@ LOKI2R.GCL <- function(sillyvec, username, password){
   
   dataAll <- dataAll0[dataAllbool, ] %>% 
     tibble::as_tibble() %>% 
-    dplyr::select(-PREFERRED_TISSUE, -TEST_TYPE)
+    dplyr::select(-PREFERRED_TISSUE)
   
   discon <- RJDBC::dbDisconnect(con)
   
+  # Are there any sillys that contain data for a TEST_TYPE other that the one supplied?
+  # If so, a warning message will be produced listing out these sillys.
+  test_types <- unique(dataAll$TEST_TYPE)
+  
+  if(sum(test_types %in% test_type) == 0){
+    
+    stop(paste0("The supplied sillys do not contain data for test_type = ", test_type))
+    
+  }
+  
+  if(test_type == "SNP" & sum(test_types == "GTSNP")>0){
+    
+    GTSNP_sillys <- dataAll %>% 
+      filter(TEST_TYPE == "GTSNP") %>% 
+      pull(SILLY_CODE) %>% 
+      unique()
+    
+  }
+  
+  if(test_type == "GTSNP" & sum(test_types == "SNP")>0){
+    
+    SNP_sillys <- dataAll %>% 
+      filter(TEST_TYPE == "SNP") %>% 
+      pull(SILLY_CODE) %>% 
+      unique()
+    
+  }
+  
+  dataAll <- filter(dataAll, TEST_TYPE == test_type) %>% 
+    select(-TEST_TYPE)# Filter dataAll for the supplied test_type
+    
   # what sillys have no data for any of these loci?
   missing_sillys <- setdiff(sillyvec, dataAll$SILLY_CODE %>% unique()) #Find which sillys had no data for any loci in LocusControl
   
@@ -270,6 +312,18 @@ LOKI2R.GCL <- function(sillyvec, username, password){
   } else { 
     
     print("The *.gcl objects created have data for all loci in LocusControl\n")
+    
+  }
+  
+  if(exists("GTSNP_sillys")){
+    
+    warning(paste0("GTSNP test_type data was removed before creating '.GCL' objects for the following silly codes: ", paste0(GTSNP_sillys, collapse = ", ")))
+    
+  }
+  
+  if(exists("SNP_sillys")){
+    
+    warning(paste0("SNP test_type data was removed before creating '.GCL' objects for the following silly codes: ", paste0(SNP_sillys, collapse = ", ")))
     
   }
   
