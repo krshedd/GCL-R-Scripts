@@ -50,6 +50,9 @@ GEN_SAMPLED_FISH_TISSUE.GCL <- function(sillyvec, username, password, file = NUL
   # The tissue importer doesn't like some date formats. Before importing tissue information with dates, 
   # open the file in excel and change the format of date columns to numeric and then save the file; the numbers will get converted to dates in Loki.
   #
+  # Also, when using readr::write_csv to write out the tissue import file, make sure to change the eol argument to from the default "\n" to "\r\n" or the importer
+  # will give you an error message about the header names.  e.g.,  import_file %>% write_csv(file = "ImportFile.csv", na = "", eol = "\r\n")
+  #
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
  
   if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(RJDBC, tidyverse, lubridate) #Install packages, if not in library and then load them.
