@@ -1,7 +1,10 @@
-LOKI2R.GCL <- function(sillyvec, username, password, test_type = c("SNP", "GTSNP")[1]){
+LOKI2R.GCL <- function(sillyvec, username, password, test_type = c("SNP", "GTSNP")[1], include_missing = FALSE){
   
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  #  This function connects to LOKI and creates a "*.gcl" object for each silly in sillyvec.  
+  #  This function connects to LOKI and creates a "*.gcl" object for each silly in sillyvec containing genotypes for each locus in LocusControl$locusnames.
+  #  The default for this function is to only include fish that have been genotyped for all loci in LocusControl$locusnames; 
+  #  however, the function will include all fish when include_missing = TRUE, which is not recommended or needed for most analyses. If a silly has no fish with genotypes for
+  #  the loci in LocusControl, no object will be created and a message will appear listing the sillys that had no data.
   #
   # Inputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #
@@ -19,7 +22,9 @@ LOKI2R.GCL <- function(sillyvec, username, password, test_type = c("SNP", "GTSNP
   #                     this function separately for each test type. If you pull data for both test types for the same
   #                     silly code, you will need to rename your '.GCL' object for the first test type before pulling data 
   #                     for the second test type, otherwise the first '.GCL' object will be overwritten.
-  #         
+  #   
+  #   include_missing - logial; whether to include all fish even if they were never genotyped for all loci in LocusControl.
+  #                     
   # Outputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #
   #   This function assigns a tibble with the following columns for each silly.
@@ -55,13 +60,13 @@ LOKI2R.GCL <- function(sillyvec, username, password, test_type = c("SNP", "GTSNP
   #   If one or more *.gcl objects have no data for one or more loci, the function returns a tibble of loci with missing data for each *.gcl object.
   # Example~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #  
-  #   password = "************"
+  #   .password = "************"
   #
   #   CreateLocusControl.GCL(markersuite = "Sockeye2011_96SNPs", username ="awbarclay", password = .password)#Locus control
   #
-  #   sillyvec <- c("SKAMC98E", "STANK05", "SKAMC98L","STIGIL02")
+  #   sillyvec <- c("SUCIWS06", "SUCIWS07", "SUCIWS08", "SUCIWS09", "SUCIWS10", "SUCIWS11", "SUCIWS12", "SUCIWS13", "SCIMA22")
   #
-  #   LOKI2R.GCL(sillyvec = sillyvec, username = "awbarclay", password = password, test_type = "SNP")
+  #   LOKI2R.GCL(sillyvec = sillyvec, username = "awbarclay", password = .password, test_type = "SNP", include_missing = TRUE)
   #
   # Note~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #
@@ -204,23 +209,39 @@ LOKI2R.GCL <- function(sillyvec, username, password, test_type = c("SNP", "GTSNP
   
   names(missing_indvs_loci$missing_loci) <- missing_indvs_loci$SillySource
   
-  # filter out individuals missing loci, replace no calls (0's) with NA
+  # replace no calls (0's) with NA
   dataAll <- dataAll %>% 
-    dplyr::anti_join(dplyr::select(.data = missing_indvs, SILLY_CODE, FISH_ID), by = c("SILLY_CODE", "FISH_ID")) %>% 
     dplyr::mutate(ALLELE_1 = dplyr::na_if(ALLELE_1, "0"),
                   ALLELE_2 = dplyr::na_if(ALLELE_2, "0"))
   
+  # filter out individuals missing loci, 
+  dataAll_no_missing <- dataAll %>% 
+    dplyr::anti_join(dplyr::select(.data = missing_indvs, SILLY_CODE, FISH_ID), by = c("SILLY_CODE", "FISH_ID")) 
+
   # what sillys have complete data?
-  dataAll_sillys <- dataAll$SILLY_CODE %>% 
+  complete_sillys <- dataAll_no_missing$SILLY_CODE %>% 
     unique() %>% 
     sort()
   
+  # What sillys had no individuals with complete data
+  missing_sillys_indv <- setdiff(setdiff(sillyvec, missing_sillys), complete_sillys)
+  
+  if(include_missing == FALSE){
+    
+    dataAll <- dataAll_no_missing
+    
+  }
+  
+  dataAll_sillys <- dataAll$SILLY_CODE %>% 
+    unique() %>% 
+    sort()
+    
   # did all indvs from a silly get dropped?
   missing_sillys_indv <- setdiff(setdiff(sillyvec, missing_sillys), dataAll_sillys)
   
   lapply(dataAll_sillys, function(silly){ 
     
-    message0 <- paste0(silly, ".gcl created ", match(silly, dataAll_sillys)," of ", length(dataAll_sillys)," completed.") 
+    message0 <- paste0(silly, ".gcl created ", match(silly, dataAll_sillys)," of ", length(dataAll_sillys), " completed.") 
     
     sillydata <- dataAll %>% 
       dplyr::filter(SILLY_CODE==silly)
@@ -300,14 +321,14 @@ LOKI2R.GCL <- function(sillyvec, username, password, test_type = c("SNP", "GTSNP
     
   }
   
-  if(nrow(missing_indvs_loci) >= 1){
-    
-    n_missing <- missing_indvs_loci %>% 
-      dplyr::mutate(n_loci_missing = nloci - n_loci_genotyped) %>% 
-      dplyr::count(SILLY_CODE, n_loci_missing) %>%
-      dplyr::rename(n_indv = n) %>% 
-      dplyr::mutate(silly_n_miss = paste0(SILLY_CODE, " (", n_indv, " individuals missing ", n_loci_missing, " loci)")) %>% 
-      dplyr::pull(silly_n_miss)
+  n_missing <- missing_indvs_loci %>% 
+    dplyr::mutate(n_loci_missing = nloci - n_loci_genotyped) %>% 
+    dplyr::count(SILLY_CODE, n_loci_missing) %>%
+    dplyr::rename(n_indv = n) %>% 
+    dplyr::mutate(silly_n_miss = paste0(SILLY_CODE, " (", n_indv, " individuals missing ", n_loci_missing, " loci)")) %>% 
+    dplyr::pull(silly_n_miss)
+  
+  if(nrow(missing_indvs_loci) >= 1 & include_missing == FALSE){
     
     warning(paste0("The following sillys had individuals that were removed due to missing data for one or more loci:\n", paste(n_missing, collapse = "\n"), "\n"), call. = FALSE)
     
@@ -315,7 +336,19 @@ LOKI2R.GCL <- function(sillyvec, username, password, test_type = c("SNP", "GTSNP
     
     assign(x = "missing_indvs_loci", value = missing_indvs_loci, pos = 1, .GlobalEnv)
     
-  } else { 
+  } 
+  
+  if(nrow(missing_indvs_loci) >= 1 & include_missing == TRUE){
+    
+    warning(paste0("The following sillys had individuals with missing data for one or more loci:\n", paste(n_missing, collapse = "\n"), "\n"), call. = FALSE)
+    
+    warning(paste0("A table of loci missing data for each individual has been assigned to the object 'missing_indvs_loci'\n"), call. = FALSE)
+    
+    assign(x = "missing_indvs_loci", value = missing_indvs_loci, pos = 1, .GlobalEnv)
+    
+  } 
+  
+  if(!nrow(missing_indvs_loci) >= 1){
     
     print("The *.gcl objects created have data for all loci in LocusControl\n")
     
