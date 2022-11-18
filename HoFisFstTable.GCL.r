@@ -1,8 +1,10 @@
-HoFisFstTable.GCL <- function(sillyvec, loci, fstatdir = NULL, dir = NULL, ncores = 4){
+HoFisFstTable.GCL <- function(sillyvec, loci, ncores = 4, ...){
   
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #
   #   This function creates a table of statistics containing obseved hetrozygosity (Ho), Fis, and Fst for each locus in loci.
+  #   Note: as of 11/18/22 this function no longer writes out an FSTAT file using gcl2FSTAT.GCL, but instead calls on create_hierfstat_data.GCL to create 
+  #         a hierfstat data object.Use gcl2FSTAT if you need to produce an FSTAT .dat file. 
   #
   # Inputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #   
@@ -10,13 +12,10 @@ HoFisFstTable.GCL <- function(sillyvec, loci, fstatdir = NULL, dir = NULL, ncore
   #
   #   loci - a character vector of locus names
   #   
-  #   fstatdir - the path to an existing FSTAT .dat file. If none is supplied the user must supply a directory (dir) where 
-  #              an FSTAT .dat file can be written.
-  #
-  #   dir -  directory where the FSTAT .dat file is dumped.
-  #
   #   ncores - a numeric vector of length one indicating the number of cores to use
-  # 
+  #
+  #   ... - allows for previously used arguments 'fstatdir' and 'dir' to be supplied. 
+  #
   # Outputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #   A tibble is returned containing locusname, Ho, Fis, and Fst
   #
@@ -25,10 +24,18 @@ HoFisFstTable.GCL <- function(sillyvec, loci, fstatdir = NULL, dir = NULL, ncore
   # Examples~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #   load("V:/Analysis/2_Central/Chinook/Susitna River/Susitna_Chinook_baseline_2020/Susitna_Chinook_baseline_2020.Rdata")
   #
-  #   HoFisFstTable.GCL(sillyvec = sillyvec31, loci = loci82, fstatdir =  NULL, dir = "FSTAT", ncores = 8)
-  #
-  #   HoFisFstTable.GCL(sillyvec = sillyvec31, loci = loci82, fstatdir = "FSTAT/fstat.dat", dir = NULL, ncores = 8)
+  #   HoFisFstTable.GCL(sillyvec = sillyvec31, loci = loci82, ncores = 23, fstatdir = "blah")
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
+  unused_args <- list(...)
+  
+  if (names(unused_args) %in% c("fstatdir", "dir")){ 
+    
+    warning("This function no longer writes out an FSTAT .dat file; therefore; the 'fstatdir' and 'dir' arguemnts are no longer used. 
+            Use gcl2FSTAT.GCL to produce an FSTAT file if needed.")
+    
+    }
+   
   
   if(!exists("LocusControl")) {
     
@@ -48,15 +55,7 @@ HoFisFstTable.GCL <- function(sillyvec, loci, fstatdir = NULL, dir = NULL, ncore
   
   ploidy <- LocusControl$ploidy[loci]
   
-  if(is.null(fstatdir)) {
-    
-    fstatdir <- paste0(dir, "/fstat.dat")
-    
-    gcl2FSTAT.GCL(sillyvec = sillyvec, loci = loci, path = fstatdir, ncores = ncores)
-  
-  }
-
-  dat <- hierfstat::read.fstat.data(fstatdir, na.s = "0000") #Read in FSTAT file
+  dat <- create_hierfstat_data.GCL(sillyvec = sillyvec, region = NULL, pop = seq_along(sillyvec), loci = loci, ncores = ncores)
 
   cl <- parallel::makePSOCKcluster(ncores)
   
@@ -70,7 +69,7 @@ HoFisFstTable.GCL <- function(sillyvec, loci, fstatdir = NULL, dir = NULL, ncore
     
     if(diploid){
       
-      VC <- hierfstat::varcomp(dat[, c("Pop", locus)], diploid = diploid)$overall
+      VC <- hierfstat::varcomp(dat[, c("pop", locus)], diploid = diploid)$overall
       
       table <- tibble::tibble(locus = !!locus, P = VC[1], I = VC[2], G = VC[3])
       
@@ -78,7 +77,7 @@ HoFisFstTable.GCL <- function(sillyvec, loci, fstatdir = NULL, dir = NULL, ncore
     
     if(!diploid){
       
-      VC <- hierfstat::varcomp(dat[, c("Pop", locus)], diploid = diploid)$overall
+      VC <- hierfstat::varcomp(dat[, c("pop", locus)], diploid = diploid)$overall
       
       table <- tibble::tibble(locus = !!locus, P = VC[1], I = NA, G = VC[2])
       
@@ -105,7 +104,7 @@ HoFisFstTable.GCL <- function(sillyvec, loci, fstatdir = NULL, dir = NULL, ncore
   MyTable <- dplyr::bind_rows(MyTable0, Overall) 
   
   #Heterozygosities
-  Hovec <- apply(hierfstat::basic.stats(dat[, c("Pop", loci[ploidy==2])])$Ho, 1, mean, na.rm = TRUE)
+  Hovec <- apply(hierfstat::basic.stats(dat[, c("pop", loci[ploidy==2])])$Ho, 1, mean, na.rm = TRUE)
   
   Ho <- tibble::tibble(locus = c(loci[ploidy==2], "Overall"), Ho = c(Hovec, mean(Hovec, na.rm = TRUE)))
   
