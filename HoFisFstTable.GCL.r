@@ -24,7 +24,7 @@ HoFisFstTable.GCL <- function(sillyvec, loci, ncores = 4, ...){
   # Examples~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #   load("V:/Analysis/2_Central/Chinook/Susitna River/Susitna_Chinook_baseline_2020/Susitna_Chinook_baseline_2020.Rdata")
   #
-  #   HoFisFstTable.GCL(sillyvec = sillyvec31, loci = loci82, ncores = 23, fstatdir = "blah")
+  #   HoFisFstTable.GCL(sillyvec = sillyvec31, loci = loci82, ncores = 23)
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
   unused_args <- list(...)
