@@ -9,7 +9,7 @@ GEN_SAMPLED_FISH_TISSUE.GCL <- function(sillyvec, username, password, file = NUL
   #
   #   username - your state user name
   #
-  #   password - your password used to access LOKI - see Eric Lardizabal if you don't have a passord for LOKI
+  #   password - your password used to access LOKI - see Eric Lardizabal if you don't have a password for LOKI
   #
   #   file - the file path, including .csv extension, for writing out a csv file of the output. 
   #
@@ -36,7 +36,9 @@ GEN_SAMPLED_FISH_TISSUE.GCL <- function(sillyvec, username, password, file = NUL
   #  
   #   password = "************"
   #
-  #   GEN_SAMPLED_FISH_TISSUE.GCL(sillyvec = c("KCDVF18", "KCDVF19", "KCDVF20"), username = "awbarclay", password = "uci_genetics", file = "C:/Users/awbarclay/Documents/R/test_tissue_table.csv", import.vars = FALSE)
+  #   source("~/R/Functions.R")# Load GCL functions; your path may differ.
+  #
+  #   GEN_SAMPLED_FISH_TISSUE.GCL(sillyvec = c("KCDVF18", "KCDVF19", "KCDVF20"), username = "awbarclay", password = password, file = "C:/Users/awbarclay/Documents/R/test_tissue_table.csv", import.vars = FALSE)
   #
   # Note~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #
@@ -97,7 +99,7 @@ GEN_SAMPLED_FISH_TISSUE.GCL <- function(sillyvec, username, password, file = NUL
   
   qry <- paste("SELECT * FROM AKFINADM.V_GEN_SAMPLED_FISH_TISSUE WHERE SILLY_CODE IN (", paste0("'", sillyvec, "'", collapse = ","), ")", sep = "") #Query
   
-  dataAll <- RJDBC::dbGetQuery(con, qry)  #Pulling data from LOKI using the connection and genotype query
+  dataAll <- RJDBC::dbGetQuery(con, qry)  #Pulling data from LOKI using the connection and tissue data query
   
   discon <- RJDBC::dbDisconnect(con) # Disconnect from Loki
   
