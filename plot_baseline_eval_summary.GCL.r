@@ -33,10 +33,10 @@ plot_baseline_eval_summary.GCL <- function(summary, file, method = c("MCMC", "PB
   #  require(tidyverse)
   #  tests <- sample_sizes %>% group_by(test_group, scenario) %>% summarize(test_group = test_group %>% unique(), scenario = scenario %>% unique(), .groups = "drop_last")#Total of 510 tests  #
   #  mixvec <- tests %>% unite(col = "mixvec", test_group, scenario, sep ="_" ) %>% pull()
-  #  path <-  "V:/Analysis/2_Central/Chinook/Susitna River/Susitna_Chinook_baseline_2020/rubias/output/3groups"
+  #  path <-  "V:/Analysis/2_Central/Chinook/Susitna River/Susitna_Chinook_baseline_2020/rubias/3groups/output"
   #  summary <- summarize_rubias_baseline_eval.GCL (mixvec = mixvec, sample_sizes = sample_sizes, method = "both", group_names = NULL, group_names_new = NULL, groupvec = NULL, groupvec_new = NULL, path = path, alpha = 0.1, burn_in = 5000, threshold = 5e-7, ncores = 8)
   # 
-  #  plot_baseline_eval_summary.GCL(summary = summary, file = "Baseline_eval_plots.pdf", method = "both", test_groups = groups3, group_colors = c("green", "magenta", "red"))
+  #  plot_baseline_eval_summary.GCL(summary = summary, file = "Baseline_eval_plots.pdf", method = "PB", test_groups = groups3, group_colors = c("green", "magenta", "red"))
   #  
   # Note~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #
@@ -44,7 +44,7 @@ plot_baseline_eval_summary.GCL <- function(summary, file, method = c("MCMC", "PB
   #  If so, you may need to supply a subset of test_groups to plot.
   # 
   #  This function is not intended for producing publication-ready plots; however, the code in this function
-  #  can be copied and modified to produce plots formated for publication.  
+  #  can be copied and modified to produce plots formatted for publication.  
   #
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
@@ -115,8 +115,10 @@ plot_baseline_eval_summary.GCL <- function(summary, file, method = c("MCMC", "PB
       
       plot <- summary$estimates %>%
         dplyr::filter(method==meth, test_group==repunit) %>% 
+        dplyr::filter(test_group %in% test_groups) %>% 
         dplyr::left_join(summary$summary_stats, by = c("test_group", "method")) %>%
-        dplyr::mutate(test_group = factor(test_group, levels = levels(repunit))) %>% 
+        dplyr::mutate(test_group = factor(test_group, levels = unique(as.character(test_group))),
+                      repunit = factor(repunit, levels = unique(as.character(repunit)))) %>% 
         ggplot2::ggplot(aes(x = true_proportion, y = mean, colour = repunit)) +
         ggplot2::geom_point() +
         ggplot2::geom_linerange(aes(ymin = lo5CI, ymax = hi95CI))+
@@ -146,9 +148,11 @@ plot_baseline_eval_summary.GCL <- function(summary, file, method = c("MCMC", "PB
     
     plot <- summary$estimates %>%
       dplyr::filter(method==meth, test_group==repunit) %>% 
+      dplyr::filter(test_group %in% test_groups) %>% 
       dplyr::left_join(summary$summary_stats, by = c("test_group", "method")) %>%
-      dplyr::mutate(test_group = factor(test_group, levels = levels(repunit))) %>% 
-      ggplot2::ggplot(aes(x = true_proportion, y = mean, colour = repunit)) +
+      dplyr::mutate(test_group = factor(test_group, levels = unique(as.character(test_group))),
+                    repunit = factor(repunit, levels = unique(as.character(repunit)))) %>% 
+      ggplot2::ggplot(aes(x = true_proportion, y = mean, colour = test_group)) +
       ggplot2::geom_point() +
       ggplot2::geom_linerange(aes(ymin = lo5CI, ymax = hi95CI))+
       ggplot2::geom_abline(intercept = 0, slope = 1) +
