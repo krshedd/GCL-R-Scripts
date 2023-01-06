@@ -1,4 +1,4 @@
-LOKI2R.GCL <- function(sillyvec, username, password, test_type = c("SNP", "GTSNP")[1], include_missing = FALSE){
+LOKI2R.GCL <- function(sillyvec, username, password, test_type = c("SNP", "GTSNP", "MSAT")[1], include_missing = FALSE){
   
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #  This function connects to LOKI and creates a "*.gcl" object for each silly in sillyvec containing genotypes for each locus in LocusControl$locusnames.
