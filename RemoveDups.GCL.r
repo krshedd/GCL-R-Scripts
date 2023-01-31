@@ -56,7 +56,7 @@ RemoveDups.GCL <- function(dupcheck, remove_both = FALSE){
   sillys <- dupcheck$silly %>% 
     unique()
   
-  if(remove_both) {
+  if(remove_both == TRUE) {
     
     to_remove <- dupcheck %>%
       tidyr::pivot_longer(
