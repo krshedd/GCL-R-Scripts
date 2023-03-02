@@ -1,4 +1,4 @@
-DupCheckBetweenSillys.GCL <- function(KeySillys, KeySillyIDs = NULL, BetweenSillys, loci, minnonmissing = 0.6, minproportion = 0.9, ncores = 4){
+DupCheckBetweenSillys.GCL <- function(KeySillys, KeySillyIDs = NULL, BetweenSillys, loci, minnonmissing = 0.6, minproportion = 0.9, ncores = 4, plot.results = TRUE){
   
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # This function check for duplicate individuals between silly ".gcl" objects. This function is mainly used for QC purposes. 
@@ -19,6 +19,8 @@ DupCheckBetweenSillys.GCL <- function(KeySillys, KeySillyIDs = NULL, BetweenSill
   #   minproportion - the proportion of shared non-missing loci that must be shared between the individuals to be reported as a matching pair (passed on to rubias::close_matching_samples()) 
   #
   #   ncores - the number of cores to use in a foreach %dopar% loop. If the number of core exceeds the number on your device, then ncores defaults to detectCores()
+  #
+  #   plot.results - logical; whether you want the function to produce histograms of duplicate rates for each KeySillyID
   #
   # Outputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #  
@@ -163,29 +165,34 @@ DupCheckBetweenSillys.GCL <- function(KeySillys, KeySillyIDs = NULL, BetweenSill
   parallel::stopCluster(cl) 
   
   # Plots
-  sapply(dupcheck0$Keysillyvial %>% unique(), function(key){
-    
-    dc <- dupcheck0 %>% 
-      tidyr::separate(Betweensillyvial, into = c("Betweensilly", NA), sep = "_", remove = FALSE) %>% 
-      dplyr::filter(Keysillyvial == key)
-    
-    max_dup <- dc %>% 
-      dplyr::filter(DuplicateRate == max(DuplicateRate))
-    
-    plot <- dc %>% 
-      ggplot2::ggplot(aes(x = DuplicateRate, fill = Betweensilly)) + # I added "fill = BetweenSilly" so the histogram will show which between sillys make up the distribution - this may be removed if others don't like it.
-      ggplot2::geom_histogram(bins = 100) +
-      ggplot2::geom_vline(xintercept = minproportion, color = "red", size = 1.25)+
-      ggplot2::xlab("Duplicate Rate")+
-      ggplot2::ylab("Frequency") +
-      ggplot2::xlim(0, 1.02) +
-      ggplot2::ggtitle(label = paste0("KeySillyID: ", key))+
-      ggplot2::geom_text(aes(x = max_dup$DuplicateRate %>% unique, y = length(max_dup$DuplicateRate)), label = paste0(max_dup$Betweensillyvial, collapse = "_"), angle = 90, hjust = -.05)
-    
-    suppressWarnings(print(plot))
-    
-  }) # End plots
   
+  if(plot.results == TRUE){ #Added this as an option to not produce plots
+    
+    sapply(dupcheck0$Keysillyvial %>% unique(), function(key){
+      
+      dc <- dupcheck0 %>% 
+        tidyr::separate(Betweensillyvial, into = c("Betweensilly", NA), sep = "_", remove = FALSE) %>% 
+        dplyr::filter(Keysillyvial == key)
+      
+      max_dup <- dc %>% 
+        dplyr::filter(DuplicateRate == max(DuplicateRate))
+      
+      plot <- dc %>% 
+        ggplot2::ggplot(aes(x = DuplicateRate, fill = Betweensilly)) + # I added "fill = BetweenSilly" so the histogram will show which between sillys make up the distribution - this may be removed if others don't like it.
+        ggplot2::geom_histogram(bins = 100) +
+        ggplot2::geom_vline(xintercept = minproportion, color = "red", size = 1.25)+
+        ggplot2::xlab("Duplicate Rate")+
+        ggplot2::ylab("Frequency") +
+        ggplot2::xlim(0, 1.02) +
+        ggplot2::ggtitle(label = paste0("KeySillyID: ", key))+
+        ggplot2::geom_text(aes(x = max_dup$DuplicateRate %>% unique, y = length(max_dup$DuplicateRate)), label = paste0(max_dup$Betweensillyvial, collapse = "_"), angle = 90, hjust = -.05)
+      
+      suppressWarnings(print(plot))
+      
+    }) # End plots
+    
+  }
+    
   max_dups <- dupcheck0 %>% 
     dplyr::filter(DuplicateRate == max(DuplicateRate))
   
