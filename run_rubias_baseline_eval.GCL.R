@@ -17,7 +17,8 @@ run_rubias_baseline_eval.GCL <- function(tests,
                                          sample_theta = TRUE, 
                                          pi_prior_sum = 1, 
                                          seed = 56, 
-                                         ncores = 4){
+                                         ncores = 4,
+                                         file_type = c("fst", "csv")[1]){
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # This function is a wrapper for run_rubias_mixture(). 
   # This function runs baseline evaluation mixtures produced by CreateRubiasBaselineEval.GCL()
@@ -44,6 +45,9 @@ run_rubias_baseline_eval.GCL <- function(tests,
   #
   #   ncores - a numeric vector of length one indicating the number of cores to use
   #
+  #   file_type - whether your baseline and mixture input files are saved as .fst (default and much faster!) or .csv files. 
+  #               This was argument was added for backwards compatibility.  
+  #
   # Outputs~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #   Breaks the output into each `mixture_collection` and for each saves as .csv files:
   #     1) collection level trace, wide format, collections in order of baseline (akin to .BOT file from BAYES)
@@ -63,7 +67,7 @@ run_rubias_baseline_eval.GCL <- function(tests,
     
   start_time <- Sys.time()
   
-  if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(rubias, tidyverse, parallel, doParallel, foreach) #Install packages, if not in library and then load them.
+  if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(rubias, tidyverse, parallel, doParallel, foreach, fst) #Install packages, if not in library and then load them.
   
   test_groups = tests$test_group %>% 
     unique()
@@ -82,9 +86,21 @@ run_rubias_baseline_eval.GCL <- function(tests,
     
     for(scn in scenario_names){
       
-      mixture <- readr::read_csv(file = paste0(mix.path, "/", scn, ".mix.csv"), col_types = cols(.default = "c")) # Had to add col_types to make sure all cols are read as character, columns with T's were getting read as logical.
+      if(file_type == "fst"){
+        
+        mixture <- fst::read_fst(path = paste0(mix.path, "/", scn, ".mix.fst")) 
+        
+        baseline <- fst::read_fst(path = paste0(base.path, "/", scn, ".base.fst"))
+        
+      }
       
-      baseline <- readr::read_csv(file = paste0(base.path, "/", scn, ".base.csv"), col_types = cols(.default = "c"))
+      if(file_type == "csv"){
+        
+        mixture <- readr::read_csv(file = paste0(mix.path, "/", scn, ".mix.csv")) 
+        
+        baseline <- readr::read_csv(file = paste0(base.path, "/", scn, ".base.csv"))
+        
+      }
       
       run_rubias_mixture(reference = baseline, 
                          mixture = mixture, 

@@ -1,4 +1,4 @@
-CreateRubiasBaselineEval.GCL <- function(sillyvec, group_names, loci, groupvec, sample_sizes, test_groups = group_names, prprtnl = FALSE, base.path = "rubias/baseline", mix.path = "rubias/mixture", seed = 123, ncores = 4){
+CreateRubiasBaselineEval.GCL <- function(sillyvec, group_names, loci, groupvec, sample_sizes, test_groups = group_names, prprtnl = FALSE, base.path = "rubias/baseline", mix.path = "rubias/mixture", seed = 123, ncores = 4, file_type = c("fst", "csv")[1]){
   
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # This function creates rubias mixture and baseline files for different proof test scenarios.  
@@ -37,6 +37,9 @@ CreateRubiasBaselineEval.GCL <- function(sillyvec, group_names, loci, groupvec, 
   #    seed - integer to set the seed for the random sampler function sample()
   #
   #    ncores - a numeric vector of length one indicating the number of cores to use
+  #   
+  #    file_type - whether you want the baseline and mixture files saved as .fst (default and much faster!) or .csv files. 
+  #                This was argument was added for backwards compatibility.  
   #
   # Output~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #
@@ -52,7 +55,7 @@ CreateRubiasBaselineEval.GCL <- function(sillyvec, group_names, loci, groupvec, 
   #  CreateRubiasBaselineEval.GCL(sillyvec = Final_Pops$silly, group_names = Final_Pops$group %>% levels(), test_groups = (Final_Pops$group %>% levels())[1:2], loci = loci80, groupvec = Final_Pops$group %>% as.numeric(), sample_sizes = sample_sizes, prprtnl = TRUE, seed = 123, ncores = 8)
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
-  if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse, parallel, doParallel, foreach, doRNG) #Install packages, if not in library and then load them.
+  if(!require("pacman")) install.packages("pacman"); library(pacman); pacman::p_load(tidyverse, parallel, doParallel, foreach, doRNG, fst) #Install packages, if not in library and then load them.
   
   if(sum(is.na(match(loci, LocusControl$locusnames)))){
     
@@ -172,10 +175,22 @@ CreateRubiasBaselineEval.GCL <- function(sillyvec, group_names, loci, groupvec, 
       baseline <- full_base %>% 
         dplyr::filter(!indiv%in%mixture$indiv)
       
-      readr::write_csv(mixture, path = paste0(mix.path, "/", g, "_", scn, ".mix.csv"))
+      if(file_type == "csv"){
+        
+        readr::write_csv(mixture, file = paste0(mix.path, "/", g, "_", scn, ".mix.csv"))
+        
+        readr::write_csv(baseline, file = paste0(base.path, "/", g, "_", scn, ".base.csv"))
+        
+      }
       
-      readr::write_csv(baseline, path = paste0(base.path, "/", g, "_", scn, ".base.csv"))
-      
+      if(file_type == "fst"){
+        
+        fst::write_fst(mixture, path = paste0(mix.path, "/", g, "_", scn, ".mix.fst"), compress = 100)
+        
+        fst::write_fst(baseline, path = paste0(base.path, "/", g, "_", scn, ".base.fst"), compress = 100)
+        
+      }
+       
     } #End for loop
     
   } #End multicore
