@@ -53,7 +53,7 @@ create_rubias_baseline <- function(sillyvec, loci, group_names, groupvec, file =
     
   }) %>% 
     dplyr::bind_rows() %>% 
-    dplyr::na_if(0)  # I think this can be removed now that we convert all zeros to NAs when using LOKI2R.GCL
+    dplyr::mutate(dplyr::across(dplyr::where(is.character), ~dplyr::na_if(., "0")))  # I think this can be removed now that we convert all zeros to NAs when using LOKI2R.GCL
   
   readr::write_csv(x = baseline, file = paste0(file, "/", baseline_name, "_base.csv"))
   
