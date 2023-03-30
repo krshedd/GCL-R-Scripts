@@ -154,7 +154,7 @@ old2new_gcl.GCL <- function (sillyvec, save_old = FALSE){
       
     }) %>% 
       dplyr::bind_cols() %>% 
-      dplyr::na_if("0")
+      dplyr::mutate(dplyr::across(dplyr::where(is.character), ~dplyr::na_if(., "0")))
     
     tidy.gcl <- scores %>%
       dplyr::bind_cols(attr) %>% 
