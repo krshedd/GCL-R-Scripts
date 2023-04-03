@@ -47,7 +47,7 @@ create_rubias_mixture <- function(sillyvec, loci, path = "rubias/mixture") {
                     collection,
                     indiv,
                     tidyselect::all_of(scores_cols)) %>%
-      dplyr::na_if(0)  # I think this can be removed now that we convert all zeros to NAs when using LOKI2R.GCL
+      dplyr::mutate(dplyr::across(dplyr::where(is.character), ~dplyr::na_if(., "0")))  # I think this can be removed now that we convert all zeros to NAs when using LOKI2R.GCL
     
     readr::write_csv(x = silly_mix, file = paste0(path, "/", silly, "_mix.csv"))
     
