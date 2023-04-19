@@ -239,7 +239,7 @@ read_project_genotypes.GCL <- function(project_name = NULL, sillyvec = NULL, loc
     # Build attributes data.frame
     
     attributes <- data_silly %>% 
-      dplyr::select(attnames) %>% 
+      dplyr::select(dplyr::all_of(attnames)) %>% 
       dplyr::distinct() %>% 
       dplyr::mutate(FISH_ID = as.character(FK_FISH_ID),
                     PLATE_ID = as.character(PLATE_ID)) %>% 
