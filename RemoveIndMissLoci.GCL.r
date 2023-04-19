@@ -17,17 +17,17 @@ RemoveIndMissLoci.GCL=function(sillyvec,proportion=0.8){
 
 
   results=setNames(vector("list",length(sillyvec)),sillyvec)
-
+  
   for(silly in sillyvec){
-
+    
     my.gcl=get(paste0(silly,".gcl"),pos=1)
-
+    
     counts=my.gcl$counts
-
+    
     ID=as.character(rownames(counts))
-
+    
     nloci=sum(apply(counts, 2, function(locus) {!all(is.na(locus))} ))  # exclude SNPs not run for a given silly
-
+    
     if(my.gcl$n > 1) {
       myproportion=apply(!is.na(counts[,,1]),1,sum)/nloci
     } 
@@ -37,29 +37,37 @@ RemoveIndMissLoci.GCL=function(sillyvec,proportion=0.8){
     }
     
     myind=myproportion>=proportion
- 
+    
     counts=counts[myind,,,drop=FALSE]      
-
+    
     scores=my.gcl$scores[myind,,,drop=FALSE]
-
+    
     n=nrow(scores)
-
+    
     attributes=my.gcl$attributes[myind,,drop=FALSE]
-
+    
     assign(paste0(silly,".gcl"),list(counts=counts,scores=scores,n=n,attributes=attributes),pos=1)
-
-    if(sum(!myind)==0){
-
-      results[[silly]]="None"
-
-    } else{
-
-      results[[silly]]=ID[!myind]
-
+    
+    if(all(is.na(myind))) {
+      
+      results[[silly]] = "All fish removed, none left"
+      
+    } else {
+      
+      if(sum(!myind)==0){
+        
+        results[[silly]]="None"
+        
+      } else {
+        
+        results[[silly]]=ID[!myind]
+        
+      }
+      
     }
-                                                                                                                                                            
+
   }#silly
-
+  
   return(results)
-
+  
 }
