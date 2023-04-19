@@ -32,33 +32,33 @@ FailureRate.GCL <- function(sillyvec) {
   # Failure rate by silly
   fail_silly <- master.tbl %>% 
     dplyr::group_by(silly) %>% 
-    dplyr::summarise(fail = sum(genotype == "0", na.rm = TRUE) / n()) %>% 
+    dplyr::summarise(fail = sum(genotype == "0", na.rm = TRUE) / dplyr::n(), .groups = "drop") %>% 
     dplyr::arrange(dplyr::desc(fail))
   
   # Failure rate by locus
   fail_locus <- master.tbl %>% 
     dplyr::group_by(locus) %>% 
-    dplyr::summarise(fail = sum(genotype == "0", na.rm = TRUE) / n()) %>% 
+    dplyr::summarise(fail = sum(genotype == "0", na.rm = TRUE) / dplyr::n(), .groups = "drop") %>% 
     dplyr::arrange(dplyr::desc(fail))
   
   # Failure rate by plate
   fail_plate <- master.tbl %>% 
     dplyr::group_by(plate) %>% 
-    dplyr::summarise(fail = sum(genotype == "0", na.rm = TRUE) / n()) %>% 
+    dplyr::summarise(fail = sum(genotype == "0", na.rm = TRUE) / dplyr::n(), .groups = "drop") %>% 
     dplyr::arrange(dplyr::desc(fail))
   
   # Failure rate overall
   fail_overall <- master.tbl %>% 
     dplyr::mutate(project = project) %>% 
     dplyr::group_by(project) %>% 
-    dplyr::summarise(fail = sum(genotype == "0", na.rm = TRUE) / n())
+    dplyr::summarise(fail = sum(genotype == "0", na.rm = TRUE) / dplyr::n(), .groups = "drop")
     
   # Plot failure rate by silly and locus
   fail_silly_plot <- plotly::ggplotly(
     ggplot(
       master.tbl %>%
         dplyr::group_by(silly, locus) %>%
-        dplyr::summarise(p_fail = sum(genotype == "0") / n()),
+        dplyr::summarise(p_fail = sum(genotype == "0") / dplyr::n(), .groups = "drop"),
       aes(x = silly, y = locus)
     ) +
       geom_tile (aes(fill = p_fail)) +
@@ -81,7 +81,7 @@ FailureRate.GCL <- function(sillyvec) {
     ggplot(
       master.tbl %>%
         dplyr::group_by(plate, locus) %>%
-        dplyr::summarise(p_fail = sum(genotype == "0") / n()),
+        dplyr::summarise(p_fail = sum(genotype == "0") / dplyr::n(), .groups = "drop"),
       aes(x = plate, y = locus)
     ) +
       geom_tile (aes(fill = p_fail)) +
