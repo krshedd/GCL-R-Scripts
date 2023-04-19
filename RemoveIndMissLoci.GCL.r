@@ -42,7 +42,15 @@ RemoveIndMissLoci.GCL=function(sillyvec,proportion=0.8){
     
     scores=my.gcl$scores[myind,,,drop=FALSE]
     
-    n=nrow(scores)
+    if(all(is.na(myind))) {
+      
+      n=0
+      
+    } else {
+      
+      n=nrow(scores)
+      
+    }
     
     attributes=my.gcl$attributes[myind,,drop=FALSE]
     
