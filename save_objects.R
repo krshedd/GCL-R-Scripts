@@ -19,20 +19,28 @@ save_objects <- function(objects, path, rds = FALSE) {
   #
   # Example~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # iris <- iris  # bringing into pos = 1
-  # save_objects(objects = "iris", path = "Objects", rds = FALSE)
+  # save_objects(objects = "iris", path = "Objects", rds = TRUE)
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
-  if(!all(objects %in% ls(pos = 1))) {
-    
-    stop(paste0("These objects:\n", paste(setdiff(objects, ls(pos = 1)), collapse = "\n"), "\nare not in your workspace, hoser!!!"))
+  if (!all(objects %in% ls(pos = 1))) {
+    stop(paste0(
+      "These objects:\n",
+      paste(setdiff(objects, ls(pos = 1)), collapse = "\n"),
+      "\nare not in your workspace, hoser!!!"
+    ))
     
   }
   
-  sapply(objects, function(obj){
-    
-    if(rds == FALSE){dput(get(obj), paste0(path, "/", obj, ".txt"))}else{
-      
-      saveRDS(get(obj), paste0(path, "/", obj, ".rds"))}
+  empty <- sapply(objects, function(obj) {
+    x <- get(obj)
+    if (!is.null(attr(x = x, which = "problems"))) {
+      attr(x = x, which = "problems") <- NULL
+    }  # resolves issue with readr::read_csv not playing nicely with dget if attr-problems exist
+    if (rds == FALSE) {
+      dput(x, paste0(path, "/", obj, ".txt"))
+    } else {
+      saveRDS(x, paste0(path, "/", obj, ".rds"))
+    }
     
   })
   
