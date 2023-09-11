@@ -1,4 +1,6 @@
 # GCL-R-Scripts
+**Update 2023-09-11**: This repository is no longer actively maintained. These R functions have been superceeded by the [GCLr package](https://github.com/commfish/GCLr).
+
 A repository for all GCL R Scripts. This repository is meant to store and provide version control for all shared GCL scripts. New functions should be developed and included as necessary. Older functions that previously existed in the "temp" folder will be migrated into this repository over time, so all can use them. GitHub is a collaborative tool and is meant to store not only our code, but to also allow us to keep all R script related issues and discussions in one accessible place.  
 Files were initially moved off of the V: drive on 2/29/16.
 
